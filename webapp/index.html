@@ -19,12 +19,15 @@
   --muted: #98989d;
   --accent: #0a84ff;
   --accent-ink: #ffffff;
+  --accent-fill: #0060df;     /* blue behind white text: 5.6:1 (the brighter --accent is 3.6:1) */
   --accent-bg: #0a2540;
   --ok: #30d158;
   --ok-ink: #04210f;
   --ok-bg: #0f2a17;
   --warn: #ffd60a;
   --warn-bg: #332b00;
+  --warn-fill: #ffd60a;       /* amber behind dark text */
+  --warn-ink: #1a1200;
   --bad: #ff453a;
   --bad-ink: #1a0000;
   --bad-bg: #3a1210;
@@ -46,12 +49,15 @@
     --muted: #5c5c60;
     --accent: #0062cc;
     --accent-ink: #ffffff;
+    --accent-fill: #0062cc;
     --accent-bg: #dcebfa;
-    --ok: #248a3d;
+    --ok: #1f7a35;              /* 5.4:1 with white, 4.7:1 on --ok-bg */
     --ok-ink: #ffffff;
     --ok-bg: #dcf3e4;
     --warn: #9a5600;
     --warn-bg: #fdecc8;
+    --warn-fill: #ffcc00;       /* the dark-amber --warn behind dark text was 3.2:1 */
+    --warn-ink: #1a1200;
     --bad: #b0000d;
     --bad-ink: #ffffff;
     --bad-bg: #fbdcdc;
@@ -66,7 +72,7 @@ body {
   color: var(--text);
   font-family: var(--sans);
   font-size: 18px;
-  line-height: 1.35;
+  line-height: 1.5;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -129,17 +135,17 @@ main {
   display: flex; align-items: center; justify-content: center; text-align: center;
   min-height: 56px; padding: 10px 18px; border-radius: 14px;
   border: 1px solid transparent; background: var(--surface2);
-  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15;
+  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; line-height: 1.3;
   min-width: 0; overflow-wrap: anywhere;
   transition: transform .08s ease-out, filter .12s, background-color .15s, border-color .15s, color .15s;
 }
 .btn:not(:disabled):active, .hdr-btn:not(:disabled):active, .x-btn:active { transform: scale(.97); filter: brightness(.92); }
 @media (hover: hover) { .btn:not(:disabled):hover, .hdr-btn:not(:disabled):hover { filter: brightness(1.08); } }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-ink); }
 .btn.danger { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
 .btn.big { min-height: 72px; font-size: 1.35rem; }
 .btn.big, .btn.wide { width: 100%; }
-.btn.armed { background: var(--bad); color: #fff; border-color: var(--bad); }
+.btn.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
 .btn-stack { display: flex; flex-direction: column; gap: 10px; margin-top: var(--gap); }
 
 /* connection card */
@@ -205,7 +211,7 @@ main {
 .tile .v { font-size: clamp(1.9rem, 9.5vw, 3.2rem); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.05; overflow: hidden; text-overflow: clip; white-space: nowrap; }
 .tile .u { font-size: .85rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
 .stale .v, .stale.gear { opacity: .35; }
-.tile .src { font-size: .78rem; font-weight: 600; color: var(--muted); margin-top: 2px; line-height: 1.15; }
+.tile .src { font-size: .78rem; font-weight: 600; color: var(--muted); margin-top: 2px; line-height: 1.35; }
 .tile .src.off { color: var(--warn); }
 
 /* ---------- calibrate ---------- */
@@ -233,7 +239,7 @@ main {
 .cal-point { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .cal-count { color: var(--muted); font-size: .95rem; }
 .prompt {
-  font-size: 1.45rem; font-weight: 700; line-height: 1.25;
+  font-size: 1.45rem; font-weight: 700; line-height: 1.35;
   background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius);
   padding: 14px 16px;
 }
@@ -283,7 +289,7 @@ main {
 .disc .arc { fill: none; stroke: var(--surface2); stroke-width: 8; stroke-linecap: round; transition: stroke .25s; }
 .disc .arc.on { stroke: var(--accent); }
 .disc .ringf { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
-.disc.blue .face { fill: var(--accent); stroke: var(--accent); }
+.disc.blue .face { fill: var(--accent-fill); stroke: var(--accent-fill); }
 .disc.blue .arc.on { stroke: var(--accent); }
 .disc.green .face { fill: var(--ok); stroke: var(--ok); }
 .disc.green .arc, .disc.green .arc.on { stroke: var(--ok); }
@@ -295,15 +301,15 @@ main {
 }
 .disc-in .lbl { font-size: .8rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
 .disc-in .big { font-size: 88px; font-size: 39cqw; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 2px; }
-.disc.blue .lbl { color: var(--accent-ink); opacity: .85; }
+.disc.blue .lbl { color: var(--accent-ink); }
 .disc.blue .big { color: var(--accent-ink); }
 .disc-in .turns { font-size: .95rem; font-weight: 600; color: var(--muted); margin-top: 10px; font-variant-numeric: tabular-nums; }
 .disc-in .chk { width: 36%; height: 36%; }
 .disc-in .chk path { stroke: var(--ok-ink); }
 .disc-in .crank { width: 27%; height: 27%; color: var(--accent); animation: crank-spin 1.2s linear infinite; }
 .cal-say { text-align: center; padding: 0 8px; min-height: 84px; }
-.cal-say .h { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
-.cal-say .s { font-size: 1.05rem; color: var(--muted); margin-top: 8px; line-height: 1.3; }
+.cal-say .h { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
+.cal-say .s { font-size: 1.05rem; color: var(--muted); margin-top: 8px; line-height: 1.45; }
 #calCount { text-align: center; color: var(--muted); font-size: .95rem; font-variant-numeric: tabular-nums; }
 .cal-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .cal-btns .capture { grid-column: 1 / -1; min-height: 84px; font-size: 1.6rem; }
@@ -311,6 +317,31 @@ main {
 .cal-btns .capture.lite { min-height: 56px; font-size: 1.05rem; background: var(--surface2); border-color: transparent; color: var(--text); }
 .cal-btns .btn { min-height: 64px; }
 #calActive.nopoint .cal-btns .btn.danger { grid-column: 1 / -1; }
+/* [v3.1] point check (cal=5): the board thinks the lever was still moving */
+#calActive.checking .cal-btns .btn.danger { grid-column: 1 / -1; }
+.qcheck {
+  background: var(--warn-bg); border: 3px solid var(--warn); border-radius: 18px;
+  padding: 18px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.qcheck .qt { display: flex; gap: 12px; align-items: flex-start; font-size: 1.45rem; font-weight: 800; line-height: 1.3; }
+.qcheck .qt .bang {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--warn-fill); color: var(--warn-ink);
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900;
+}
+.qcheck .qb { font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
+.qcheck .qd { font-size: .9rem; color: var(--muted); }
+.qcheck .btn { min-height: 72px; font-size: 1.3rem; width: 100%; }
+.btn.warnfill { background: var(--warn-fill); border-color: var(--warn-fill); color: var(--warn-ink); }
+.redo-banner {
+  border: 2px solid var(--warn); background: var(--warn-bg); border-radius: 14px;
+  padding: 12px 14px; font-size: 1.1rem; font-weight: 700; line-height: 1.4;
+}
+.redo-banner b { color: var(--warn); }
+.hold-banner {
+  background: var(--warn-fill); color: var(--warn-ink); border-radius: 14px; padding: 12px 14px; text-align: center;
+}
+.hold-banner .hb-t { font-size: 1.25rem; font-weight: 800; line-height: 1.3; }
+.hold-banner .hb-s { font-size: .95rem; font-weight: 600; margin-top: 4px; }
 @keyframes crank-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .disc-in .crank { animation: none; }
@@ -354,7 +385,7 @@ ol.steps li { margin: 4px 0; }
 .log .sent { color: var(--accent); }
 .log .sys { color: var(--warn); }
 .qbtns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.qbtns .btn { padding: 6px 2px; font-size: .88rem; line-height: 1.15; flex-direction: column; gap: 0; }
+.qbtns .btn { padding: 6px 2px; font-size: .88rem; line-height: 1.3; flex-direction: column; gap: 0; }
 .qbtns .btn .k { font-family: var(--mono); font-size: .8rem; color: var(--muted); font-weight: 600; }
 .sendrow { display: flex; gap: 8px; }
 .sendrow input {
@@ -396,8 +427,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 .dseg { height: 14px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--line); }
 .dseg.done { background: var(--ok); border-color: var(--ok); }
 .dseg.cur { background: var(--accent); border-color: var(--accent); }
-.dlabel { font-size: 1.55rem; font-weight: 800; line-height: 1.15; }
-.dtext { font-size: 1.2rem; font-weight: 600; margin-top: 8px; line-height: 1.3; }
+.dlabel { font-size: 1.55rem; font-weight: 800; line-height: 1.3; }
+.dtext { font-size: 1.2rem; font-weight: 600; margin-top: 8px; line-height: 1.45; }
 .countdown {
   text-align: center; font-size: min(34vw, 20vh); line-height: 1; font-weight: 800;
   font-variant-numeric: tabular-nums; letter-spacing: -.03em;
@@ -426,7 +457,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 .rec-sum { font-size: .92rem; margin: 4px 0 8px; }
 .rec-sum .tag { color: var(--warn); font-weight: 700; }
 .rec-acts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
-.rec-acts .btn { min-height: 56px; padding: 4px; font-size: .92rem; line-height: 1.1; }
+.rec-acts .btn { min-height: 56px; padding: 4px; font-size: .92rem; line-height: 1.3; }
 #copySheet {
   position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.6);
   display: flex; align-items: flex-end; justify-content: center;
@@ -534,12 +565,24 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     </div>
 
     <div id="calActive" hidden>
+      <div class="hold-banner" id="holdBanner" role="status" hidden>
+        <div class="hb-t">Hold the lever still — the reading is still changing</div>
+        <div class="hb-s">It will capture by itself once the lever stops.</div>
+      </div>
       <div class="cadg" id="cadG" role="img" aria-label="Cadence" hidden>
         <div class="cadg-track"><i class="cadg-win"></i><b class="cadg-dot idle" id="cadDot">--</b></div>
         <div class="cadg-ticks" aria-hidden="true"><span style="left:28.57%">60</span><span style="left:57.14%">80</span></div>
         <div class="cadg-cap" id="cadCap"></div>
       </div>
       <div class="small" id="calWait" role="status" hidden style="color:var(--warn);font-weight:600;text-align:center">Waiting for the bridge…</div>
+      <div class="redo-banner" id="redoBanner" role="status" hidden></div>
+      <div class="qcheck" id="calCheck" role="alert" hidden>
+        <div class="qt"><span class="bang" aria-hidden="true">!</span><span id="checkTitle"></span></div>
+        <div class="qb" id="checkBody"></div>
+        <div class="qd" id="checkDrift" hidden></div>
+        <button class="btn warnfill" id="btnRedo" type="button">Redo point</button>
+        <button class="btn secondary" id="btnKeep" type="button">Capture anyway</button>
+      </div>
       <div class="stage" id="stage">
         <div id="calDots" aria-hidden="true"></div>
         <div class="disc" id="disc">
@@ -564,7 +607,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           </div>
         </div>
       </div>
-      <div class="cal-say" aria-live="polite">
+      <div class="cal-say" id="calSay" aria-live="polite">
         <div class="h" id="calHead"></div>
         <div class="s" id="calSub"></div>
       </div>
@@ -711,6 +754,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var DEMO_V3 = params.get('v3') === '1';
   var DEMO_STALL = params.get('stall') === '1';     // demo: status lines stall for 3 s every ~12 s
   var DEMO_CAD = num(params.get('cad')) || 72;      // demo v3: cadence while calibrating, rpm
+  var DEMO_SUSPECT = params.get('suspect') === '1';     // demo v3: every 4th point gets 1-2 W lines (hold still), then settles
+  var DEMO_STUCK = params.get('stuck') === '1';         // demo v3: point 6 never settles: W lines, then P and cal=5
   var DEMO_LEARNFAIL = params.get('learnfail') === '1';   // demo v3: the first crank learning fails
 
   var DIAG_STEPS = [
@@ -829,7 +874,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   // ===================================================================
   // Line parser
   // ===================================================================
-  var MACHINE_RE = /^([SCKAUQGMYDLN]),/;
+  var MACHINE_RE = /^([SCKAUQGMYDLNWP]),/;
 
   function handleLine(raw) {
     var line = raw;
@@ -879,6 +924,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'Y': ok = onY(parts); break;
         case 'L': ok = onL(parts); break;
         case 'N': ok = onN(parts); break;
+        case 'W': ok = onW(parts); break;
+        case 'P': ok = onP(parts); break;
       }
     } catch (e) { console.warn('parse error', line, e); ok = false; }
     if (state.showRaw || !ok) logLine(ok ? line : line + '   (malformed, ignored)', ok ? 'raw' : 'rawbad');
@@ -889,11 +936,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (p.length < 9) return false;
     var gear = int(p[1]), cal = int(p[5]);
     if (!fin(gear) || gear < 0 || gear > 99) return false;
-    if (!fin(cal) || cal < 0 || cal > 4) return false;
+    if (!fin(cal) || cal < 0 || cal > 5) return false;
     // [v3] 12th field src: B board / W pod / - none. Its presence marks v3 firmware.
     var srcRaw = p.length >= 12 ? p[11].trim() : '';
     var src = srcRaw === 'B' || srcRaw === 'W' || srcRaw === '-' ? srcRaw : '';
-    if (cal >= 3 && !src) return false;   // cal=3 only exists on v3, cal=4 on v3.1
+    if (cal >= 3 && !src) return false;   // cal=3 only exists on v3, cal=4 and 5 on v3.1
     var flagStr = (p[9] || '').trim();
     var flags = {};
     for (var i = 0; i < flagStr.length; i++) flags[flagStr.charAt(i)] = true;
@@ -919,6 +966,15 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     state.s = s;
     state.sAt = Date.now();
     if (src) state.v3 = true;   // latched until disconnect
+    if (src && p.length >= 13 && fin(s.lturns)) state.v31 = true;   // [v3.1] 13th field lturns
+    if (cal === 5 && prevCal !== 5) {
+      // [v3.1] the point couldn't settle for 15 s: the board waits for redo (u) or capture anyway (n)
+      if (!state.stuck || state.stuck.point !== s.step + 1) {
+        state.stuck = { point: s.step + 1 };   // no P line seen
+        try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+      }
+    }
+    if (cal === 0) state.redo = 0;
     if (prevCal === 0 && cal !== 0) {
       // A fresh calibration starts at step 0. A later step after a reconnect is the same run continuing.
       if (s.step > 0 && state.points.length) state.calEnded = false;
@@ -952,6 +1008,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     state.points = state.points.filter(function (q) { return q.point < point; });
     state.points.push(pt);
     state.capturedAt = Date.now(); state.capturedPoint = point;   // renderCal: green 3/3 flash
+    if (state.w && state.w.point === point) state.w.resolved = true;   // settled and captured
+    if (state.stuck && state.stuck.point === point) state.stuck = null;
+    if (state.redo === point) state.redo = 0;                            // redone
     setTimeout(render, CAPTURE_FLASH_MS + 50);
     try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
     renderPoints();
@@ -1000,6 +1059,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var step = int(p[1]);
     if (!fin(step) || step < 0 || step >= TOTAL_POINTS) return false;
     // After undo the current step is <step>, so points 1..step remain captured.
+    // [v3.1] A redo after cal=5 keeps the same step: that point was never added (no C line), so nothing is lost.
+    var wasStuck = (state.s && state.s.cal === 5) || (state.stuck && state.stuck.point === step + 1);
+    if (wasStuck) state.redo = step + 1;
+    state.stuck = null;
+    if (state.w) state.w.resolved = true;
     state.points = state.points.filter(function (q) { return q.point <= step; });
     if (state.s) state.s.step = step;
     renderPoints();
@@ -1015,6 +1079,33 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     logLine(ok ? 'Crank learned: ' + (p[2] || '?') + ' turns at ' + (p[3] || '?') + ' rpm, dip ' + (p[4] || '?') + ' µT'
       : 'Crank not found (' + (reason || 'no reason given') + '). Continuing with the hold-still method.', 'sys');
     if (!ok) toast('Crank not found: ' + (reason || 'no reason given'));
+    render();
+    return true;
+  }
+
+  // [v3.1] W,<point>,<drift>,<creep>: point may have been taken while the lever was still moving
+  function onW(p) {
+    var point = int(p[1]);
+    if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
+    // [v3.1] Non-blocking: the board dropped that capture and keeps waiting for the lever to settle.
+    var fresh = !state.w || state.w.point !== point || state.w.resolved;
+    var count = fresh ? 1 : state.w.count + 1;
+    state.w = { point: point, drift: num(p[2]), creep: num(p[3]), resolved: false, count: count };
+    logLine('Point ' + point + ': still changing (the check turn moved ' + fmt(state.w.drift, 1) + ' \u00b5T further, creep ' +
+      fmt(state.w.creep, 1) + ' \u00b5T). Waiting for the lever to settle.', 'sys');
+    if (fresh) { try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {} }
+    render();
+    return true;
+  }
+
+  // [v3.1] P,<point>: the reading kept changing for 15 s; the board enters cal=5
+  function onP(p) {
+    var point = int(p[1]);
+    if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
+    var fresh = !state.stuck || state.stuck.point !== point;
+    state.stuck = { point: point };
+    logLine('Point ' + point + ': the reading kept changing for 15 s. Redo it or capture it anyway.', 'sys');
+    if (fresh) { try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {} }
     render();
     return true;
   }
@@ -1036,6 +1127,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     state.learnFailed = false;
     state.capturedAt = 0;
     state.learnDoneAt = 0;
+    state.w = null;
+    state.stuck = null;
+    state.redo = 0;
     setHidden('storedMsg', true);
     renderPoints();
     renderResult();
@@ -2033,6 +2127,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         if (state.s && state.s.cal !== 0) savePartialCal('connection lost');
         state.s = null;
         state.v3 = false;          // re-detected from the next S lines
+        state.v31 = false;
         state.lastTurn = null;
         renderTurnInfo();
         keepAwake(false);
@@ -2218,6 +2313,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < CAPTURE_FLASH_MS;
     var justLearned = !learning && !confirming && step === 0 && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
     var stopped = crankMode && !learning && !confirming && !s.pedalling && s.cal === 1;
+    var checking = s.cal === 5;   // [v3.1] point check
+    renderPointCheck(checking, s);
 
     // disc look: learn | confirm | grey | blue | green | amber
     var look, head, sub;
@@ -2241,7 +2338,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       look = 'blue';
       if (crankMode) {
         head = 'Hold it there';
-        sub = s.cal === 2 ? 'Saving…' : turns >= 3 && !auto ? 'Tap CAPTURE to save' : 'Turn ' + Math.max(1, turns) + ' of 3';
+        sub = s.cal === 2 ? 'Saving…' : turns >= 3 && !auto ? 'Tap CAPTURE to save'
+          : turns >= 3 && state.v31 ? 'Checking the lever has stopped…' : 'Turn ' + Math.max(1, turns) + ' of 3';
       } else {
         head = 'Hold still';
         sub = s.cal === 2 ? 'Saving…' : auto ? 'Saves when the ring fills' : 'Tap CAPTURE when ready';
@@ -2249,8 +2347,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     } else {
       look = 'grey';
       var n = step + 1;
-      if (step === 0) { head = 'Lever all the way down'; sub = crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
-      else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      var v31c = crankMode && state.v31;   // [v3.1] wording: "...FIRST shows gear N, then hold it there"
+      if (step === 0) { head = 'Lever all the way down'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Stop where the Keiser console FIRST shows ' + n + ', then hold it there'; }
       else { head = 'Shift up to ' + n; sub = 'Stop as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
     }
     $('calHead').textContent = head;
@@ -2300,7 +2400,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     }
 
     // cadence slider (crank mode only: the v2 method needs the flywheel still)
-    setHidden('cadG', !crankMode);
+    setHidden('cadG', !crankMode || checking);
     if (crankMode) {
       var rpm = fin(s.cad) ? Math.round(s.cad) : 0, dotCls = '', cap, capCls = '';
       if (stopped || rpm <= 0) {
@@ -2331,8 +2431,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     $('btnRelearn').textContent = confirming ? 'Learn again' : 'Try learning the crank again';
     $('btnConfirm').disabled = !connected;
     $('btnRelearn').disabled = !connected;
-    setHidden('btnCapture', noPoint);
-    setHidden('btnUndo', noPoint);
+    $('calActive').classList.toggle('checking', checking);
+    setHidden('btnCapture', noPoint || checking);
+    setHidden('btnUndo', noPoint || checking);
     // Auto-capture on: a small secondary "Capture now", usable once 2 of 3 turns agree
     // (or the hold timer is two-thirds done). Off: the big CAPTURE button.
     var cap = $('btnCapture');
@@ -2342,6 +2443,47 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped;
     $('btnUndo').disabled = !connected || step === 0 || s.cal !== 1;
     $('btnCancel').disabled = !connected;
+  }
+
+  // [v3.1] Hold-still notice (M flag / W line): a non-blocking amber strip; the turns meter stays.
+  // cal=5 (P line, couldn't settle for 15 s): the big amber card replaces the disc.
+  // The redo banner stays until the redone point is captured.
+  var checkKey = '';
+  function renderPointCheck(checking, s) {
+    setHidden('stage', checking);
+    setHidden('calSay', checking);
+    setHidden('calCheck', !checking);
+    var n = checking ? s.step + 1 : 0;
+    if (checking) {
+      if (String(n) !== checkKey) {   // only rewrite the card when it changes
+        checkKey = String(n);
+        $('checkTitle').textContent = 'Point ' + n + ': the reading keeps changing';
+        $('checkBody').textContent = n >= TOTAL_POINTS
+          ? 'To redo it: push the lever back down a little, then all the way up again and hold.'
+          : 'To redo it: move the lever DOWN below gear ' + n + ', then up to where the console first shows gear ' + n + ', then hold it there.';
+        setHidden('checkDrift', false);
+        $('checkDrift').textContent = 'It kept changing for 15 seconds, so the bridge stopped waiting.';
+        $('btnRedo').textContent = 'Redo point ' + n;
+      }
+    } else checkKey = '';
+
+    // hold-still strip: driven by the M flag, or a W for this point that hasn't been captured yet
+    var holding = !checking && (s.cal === 1 || s.cal === 2) &&
+      (!!s.flags.M || !!(state.w && !state.w.resolved && state.w.point === s.step + 1));
+    setHidden('holdBanner', !holding);
+    var connected = state.conn === 'connected';
+    $('btnRedo').disabled = !connected;
+    $('btnKeep').disabled = !connected;
+
+    var redo = state.redo;
+    var showRedo = !checking && !holding && redo > 0 && (s.cal === 1 || s.cal === 2) && s.step === redo - 1;
+    setHidden('redoBanner', !showRedo);
+    if (showRedo) {
+      var txt = redo >= TOTAL_POINTS
+        ? 'Redo point 25: push the lever back down a little, then all the way up again and hold.'
+        : 'Redo point ' + redo + ': lever DOWN below gear ' + redo + ' first, then up to where the console first shows gear ' + redo + ', then hold.';
+      if ($('redoBanner').textContent !== txt) $('redoBanner').textContent = txt;
+    }
   }
 
   function renderBadge() {
@@ -2491,6 +2633,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   });
   $('btnCapture').addEventListener('click', function () { send('n'); });
   $('btnUndo').addEventListener('click', function () { send('u'); });
+  $('btnRedo').addEventListener('click', function () { send('u'); });   // [v3.1] cal=5: redo the questioned point
+  $('btnKeep').addEventListener('click', function () { send('n'); });   // [v3.1] cal=5: capture anyway
   $('btnConfirm').addEventListener('click', function () { send('n'); });
   $('btnRelearn').addEventListener('click', function () { send('l'); });
   $('autoToggle').addEventListener('click', function () { send('a'); });
@@ -2582,6 +2726,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     // [v3] turn detection from the crank magnet
     var turnAcc = 0, turnMs = 0, agree = 0, tStream = false, pedal = true;
     var lturns = 0, learnFails = DEMO_LEARNFAIL ? 1 : 0;   // [v3.1] turn-based crank learning
+    var wPlan = {}, wSent = 0, mflag = false, firstW = 0, stuckDone = false;   // [v3.1] hold-still check
     var pauseUntil = 0;   // status lines held back until this time (simulated Bluetooth stall)
     this.pauseStatus = function (ms) { pauseUntil = Date.now() + ms; };
 
@@ -2736,6 +2881,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           stab = 100;                                   // waiting for n (matches) or l (learn again)
         } else if (cal === 2) {
           if (--capT <= 0) capturePoint();
+        } else if (cal === 5) {
+          stab = 0;                                     // [v3.1] waiting for u (redo) or n (capture anyway)
         } else if (phase === 'move') {
           stab = 0; agree = 0;
           if (++phaseT >= 6) { phase = 'settle'; phaseT = 0; }
@@ -2797,6 +2944,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (sat) flags += 'S';
       if (hold && calValid) flags += 'H';
       if (auto) flags += 'A';
+      if (mflag && cal !== 0) flags += 'M';
       if (recording) flags += 'G';
       if (dumping) flags += 'Y';
 
@@ -2826,9 +2974,26 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       }
       if (cal === 3) lturns++;
       if (cal === 1 && phase === 'settle') {
-        agree = Math.min(3, agree + 1);
-        stab = [0, 33, 67, 100][agree];
-        if (agree >= 3 && auto) beginCapture();
+        if (agree < 3) {
+          agree++;
+          stab = [0, 34, 68, 100][agree];
+        } else if (auto) {
+          // [v3.1] one more turn at stab 100: did the lever really stop?
+          var stuckHere = DEMO_STUCK && step === 5 && !stuckDone;
+          if (wPlan[step] === undefined) wPlan[step] = DEMO_SUSPECT && step > 0 && step % 4 === 3 ? 1 + (step % 8 === 3 ? 1 : 0) : 0;
+          if (stuckHere || wSent < wPlan[step]) {
+            // still moving: drop this capture, keep waiting (non-blocking)
+            if (!wSent) firstW = Date.now();
+            wSent++; mflag = true;
+            agree = 1; stab = 34;
+            out('W,' + (step + 1) + ',' + (1.1 + Math.random()).toFixed(1) + ',' + (0.5 + Math.random() * 0.6).toFixed(1));
+            if (stuckHere && Date.now() - firstW >= 15000 / (FAST > 1 ? 5 : 1)) {
+              cal = 5; stab = 0;
+              out('P,' + (step + 1));
+              out('Point ' + (step + 1) + ': the reading keeps changing. u = redo, n = capture anyway.');
+            }
+          } else beginCapture();
+        }
       }
     }
 
@@ -2836,6 +3001,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       var p = PATH[step];
       out(['C', step + 1, (p[0] + jitter(0.05)).toFixed(1), (p[1] + jitter(0.05)).toFixed(1), (p[2] + jitter(0.05)).toFixed(1)].join(','));
       out('Point ' + (step + 1) + ' captured.');
+      mflag = false; wSent = 0;
+      if (DEMO_STUCK && step === 5) stuckDone = true;
       step++;
       if (step >= TOTAL_POINTS) {
         cal = 0; step = 0; stab = 0; calValid = true;
@@ -2855,7 +3022,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'c':
           if (cal !== 0) { out('Already calibrating. x = abort.'); break; }
           if (DEMO_V3) {
-            cal = 3; step = 0; stab = 0; agree = 0; lturns = 0;
+            cal = 3; step = 0; stab = 0; agree = 0; lturns = 0; wPlan = {}; wSent = 0; mflag = false; stuckDone = false;
             out('Calibration started. Pedal steadily at 60-80 rpm so the bridge can learn your crank.');
             break;
           }
@@ -2865,6 +3032,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'n':
           if (cal === 0) { out('Not calibrating. c = start.'); break; }
           if (cal === 3) { out('Still learning the crank. Keep pedalling.'); break; }
+          if (cal === 5) { capturePoint(); break; }   // [v3.1] capture anyway
           if (cal === 4) {
             cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
             out('Cadence confirmed: keep pedalling through all 25 points.');
@@ -2884,8 +3052,16 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           break;
         case 'u':
           if (cal === 0) { out('Not calibrating.'); break; }
+          if (cal === 5) {
+            // [v3.1] redo: same step; after moving the lever down and back up it settles
+            cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+            mflag = false; wSent = 0; stuckDone = true;
+            out('U,' + step);
+            out('Redo: first move the lever DOWN below this gear.');
+            break;
+          }
           if (step === 0) { out('Nothing to undo.'); break; }
-          step--; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+          step--; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
           out('U,' + step);
           out('Undo: back to point ' + (step + 1) + '.');
           break;

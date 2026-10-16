@@ -112,6 +112,84 @@ arduino-cli upload --fqbn adafruit:nrf52:cluenrf52840 -p COM3 KeiserMagBridge_v2
 - Incomplete calibrations are saved on cancel or disconnect.
 - A clearer message for `Q,none`.
 
+## Method test bench and gear ladder (2026-10-16)
+
+**Bench:** `bench/method_bench.py` scores 8 processing methods on wobble, resolution, bias, delay, drift once stopped and turn counting, on clean data and with simulated stalls. Results are in `bench/results/`, summarised in `method_bench_2026-10-15_summary.md`. The best method was **averaging the last 2 turns**: wobble 0.12 µT, all 10 gear steps resolved, 0.3 µT drift once stopped.
+
+**Ground truth:** the Bike Test Panel (https://claude.ai/artifact/VKnU6LFQCicTpvGkxeZXri) has a **Gear ladder** tab. Pedal steadily, tap "Holding gear N" when the console shows N, hold for 5 s, and go 1 → 24 → 1. Console watts and rpm are optional per gear.
+
+**Two kinds of ladder** (panel v11, switch "Where to hold each gear", key E; each hold is tagged `at: mid|edge`):
+- **Middle of the gear:** hold anywhere the console shows the gear. Used to score the methods and the board's gear in riding conditions.
+- **Where it first shows (edges):** move the lever slowly until the console *first* shows the gear, then hold. Going up that is the bottom of each gear; coming down, the top. Gear 1 starts with the lever all the way down. At 24 there is one extra hold with the lever all the way up (the top of 24). Used for the per-gear range and play check.
+
+**Scoring:** `bench/ladder_eval.py LOG CLICKS [--cal FILE]`:
+1. **Methods** (mid ladder): calibrates on the way up, tests on the way down. Reports gear % correct (exact and within 1), position bias and spread, watts vs the console, and up vs down difference.
+2. **Gear range** (edge ladder): per gear, bottom, top, range (top − bottom along the lever path), width going up, **play** at each gear change (where the console changes going up minus coming down), turn-to-turn noise, and flags (narrow < 1.5 µT, noisy < 4 noise SDs, play > 25 % of the gear). It ends with a verdict on whether calibrating on the way down would help. Output: `bench/results/ladder_<log>_gears.csv`.
+3. **Board calibration check:** replays the sketch v3.1 gear logic (path-following, off-path hold, 20 % hysteresis, one update per turn) with the stored calibration. The calibration comes from `--cal` (a phone page calibration CSV, or a log with the board's `p` printout) or from a `p` printout in LOG. Mid holds give the % of time the board shows the console's gear (up and down). Edge holds show where the board puts each console gear change, in gear widths.
+
+`--dry-run` checks the pipeline on the 2026-10-15 log with made-up gears (and a made-up calibration).
+
+**Tap timing tolerance:** each hold is taken as the cluster of pedal turns where the lever sat still near the tap (within 3 s either side of the 5 s window; all turns within 1.0 µT of the cluster's median). It isn't the exact tap window, so tapping a bit early or late, or moving on before the bar fills, doesn't matter much. `--window tap` restores the exact window. The output gives a timing line saying how far the steady stretch was from the taps.
+
+Tested with `bench/test_ladder_timing.py` on 3 simulated sessions (`bench/sim_ladder.py`). They use real crank dips and noise from the 2026-10-15 fast-pedalling step, a curved 120 µT lever path and a known play. Taps were from 2 s early to 3 s late, and the rider moved on from 1.5 s early to 1.5 s late (at least 1.5 s at each gear):
+
+| Taps | Hold taken as | Range error, median / max | Play error, median / max | Board shows console gear (mid, up / down) |
+|---|---|---|---|---|
+| perfect | tap window | 0.08 / 0.27 µT | 0.05 / 0.14 µT | 94 / 99 % |
+| sloppy | tap window | 0.20 / 2.01 µT | 0.21 / 5.00 µT | 86 / 90 % |
+| sloppy | steady stretch | 0.10 / 1.09 µT | 0.15 / 1.05 µT | 92 / 95 % |
+
+The remaining worst cases are holds where the lever sat still for only about 2 turns. Staying until the bar fills keeps the error near the median.
+
+**Down-pass calibration in the app:** not yet. Decide from the edge ladder's play numbers. Under about 10 % of a gear it isn't needed. At 10–25 %, calibrate both ways and use the midpoint. Over 25 %, calibrate both ways, possibly with direction-aware edges. It would be a sketch and app change (backup and OK first).
+
+**To capture (one session, about 25 min of pedalling with rests):**
+1. Board on USB, logger running with `r` (50 Hz raw).
+2. Phone page **disconnected** (or v3.1 uploaded), so there are no stalls.
+3. Calibrate in the app (v3, while pedalling), then send `p` through the logger so the stored calibration lands in the log.
+4. Panel open on the computer: edges ladder (1 → 24 → 1), rest, then middle ladder.
+5. Afterwards, export the clicks from the panel's `events` collection into `bench/logs/<date>_ladder_clicks.json`.
+
+## v3.1 review fixes (2026-10-16, compiled, NOT uploaded)
+
+A review agent tested the v3.1 sketch, including the other session's in-place additions. Its tests are in `bench/tests/`:
+
+```
+py -3 bench/tests/test_fw_log.py
+py -3 bench/tests/test_fw_stress.py
+py -3 bench/tests/test_ble_lines.py
+```
+
+The backup from before these fixes is `bench/backups/KeiserMagBridge_v3_1.before-review-fixes.2026-10-16.ino`.
+
+**Fixes made:**
+- **Blocker:** phone text is sent in 20-byte pieces. Without `configPrphBandwidth`, the link cuts any longer write at 23 bytes, so every line over 23 characters was being cut off.
+- **Learning cap 130 rpm** (was 160). This catches double counts from about 65 rpm. Below that, the rider's cadence check catches them.
+- **Real 19.53 ms tick clock in `crankLearn()`.** The learned rpm read about 2.3% low before.
+- **DualLog:** a half-line from a previous connection is dropped.
+- **Learning resets the self-cadence**, so the check doesn't show the old cadence.
+- **Lost readings** (`sampleDrops`) reset the turn timing.
+- **Calibration format v4.** v3 calibrations are rejected; recalibrate after uploading.
+- **The sensor task's creation is checked**, and the unused `lastSampleMs` is removed.
+
+**New: the "lever still moving" check (hold-still design, chosen by the user).**
+- After 3 turns agree, the board checks one more turn. The capture is dropped if that turn moved ≥ 1.0 µT further along the direction of travel, or if the 3 turns crept ≥ 0.8 µT and the next turn kept going ≥ 0.4 µT.
+- When a capture is dropped, the board sends `W`, sets flag `M` ("hold the lever still") and simply waits for fresh agreement. It captures by itself once the lever is still, with no taps.
+- Only after 15 s of no settling does it send `P` and enter cal state 5, where the rider can redo (`u`) or capture anyway (`n`).
+
+**Why there is no "wait for it to settle" step:** raw data shows the carrier stops when the lever stops (at most ~1 µT bounce for under 1 s at the top end stop). Cadence affects the reading only 0.05 µT per rpm. Two steady stretches crept 1.5–1.8 µT; possibly a hand resting on the lever, still to test with hands off the lever at a middle gear.
+
+**Tuning:**
+- On the free-shifting gear-change recording, "hold still" notices appeared on 5 points, and the lever never failed to settle.
+- A lever creeping slowly (0.6 µT/s) now gets 1 capture at the end stop, against 11 before.
+- A capture now needs about 4–5 turns (~4 s at 70 rpm).
+
+Backups:
+- `bench/backups/KeiserMagBridge_v3_1.before-review-fixes.2026-10-16.ino`
+- `bench/backups/KeiserMagBridge_v3_1.keep-redo-version.2026-10-16.ino`
+
+**Results:** all three test suites pass. Compile: 19% storage, 58% RAM, no warnings.
+
 ## Next session
 
 1. Mount the board in its 3D-printed case at a new spot, on the flywheel side of the resistance unit and away from the drive pulley's magnet path. Use the paperclip trick to find the magnet.

@@ -26,6 +26,11 @@
  *   - Phone output goes out a whole line per notification (fewer sends).
  *   - Per-turn 'T' lines go to USB only.
  *   - Calibration capture: 3 turns within 2.0 uT (was 1.0).
+ *   - Review fixes (2026-10-16): phone text sent in 20-byte pieces (the
+ *     default link cuts longer writes at 23 bytes); learning cap 130 rpm;
+ *     real sample clock in crankLearn(); a capture is checked one more turn
+ *     and, if the lever looks like it was still moving, the rider is asked
+ *     to keep or redo it (cal state 5, W line); calibration format v4.
  *   - Crank learning ends on turns, not a fixed 10 s (tested first with
  *     bench/replay_learn.py, which mirrors it): every 0.5 s the crank is
  *     learned again from everything so far and the turns counted; it ends
@@ -168,7 +173,7 @@ static const uint8_t  LEARN_MIN_TURNS    = 4;     // at the cap, accept with thi
 static const float    LEARN_REG_LO       = 0.75f; // a regular turn lasts LO..HI x the median turn
 static const float    LEARN_REG_HI       = 1.33f;
 static const float    LEARN_REG_SHARE    = 0.75f; // at least this share of turns must be regular
-static const float    LEARN_MAX_RPM      = 160.0f;// faster: counting twice per turn
+static const float    LEARN_MAX_RPM      = 130.0f;// faster: counting twice per turn (60-80 asked)
 // Crank-magnet turn detector (same values as bench/replay_v3.py).
 static const float    CRANK_MIN_DEPTH_UT = 8.0f;  // weaker dips: crank too far away to use
 static const float    DIP_FRAC           = 0.5f;  // dip when below baseline by this x depth
@@ -179,6 +184,16 @@ static const float    QEMA_TAU_MS        = 1000;  // running mean used while res
 static const float    DEPTH_ADAPT        = 0.1f;  // slow tracking of the dip depth
 static const float    TURN_AGREE_UT      = 2.0f;  // auto-capture: 3 turns within this
 static const float    TURN_MOVE_UT       = 1.0f;  // ...and this far from the previous point
+// "Lever still moving" check, made on the turn after 3 turns agree (tuned on
+// the 2026-10-15 gear-change recording, bench/NOTES.md): along the direction
+// of travel from the previous point, that next turn moved >= DRIFT_UT
+// further, or the 3 turns crept >= CREEP_UT and the next turn kept going
+// >= DRIFT_SLOW_UT. Then the capture is dropped and the rider is asked to hold
+// the lever still; after SETTLE_GIVEUP_MS of that, redo or capture anyway.
+static const float    SUSPECT_DRIFT_UT   = 1.0f;
+static const float    SUSPECT_CREEP_UT   = 0.8f;
+static const float    SUSPECT_DRIFT_SLOW_UT = 0.4f;
+static const uint32_t SETTLE_GIVEUP_MS   = 15000;
 
 // Diagnostics recording: average each pair of 50 Hz samples -> 25 Hz.
 static const uint16_t REC_CAPACITY       = 12000; // 8 minutes at 25 Hz (~108 KB)
@@ -217,7 +232,7 @@ static const float PA2 =  4.75E-05f;
 // =========================================================================
 static const char*    CAL_PATH    = "/keiser_cal.bin";
 static const uint32_t CAL_MAGIC   = 0x4B4D3343;  // "KM3C"
-static const uint16_t CAL_VERSION = 3;           // v3: path of points + crank
+static const uint16_t CAL_VERSION = 4;           // v4: same layout as v3; v3 files rejected
 
 struct CalData {
   uint32_t magic;
@@ -307,7 +322,7 @@ static float     powerW       = 0.0f;
 static float     cadenceRpm   = 0.0f;
 
 // Calibration state machine
-enum CalState { CAL_IDLE, CAL_WAITING, CAL_CAPTURING, CAL_LEARN, CAL_CONFIRM };
+enum CalState { CAL_IDLE, CAL_WAITING, CAL_CAPTURING, CAL_LEARN, CAL_CONFIRM, CAL_POINT_CHECK };
 static CalState  calState   = CAL_IDLE;
 static int       calStep    = 0;
 static float     calRaw[NUM_GEARS + 1][3];
@@ -353,6 +368,13 @@ static bool      turnStream   = false;        // 't': one T line per turn
 // Calibration while pedalling: the last few agreeing turn averages
 static float     turnHist[3][3];
 static uint8_t   turnHistN    = 0;
+static bool      pendingCap   = false;        // 3 turns agreed: checking one more turn
+static float     pendingMean[3];
+static float     pendingCreep = 0;            // along travel, newest - oldest of the 3
+static float     pendingDir[3];               // unit direction of travel
+static bool      calRedo      = false;        // prompt says 'move down below first'
+static uint32_t  settleSince  = 0;            // 0, or when 'hold still' started for this point
+static float     lastTurnAvg[3];              // most recent turn average (capture anyway)
 
 // Diagnostics recording (see bench/PROTOCOL.md)
 static int16_t   recXYZ[REC_CAPACITY][3];       // raw field, 0.1 uT
@@ -371,7 +393,7 @@ static int32_t   dumpPos      = -1;             // -1 = not sending
 static bool      debugStream  = false;
 static bool      rawStream    = false;
 static bool      statusStream = false;
-static uint32_t  lastSampleMs = 0, lastNotifyMs = 0, lastDebugMs = 0, lastStatusMs = 0;
+static uint32_t  lastNotifyMs = 0, lastDebugMs = 0, lastStatusMs = 0;
 
 // =========================================================================
 // Console output: everything printed goes to USB serial AND, when a phone
@@ -387,8 +409,9 @@ class DualLog : public Print {
     if (conn == BLE_CONN_HANDLE_INVALID || mutex_ == nullptr) return 1;
     xSemaphoreTake(mutex_, portMAX_DELAY);
     buf_[n_++] = c;
-    // Send a whole line per notification (the stack splits it to the
-    // connection's packet size), so fewer, larger sends.
+    // A half-line left from a previous connection is dropped, not glued on.
+    if (conn != lastConn_) { n_ = 0; lastConn_ = conn; }
+    // Send a whole line at a time (in 20-byte pieces, see sendLocked).
     if (c == '\n' || n_ >= sizeof(buf_)) sendLocked(conn);
     xSemaphoreGive(mutex_);
     return 1;
@@ -396,13 +419,19 @@ class DualLog : public Print {
   using Print::write;
 
  private:
+  // The default link (no configPrphBandwidth) carries at most 20 bytes per
+  // notification and the library cuts longer writes at 23 bytes, so send the
+  // buffered line in 20-byte pieces.
   void sendLocked(uint16_t conn) {
-    if (n_ && bleuart.notifyEnabled(conn)) bleuart.write(conn, buf_, n_);
+    if (n_ && bleuart.notifyEnabled(conn)) {
+      for (size_t i = 0; i < n_; i += 20) bleuart.write(conn, buf_ + i, min(n_ - i, (size_t)20));
+    }
     n_ = 0;
   }
   SemaphoreHandle_t mutex_ = nullptr;
   uint8_t buf_[160];
   size_t  n_ = 0;
+  uint16_t lastConn_ = BLE_CONN_HANDLE_INVALID;
 };
 
 static DualLog Log;
@@ -687,7 +716,8 @@ static LearnResult crankLearn(int n, bool atCap) {
   float avg[3];
   uint32_t per;
   for (int i = 0; i < n; i++) {
-    if (crankSample(1 + i * SAMPLE_PERIOD_MS, learnBuf[i], avg, &per) == 2 && turns < maxTurns)
+    uint32_t t = 1 + (uint32_t)((uint64_t)i * pdMS_TO_TICKS(SAMPLE_PERIOD_MS) * 1000 / configTICK_RATE_HZ);
+    if (crankSample(t, learnBuf[i], avg, &per) == 2 && turns < maxTurns)
       learnPer[turns++] = (uint16_t)min(per, (uint32_t)65535);
   }
   crankReset(base);
@@ -743,13 +773,14 @@ static void stabReset() {
 static void calPrompt() {
   const char* keep = crank.ok ? "Keep pedalling. " : "";
   if (calStep == 0) {
-    Log.printf("\n[CAL 1/25] %sPush the gear lever ALL THE WAY DOWN.\n", keep);
+    Log.printf("\n[CAL 1/25] %sPush the gear lever ALL THE WAY DOWN and hold it there.\n", keep);
   } else if (calStep < NUM_GEARS) {
-    Log.printf("\n[CAL %d/25] %sMove the lever UP slowly until the Keiser console "
-                  "FIRST shows gear %d. %s\n", calStep + 1, keep, calStep + 1,
-                  crank.ok ? "Hold it there." : "Stop there.");
+    Log.printf("\n[CAL %d/25] %s%sMove the lever up to where the Keiser console "
+                  "FIRST shows gear %d, then %s\n", calStep + 1, keep,
+                  calRedo ? "Redo: first move the lever DOWN below this gear. " : "",
+                  calStep + 1, crank.ok ? "hold it there." : "stop there.");
   } else {
-    Log.printf("\n[CAL 25/25] %sPush the gear lever ALL THE WAY UP.\n", keep);
+    Log.printf("\n[CAL 25/25] %sPush the gear lever ALL THE WAY UP and hold it there.\n", keep);
   }
   if (crank.ok) {
     Log.println(autoCapture ? F("It captures and beeps once 3 pedal turns agree.")
@@ -760,6 +791,8 @@ static void calPrompt() {
     Log.println(F("Flywheel still, then press button A or send 'n'."));
   }
   turnHistN = 0;
+  pendingCap = false;
+  settleSince = 0;
   stabReset();
 }
 
@@ -770,6 +803,7 @@ static void calLearnStart() {
   crank.ok   = false;                     // re-learned for this calibration
   stabPct    = 0;
   learnLast  = { false, 0, 0, 0, 0, "no signal" };
+  selfPeriods[0] = selfPeriods[1] = 0;     // no cadence from the old crank settings
   Log.println(F("Pedal steadily at 60-80 rpm so the bridge can learn your crank (5-15 s)."));
 }
 
@@ -926,6 +960,9 @@ static void calOnSample(const float b[3]) {
 
 // Store a calibration point and move on (shared by both capture methods).
 static void calStorePoint(const float b[3]) {
+  calRedo = false;
+  pendingCap = false;
+  settleSince = 0;
   memcpy(calRaw[calStep], b, sizeof(calRaw[calStep]));
   Log.printf("  captured (%.1f, %.1f, %.1f) uT\n", b[0], b[1], b[2]);
   Log.printf("C,%d,%.1f,%.1f,%.1f\n", calStep + 1, b[0], b[1], b[2]);
@@ -946,6 +983,41 @@ static void turnHistMean(float out[3]) {
 // in a row agree within TURN_AGREE_UT and differ from the previous point.
 static void calOnTurn(const float avg[3]) {
   if (calState != CAL_WAITING || !crank.ok) return;
+  memcpy(lastTurnAvg, avg, sizeof(lastTurnAvg));
+  // Couldn't settle for a while: stop and let the rider redo or capture anyway.
+  if (settleSince && millis() - settleSince >= SETTLE_GIVEUP_MS) {
+    calState = CAL_POINT_CHECK;
+    pendingCap = false;
+    stabPct  = 0;
+    Log.printf("\nPoint %d: the reading keeps changing.\n", calStep + 1);
+    Log.printf("Redo it: send 'u', move the lever DOWN below gear %d, then up until the console "
+               "FIRST shows gear %d and hold.  Or send 'n' / press A to capture it anyway.\n",
+               calStep + 1, calStep + 1);
+    Log.printf("P,%d\n", calStep + 1);
+    playNotes(BEEP_FAIL, 1);
+    return;
+  }
+  if (pendingCap) {                            // the turn after 3 agreed: still moving?
+    pendingCap = false;
+    float d[3] = { avg[0] - pendingMean[0], avg[1] - pendingMean[1], avg[2] - pendingMean[2] };
+    float drift = dot3(d, pendingDir);
+    bool suspect = calStep > 0 &&
+                   (drift >= SUSPECT_DRIFT_UT ||
+                    (pendingCreep >= SUSPECT_CREEP_UT && drift >= SUSPECT_DRIFT_SLOW_UT));
+    if (!suspect) { calStorePoint(pendingMean); return; }
+    // Still changing: drop this capture, ask to hold still, agree afresh
+    // starting from this turn (the newest position).
+    if (!settleSince) {
+      settleSince = millis() ? millis() : 1;
+      Log.printf("\nPoint %d: the reading is still changing - hold the lever still.\n", calStep + 1);
+      playNotes(BEEP_UNDO, 3);
+    }
+    Log.printf("W,%d,%.1f,%.1f\n", calStep + 1, drift, pendingCreep);
+    turnHistN = 0;
+    memcpy(turnHist[turnHistN++], avg, sizeof(turnHist[0]));
+    stabPct = 34;
+    return;
+  }
   if (turnHistN == 3) {                        // keep the most recent turns
     memmove(turnHist[0], turnHist[1], 2 * sizeof(turnHist[0]));
     turnHistN = 2;
@@ -964,11 +1036,34 @@ static void calOnTurn(const float avg[3]) {
   turnHistMean(mean);
   bool moved = calStep == 0 || dist3(mean, calRaw[calStep - 1]) >= TURN_MOVE_UT;
   stabPct = moved ? (uint8_t)min(100, turnHistN * 34) : 0;
-  if (moved && autoCapture && turnHistN == 3) calStorePoint(mean);
+  if (moved && autoCapture && turnHistN == 3) {
+    // Don't store yet: check one more turn (calOnTurn above).
+    memcpy(pendingMean, mean, sizeof(pendingMean));
+    if (calStep > 0) {
+      float d[3] = { mean[0] - calRaw[calStep - 1][0], mean[1] - calRaw[calStep - 1][1],
+                     mean[2] - calRaw[calStep - 1][2] };
+      float n = sqrtf(dot3(d, d));
+      for (int k = 0; k < 3; k++) pendingDir[k] = n > 0 ? d[k] / n : 0;
+      float c[3] = { turnHist[2][0] - turnHist[0][0], turnHist[2][1] - turnHist[0][1],
+                     turnHist[2][2] - turnHist[0][2] };
+      pendingCreep = dot3(c, pendingDir);
+    } else {
+      pendingDir[0] = pendingDir[1] = pendingDir[2] = 0;
+      pendingCreep = 0;
+    }
+    pendingCap = true;
+  }
 }
 
 static void calCapture() {
   if (calState == CAL_CONFIRM) { calConfirm(); return; }   // 'n' / button A also confirms
+  if (calState == CAL_POINT_CHECK) {                        // capture anyway
+    float b[3];
+    if (turnHistN > 0) turnHistMean(b); else memcpy(b, lastTurnAvg, sizeof(b));
+    Log.println(F("Captured anyway."));
+    calStorePoint(b);
+    return;
+  }
   if (calState != CAL_WAITING) return;
   // Manual captures get the same "the lever moved" check as auto-capture.
   if (crank.ok) {                              // manual capture while pedalling
@@ -998,6 +1093,15 @@ static void calCapture() {
 }
 
 static void calUndo() {
+  if (calState == CAL_POINT_CHECK) {           // redo the point that wouldn't settle
+    calState = CAL_WAITING;
+    calRedo  = true;
+    Log.printf("Redo point %d.\n", calStep + 1);
+    Log.printf("U,%d\n", calStep);
+    playNotes(BEEP_UNDO, 3);
+    calPrompt();
+    return;
+  }
   if (calState != CAL_WAITING || calStep == 0) return;
   calStep--;
   Log.printf("Undo: back to point %d.\n", calStep + 1);
@@ -1214,6 +1318,11 @@ static void processSample(const Sample& smp) {
   } else if (crank.ok) {
     float avg[3];
     uint32_t per = 0;
+    static uint32_t seenDrops = 0;
+    if (sampleDrops != seenDrops) {             // readings were lost: don't time a turn across the gap
+      seenDrops = sampleDrops;
+      crHaveBoundary = false;
+    }
     int r = crankSample(smp.ms, raw, avg, &per);
     if (r) onTurnBoundary(r, avg, per, smp.ms);
   }
@@ -1502,7 +1611,7 @@ static void setupCentral() {
 // User input: button + serial
 // =========================================================================
 static void handleShortPress() {
-  if (calState == CAL_WAITING || calState == CAL_CONFIRM) calCapture();
+  if (calState == CAL_WAITING || calState == CAL_CONFIRM || calState == CAL_POINT_CHECK) calCapture();
 }
 
 static void handleLongPress() {
@@ -1574,7 +1683,8 @@ static void pollCommands() {
 static void updateLed() {
   uint32_t now = millis();
   bool on;
-  if (calState != CAL_IDLE)  on = (calState == CAL_WAITING || calState == CAL_CONFIRM);
+  if (calState != CAL_IDLE)  on = (calState == CAL_WAITING || calState == CAL_CONFIRM ||
+                                   calState == CAL_POINT_CHECK);
   else if (saturated)        on = (now / 100) % 2;
   else if (!calValid)        on = (now / 500) % 2;
   else                       on = false;
@@ -1603,7 +1713,7 @@ static void printDebug() {
 
 // Machine-readable status for the web page (bench/PROTOCOL.md).
 static void printStatus() {
-  char flags[12];
+  char flags[14];
   int n = 0;
   if (calValid)                          flags[n++] = 'V';
   if (podConn != BLE_CONN_HANDLE_INVALID) flags[n++] = 'P';
@@ -1614,6 +1724,7 @@ static void printStatus() {
   if (recording)                         flags[n++] = 'G';
   if (dumpPos >= 0)                      flags[n++] = 'Y';
   if (pedalling())                       flags[n++] = 'R';
+  if (settleSince && calState == CAL_WAITING) flags[n++] = 'M';   // hold the lever still
   flags[n] = '\0';
   Log.printf("S,%d,%.1f,%.0f,%.1f,%d,%d,%d,%.1f,%s,%u,%c,%u\n",
              calValid ? stableGear : 0, resistance, powerW, cadenceRpm,
@@ -1661,7 +1772,10 @@ void setup() {
   setupCentral();
 
   sampleQueue = xQueueCreate(SAMPLE_QUEUE_LEN, sizeof(Sample));
-  xTaskCreate(sensorTask, "mag", 1024, nullptr, TASK_PRIO_NORMAL, nullptr);
+  if (!sampleQueue || xTaskCreate(sensorTask, "mag", 1024, nullptr, TASK_PRIO_NORMAL, nullptr) != pdPASS) {
+    Log.println(F("Could not start the sensor task (out of memory?)."));
+    while (true) { digitalWrite(LED_RED, !digitalRead(LED_RED)); delay(50); }
+  }
 
   watchdogStart();
 }

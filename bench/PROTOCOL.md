@@ -1,4 +1,4 @@
-# Bridge ↔ phone page protocol (sketch v2, v3)
+# Bridge ↔ phone page protocol (sketch v2, v3, v3.1)
 
 **v3 changes are marked [v3].** In v3 the board detects pedal turns itself from the crank magnet, and works out the gear from the average over each full turn. Calibration is done **while pedalling**. A page must still accept v2 lines: every field added in v3 goes at the end of a line, and new values are only used when present.
 
@@ -10,7 +10,7 @@ The link uses the Nordic UART Service. That is the same service the Bluefruit Co
 | RX: the page writes commands here | `6e400002-b5a3-f393-e0a9-e50e24dcca9e` |
 | TX: the board notifies lines here | `6e400003-b5a3-f393-e0a9-e50e24dcca9e` |
 
-**How lines arrive.** The board sends text lines ending in `\n`. They arrive in notification chunks of up to 20 bytes, so the page must buffer them and split on `\n`.
+**How lines arrive.** The board sends text lines ending in `\n`. They arrive in notification chunks of up to 20 bytes, so the page must buffer them and split on `\n`. (v3.1 sends each line in 20-byte pieces: the default link cuts any longer write at 23 bytes.)
 
 **Which lines are for the page.** A line is machine-readable when it starts with one of the prefixes below. The board prints every other line for humans. The page shows those in a log.
 
@@ -23,8 +23,8 @@ Each command is a single ASCII character. Send one character per write.
 | `1` | Status stream ON: an `S` line about 4 times a second. Send this on connect. |
 | `0` | Status stream OFF. |
 | `c` | Start calibration. |
-| `n` | Capture the current calibration point (manual capture). [v3.1] Refused with an `N` line if the lever has not moved from the previous point. While `cal`=4 it confirms the cadence instead. |
-| `l` | [v3.1] Learn the crank again. Accepted while `cal`=4 (cadence check), or at point 1 of a calibration that fell back to the hold-still method. |
+| `n` | Capture the current calibration point (manual capture). [v3.1] Refused with an `N` line if the lever has not moved from the previous point. While `cal`=4 it confirms the cadence instead. While `cal`=5 it captures the point anyway. |
+| `l` | [v3.1] Learn the crank again. Accepted while `cal`=4 (cadence check), or at point 1 of the calibration (`cal`=1, `step`=0), in either method. |
 | `u` | Undo: go back one calibration point. |
 | `x` | Abort calibration. |
 | `a` | Toggle auto-capture. Default is ON. |
@@ -68,9 +68,9 @@ It is absent on v2.
 | `res` | Keiser resistance 0–100, 1 decimal. |
 | `watts` | Integer. |
 | `cad` | rpm, 1 decimal. |
-| `cal` | `0` idle, `1` waiting for a point, `2` capturing (averaging), `3` [v3] learning the crank ("pedal steadily"; `step` stays 0), `4` [v3.1] cadence check: the crank is learned and the board waits for `n` (the rpm matches the console) or `l` (learn again). |
+| `cal` | `0` idle, `1` waiting for a point, `2` capturing (averaging), `3` [v3] learning the crank ("pedal steadily"; `step` stays 0), `4` [v3.1] cadence check: the crank is learned and the board waits for `n` (the rpm matches the console) or `l` (learn again). `5` [v3.1] can't settle: for 15 s the reading at point `step` (0-based) kept changing. The board waits for `u` (redo it) or `n` (capture it anyway). See the `P` line. |
 | `step` | Current calibration point, 0-based (0–24). Only meaningful when `cal` is not 0. |
-| `stab` | 0–100: progress towards auto-capture. v2: the "held steady" timer. [v3]: agreeing pedal turns (0, 33, 67, 100 for 0–3 turns). While `cal`=3 it is the crank-learning progress: [v3] time, 0–100 over 10 s; [v3.1] turns, `lturns` / 6 × 100, at most 95 until learning succeeds. |
+| `stab` | 0–100: progress towards auto-capture. v2: the "held steady" timer. [v3]: agreeing pedal turns: 0, 34, 68, then 100 for 0–3 turns. [v3.1] It stays at 100 for one more turn while the board checks that the lever has stopped. It drops back to 34 when the board asks the rider to hold still (see `W`). It is 0 while `cal`=5. While `cal`=3 it is the crank-learning progress: [v3] time, 0–100 over 10 s; [v3.1] turns, `lturns` / 6 × 100, at most 95 until learning succeeds. |
 | `off` | Distance of the current reading from the calibrated path, in µT, 1 decimal. Large = something disturbing. |
 | `flags` | Letters, any order; empty if none. See below. |
 
@@ -85,6 +85,7 @@ It is absent on v2.
 | `G` | A diagnostics recording is running |
 | `Y` | The recording is being sent (status lines pause during the send) |
 | `R` | [v3] Pedalling: the board is detecting turns right now |
+| `M` | [v3.1] The reading at the current point is still changing. Show "Hold the lever still" until the point is captured. |
 
 **Calibration prompt for `step`:**
 
@@ -92,11 +93,13 @@ It is absent on v2.
 |---|---|---|
 | (cal=3) | — | "Pedal steadily at 60–80 rpm so the bridge can learn your crank" (5–15 s) |
 | (cal=4) | — | [v3.1] "Check the cadence matches the Keiser console" |
-| 0 | "Push the gear lever ALL THE WAY DOWN" | "Keep pedalling. Push the gear lever ALL THE WAY DOWN" |
-| 1–23 | "Move the lever up until the console FIRST shows gear `step+1`, then stop pedalling" | "Keep pedalling. Move the lever up until the console FIRST shows gear `step+1`, then hold it there" |
-| 24 | "Push the gear lever ALL THE WAY UP" | "Keep pedalling. Push the gear lever ALL THE WAY UP" |
+| 0 | "Push the gear lever ALL THE WAY DOWN" | "Keep pedalling. Push the gear lever ALL THE WAY DOWN" — [v3.1] "…ALL THE WAY DOWN and hold it there" |
+| 1–23 | "Move the lever up until the console FIRST shows gear `step+1`, then stop pedalling" | "Keep pedalling. Move the lever up until the console FIRST shows gear `step+1`, then hold it there" — [v3.1] "Keep pedalling. Move the lever up to where the Keiser console FIRST shows gear `step+1`, then hold it there" |
+| 24 | "Push the gear lever ALL THE WAY UP" | "Keep pedalling. Push the gear lever ALL THE WAY UP" — [v3.1] "…ALL THE WAY UP and hold it there" |
+| (redo) | — | [v3.1] After `u` in `cal`=5: "Redo point N: lever DOWN below gear N first, then up to where the console first shows gear N, then hold." Point 25: "push the lever back down a little, then all the way up again and hold." |
+| (`M` set) | — | [v3.1] "Hold the lever still — the reading is still changing. It will capture by itself once the lever stops." |
 
-The page tells v2 from v3 by whether `S` lines carry `src`.
+The page splits each prompt into a large heading and a smaller line under the calibration circle. For example, v3.1 points 2–24 show "Shift up to N", then "Keep pedalling. Stop where the Keiser console FIRST shows N, then hold it there". Points 1 and 25 show "Lever all the way down" or "Lever all the way up", then "Keep pedalling and hold it there". The page tells v2 from v3 by whether `S` lines carry `src`, and v3.1 from v3 by whether they also carry `lturns`.
 
 ### `L`: crank learning result [v3.1]
 
@@ -112,9 +115,9 @@ L,<ok>,<turns>,<rpm>,<depth>,<reason>
 | `turns` | Full turns counted |
 | `rpm` | From the median turn |
 | `depth` | Dip depth in µT |
-| `reason` | `ok`, `dip too shallow`, `too few turns`, `irregular turns`, or `too fast - counting twice per turn?` |
+| `reason` | `ok`, `no signal`, `dip too shallow`, `too few turns`, `irregular turns`, or `too fast - counting twice per turn?` |
 
-Learning ends early once 6 turns are seen, most of them (75 %) within 0.75–1.33 × the median turn, and the rpm is at most 160. Otherwise it ends after 15 s, accepting 4 turns. `bench/replay_learn.py` replays this on a recording.
+Learning ends early once 6 turns are seen, most of them (75 %) within 0.75–1.33 × the median turn, and the rpm is at most 130. (60–80 rpm is asked for, so a double count shows as 120+.) Otherwise it ends after 15 s, accepting 4 turns. `bench/replay_learn.py` replays this on a recording.
 
 ### `N`: manual capture refused [v3.1]
 
@@ -145,6 +148,35 @@ K,<ok>,<span>,<minstep>,<minstepAt>,<msg>
 | `minstep` | Smallest µT between consecutive points |
 | `minstepAt` | Gear where the smallest step occurs |
 | `msg` | Short text reason or "saved" |
+
+### `W`: hold the lever still [v3.1]
+
+```
+W,<point>,<drift>,<creep>
+```
+
+Sent when 3 turns agreed but the check turn shows that the lever was still moving at point `point` (1-based). The board throws that capture away **and keeps going**: it shows nothing extra, sets the `M` flag, and waits for 3 fresh agreeing turns plus a check turn. Once the lever is still, the point is captured normally, with the usual `C` line. The page should show "Hold the lever still" while `M` is set; the rider doesn't need to tap anything.
+
+| Field | Meaning |
+|---|---|
+| `drift` | How far, in µT, the turn after the 3 agreeing turns moved further in the direction of travel. |
+| `creep` | How far the 3 turns themselves crept in that direction. |
+
+**When it is sent:** if `drift` ≥ 1.0, or if `creep` ≥ 0.8 and `drift` ≥ 0.4. These thresholds were tuned on the 2026-10-15 gear-change recording and on a slowly creeping lever in `bench/tests/test_fw_stress.py`. Point 1 is never questioned. `W` can repeat for the same point.
+
+### `P`: point can't settle [v3.1]
+
+```
+P,<point>
+```
+
+Sent when the reading at point `point` (1-based) has kept changing for 15 s since the first `W`. The board enters `cal`=5 and stops auto-capturing until the rider answers:
+
+| Answer | What happens |
+|---|---|
+| `u`: redo | `U,<step>` follows (the same step), and the prompt starts with "Redo: first move the lever DOWN below this gear." The page should show matching instructions: move the lever down below gear N, then up until the console first shows gear N, then hold it. |
+| `n` or button A: capture anyway | The point is stored from the latest agreeing turns, and the usual `C` line follows. |
+| `x` or a long press | Aborts, as usual. |
 
 ### `A`: calibration aborted
 
@@ -219,7 +251,7 @@ Y,end,<count>,<checksum>
 | Field in `D` | Meaning |
 |---|---|
 | `x`, `y`, `z` | Integers in units of 0.1 µT, raw (not smoothed). |
-| `revs` | The Wahoo's cumulative crank revolutions (wraps at 65535), or `-1` if no cadence pod is connected. |
+| `revs` | Cumulative crank revolutions (wraps at 65535): the board's own turn count when it detects the crank itself [v3], otherwise the Wahoo's; `-1` if neither. |
 | `dt` | Milliseconds since the previous sample. `0` for the first sample; capped at 255. |
 
 - **Checksum:** `(sum of all x + y + z) mod 65536`, as a non-negative integer, so the page can confirm nothing was lost.
