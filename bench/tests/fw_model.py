@@ -22,7 +22,6 @@ def u32(x):
 SAMPLE_PERIOD_MS = 20
 NOTIFY_PERIOD_MS = 500
 EMA_ALPHA = 0.15
-HYST_FRACTION = 0.20
 GEAR_DWELL_MS = 150
 CADENCE_TIMEOUT_MS = 3000
 CAPTURE_SAMPLES = 32
@@ -53,6 +52,29 @@ QEMA_TAU_MS = 1000.0
 DEPTH_ADAPT = 0.1
 TURN_AGREE_UT = 2.0
 TURN_MOVE_UT = 1.0
+TURN_ALONG_UT = 0.5
+TOP_FRACTION = 0.3
+BEHIND_UT = 0.5
+DOWN_FIRST = 22
+EDGE_BIAS_UT = 0.25
+STICK_DEFAULT_UT = 0.6
+STICK_MIN_UT = 0.2
+CHECK_ORDER_UT = 0.5
+CHECK_OVERSHOOT = 1.6
+CHECK_SHAPE_UT = 1.0
+CHECK_SHAPE_FRAC = 0.12
+CHECK_OFF_UT = 1.8
+CHECK_PAIR_UT = 1.1
+CHECK_PAIR_FRAC = 0.15
+CHECK_PERP_UT = 1.8
+CHECK_BLAME_RATIO = 1.6
+CHECK_MIN_PAIRS = 5
+CHECK_MAX_ROUNDS = 8
+PRIOR_UT = 2.0
+PRIOR_MAX = 6
+MAX_SUSPECTS = 20
+CHK_LAST = 23
+PASS_UP, PASS_DOWN, PASS_FIX_UP, PASS_FIX_DOWN = 0, 1, 2, 3
 SUSPECT_DRIFT_UT = 1.0
 SUSPECT_CREEP_UT = 0.8
 SUSPECT_DRIFT_SLOW_UT = 0.4
@@ -114,6 +136,12 @@ class Firmware:
         self.crank = dict(ok=False, sign=1, u=[1.0, 0.0, 0.0], depth=0.0, base=0.0)
         self.cal = cal                   # dict like CalData or None
         self.calValid = cal is not None
+        if cal is not None:
+            cal.setdefault("downMask", 0)
+            cal.setdefault("down", [[0.0, 0.0, 0.0] for _ in range(NUM_GEARS + 1)])
+        self.pathPts = None
+        self.edgeUpR = [0.0] * (NUM_GEARS + 1)
+        self.edgeDownR = [0.0] * (NUM_GEARS + 1)
         # signal chain
         self.medianBuf = [[0.0] * 5 for _ in range(3)]
         self.medianIdx = 0
@@ -134,6 +162,16 @@ class Firmware:
         self.calState = CAL_IDLE
         self.calStep = 0
         self.calRaw = [[0.0, 0.0, 0.0] for _ in range(NUM_GEARS + 1)]
+        self.calDown = [[0.0, 0.0, 0.0] for _ in range(NUM_GEARS + 1)]
+        self.calDownMask = 0
+        self.calPass = PASS_UP
+        self.behindSent = False
+        self.behindNow = False
+        self.backGate = False
+        self.fixArmed = False
+        self.suspects = []
+        self.prev = None                 # the previous calibration's up points (prevPts)
+        self.staging = False
         self.capSum = [0.0, 0.0, 0.0]
         self.capCount = 0
         self.autoCapture = True
@@ -167,6 +205,9 @@ class Firmware:
         self.captures = []               # (ms, step, point)
         self.learn_probes = []           # (learnCount, LearnResult)
         self.load_crank_from_cal()
+        if cal is not None and cal.get("pts"):           # setup(): the check, then the path
+            self.cal_check(False)
+            self.build_path()
 
     # ------------------------------------------------------------- output
     def log(self, line):
@@ -310,10 +351,13 @@ class Firmware:
         self.stabPct = 0
 
     def cal_prompt(self):
-        self.log(f"[CAL {self.calStep + 1}/25] prompt{' (redo)' if getattr(self, 'calRedo', False) else ''}")
+        tag = {PASS_UP: "UP", PASS_DOWN: "DOWN", PASS_FIX_UP: "REDO-UP", PASS_FIX_DOWN: "REDO-DOWN"}[self.calPass]
+        self.log(f"[{tag} point {self.calStep + 1}] prompt{' (redo)' if getattr(self, 'calRedo', False) else ''}")
         self.turnHist = []
         self.pendingCap = False
         self.settleSince = 0
+        self.behindSent = False
+        self.backGate = False
         self.stab_reset()
 
     def cal_learn_start(self):
@@ -329,10 +373,14 @@ class Firmware:
 
     def cal_start(self):
         self.log("=== Calibration started")
+        self.staging = False
+        self.calPass = PASS_UP
+        self.calDownMask = 0
         self.cal_learn_start()
 
     def cal_relearn(self):
-        if self.calState != CAL_CONFIRM and not (self.calState == CAL_WAITING and self.calStep == 0):
+        if self.calState != CAL_CONFIRM and not (self.calState == CAL_WAITING and self.calPass == PASS_UP
+                                                 and self.calStep == 0):
             return
         self.log("Learning the crank again.")
         self.cal_learn_start()
@@ -365,7 +413,13 @@ class Firmware:
         self.cal_prompt()
 
     def cal_abort(self, why):
+        fixing = self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN)
+        self.backGate = False
         self.calState = CAL_IDLE
+        self.calPass = PASS_UP
+        if fixing:
+            self.log("A," + why)
+            return
         self.load_crank_from_cal()
         self.log("A," + why)
 
@@ -374,33 +428,110 @@ class Firmware:
         self.load_crank_from_cal()
         self.log("K,0,%.1f,%.2f,%d,%s" % (span, minStep, minStepAt, msg))
 
-    def cal_finish(self):
-        self.calState = CAL_IDLE
+    @staticmethod
+    def gear_width(g):
+        return GEAR_EDGES[g] - GEAR_EDGES[g - 1]
+
+    @staticmethod
+    def synth_top(p):                                                 # synthTop()
+        f = TOP_FRACTION
+        p[NUM_GEARS] = [p[NUM_GEARS - 1][k] + f * (p[NUM_GEARS - 1][k] - p[NUM_GEARS - 2][k]) for k in range(3)]
+
+    @staticmethod
+    def cal_validate(p):                                              # calValidate(): (ok, span, minStep, at, msg)
         span, minStep, minStepAt = 0.0, 1e9, 1
         for i in range(1, NUM_GEARS + 1):
-            step = dist3(self.calRaw[i], self.calRaw[i - 1])
+            step = dist3(p[i], p[i - 1])
             span += step
             if step < minStep:
                 minStep, minStepAt = step, i
         if span < MIN_SPAN_UT:
-            return self.cal_reject("signal too small", span, minStep, minStepAt)
+            return False, span, minStep, minStepAt, "signal too small"
         if minStep < MIN_STEP_REJECT_UT:
-            return self.cal_reject("points %d and %d are the same - did the lever move?" % (minStepAt, minStepAt + 1),
-                                   span, minStep, minStepAt)
+            return (False, span, minStep, minStepAt,
+                    "points %d and %d are the same - did the lever move?" % (minStepAt, minStepAt + 1))
         for k in range(NUM_GEARS + 1):
             for j in range(NUM_GEARS):
                 if k - 2 <= j <= k + 1:
                     continue
-                d, _ = dist_to_segment(self.calRaw[k], self.calRaw[j], self.calRaw[j + 1])
+                d, _ = dist_to_segment(p[k], p[j], p[j + 1])
                 if d < FOLD_MARGIN_UT:
-                    return self.cal_reject("path folds back: point %d is %.1f uT from gear %d's segment" % (k + 1, d, j + 1),
-                                           span, minStep, minStepAt)
+                    return (False, span, minStep, minStepAt,
+                            "path folds back: point %d is %.1f uT from gear %d's segment" % (k + 1, d, j + 1))
+        return True, span, minStep, minStepAt, ""
+
+    def cal_commit(self, up, down, mask, newCal):                     # calCommit()
+        p = [list(x) for x in up]
+        if not newCal and self.calValid and p[NUM_GEARS - 2:NUM_GEARS] == self.cal["pts"][NUM_GEARS - 2:NUM_GEARS]:
+            p[NUM_GEARS] = list(self.cal["pts"][NUM_GEARS])
+        else:
+            self.synth_top(p)
+        ok, span, minStep, minStepAt, msg = self.cal_validate(p)
+        if not ok:
+            if newCal:
+                self.cal_reject(msg, span, minStep, minStepAt)
+            else:
+                self.log("E,fail," + msg)
+            return False
+        if newCal and self.calValid:
+            self.prev = [list(x) for x in self.cal["pts"]]
+        old = self.cal or {}
         c = self.crank
-        self.cal = dict(pts=[list(p) for p in self.calRaw], crankOk=1 if c["ok"] else 0, crankSign=c["sign"],
-                        crankU=list(c["u"]), crankDepth=c["depth"], crankBase=c["base"])
+        self.cal = dict(pts=p, down=[list(x) for x in down], downMask=mask & (((1 << NUM_GEARS) - 1) & ~1),
+                        crankOk=(1 if c["ok"] else 0) if newCal else old.get("crankOk", 0),
+                        crankSign=c["sign"] if newCal else old.get("crankSign", 1),
+                        crankU=list(c["u"]) if newCal else old.get("crankU"),
+                        crankDepth=c["depth"] if newCal else old.get("crankDepth"),
+                        crankBase=c["base"] if newCal else old.get("crankBase"))
         self.calValid = True
+        self.cal_check(False)
+        self.build_path()
         self.stableGear = self.pendingGear = 1
+        self.staging = False
+        if not newCal:
+            self.log("E,ok,saved")
         self.log("K,1,%.1f,%.2f,%d,saved" % (span, minStep, minStepAt))
+        self.cal_check(True)
+        return True
+
+    def cal_finish(self):
+        self.calState = CAL_IDLE
+        self.calPass = PASS_UP
+        self.cal_commit(self.calRaw, self.calDown, self.calDownMask, True)
+
+    def cal_fix_store(self, b):                                       # calFixStore()
+        down = self.calPass == PASS_FIX_DOWN
+        self.calState = CAL_IDLE
+        self.calPass = PASS_UP
+        if down:
+            self.log("C,down,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.calDown[self.calStep] = list(b)
+            self.calDownMask |= 1 << self.calStep
+        else:
+            self.log("C,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.calRaw[self.calStep] = list(b)
+        self.captures.append((self.millis(), ('rd' if down else 'ru', self.calStep), list(b)))
+        self.cal_commit(self.calRaw, self.calDown, self.calDownMask, False)
+
+    def cal_fix_start(self, down, point):                             # calFixStart()
+        if self.calState != CAL_IDLE:
+            return self.log("E,fail,busy calibrating")
+        if not self.calValid or not self.cal.get("crankOk") or not self.crank["ok"]:
+            return self.log("E,fail,needs a saved calibration made while pedalling")
+        i = point - 1
+        if i < 1 or i > (DOWN_FIRST if down else NUM_GEARS - 1):
+            return self.log("E,fail,no such point")
+        self.calRaw = [list(x) for x in self.cal["pts"]]
+        self.calDown = [list(x) for x in self.cal["down"]]
+        self.calDownMask = self.cal["downMask"]
+        self.staging = False
+        self.calPass = PASS_FIX_DOWN if down else PASS_FIX_UP
+        self.calStep = i
+        self.calRedo = False
+        self.fixArmed = False
+        self.calState = CAL_WAITING
+        self.log("E,ok,redo")
+        self.cal_prompt()
 
     def cal_on_sample(self, b):
         if self.calState != CAL_CAPTURING:
@@ -418,12 +549,34 @@ class Firmware:
         self.calRedo = False
         self.pendingCap = False
         self.settleSince = 0
-        self.calRaw[self.calStep] = list(b)
-        self.log("C,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
-        self.captures.append((self.millis(), self.calStep, list(b)))
-        self.calStep += 1
-        if self.calStep > NUM_GEARS:
-            return self.cal_finish()
+        if self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN):
+            return self.cal_fix_store(b)
+        if self.calPass == PASS_DOWN:
+            self.calDown[self.calStep] = list(b)
+            self.calDownMask |= 1 << self.calStep
+            self.log("C,down,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.captures.append((self.millis(), ('d', self.calStep), list(b)))
+            self.calStep -= 1
+            if self.calStep < 1:
+                return self.cal_finish()
+        else:
+            self.calRaw[self.calStep] = list(b)
+            self.log("C,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.captures.append((self.millis(), self.calStep, list(b)))
+            if self.calStep == NUM_GEARS - 1:
+                self.synth_top(self.calRaw)
+                ok, span, minStep, minStepAt, msg = self.cal_validate(self.calRaw)
+                if not ok:
+                    return self.cal_reject(msg, span, minStep, minStepAt)
+                t = self.calRaw[NUM_GEARS]
+                self.log("C,%d,%.1f,%.1f,%.1f" % (NUM_GEARS + 1, t[0], t[1], t[2]))
+                if not self.crank["ok"]:
+                    return self.cal_finish()
+                self.calPass = PASS_DOWN
+                self.calStep = DOWN_FIRST
+                self.calDownMask = 0
+            else:
+                self.calStep += 1
         self.calState = CAL_WAITING
         self.cal_prompt()
 
@@ -431,10 +584,114 @@ class Firmware:
         n = len(self.turnHist)
         return [sum(h[k] / n for h in self.turnHist) if n else 0.0 for k in range(3)]
 
+    def cal_prev_ref(self):                                           # calPrevRef(): (prev, dir) or None
+        if self.calPass == PASS_UP:
+            if self.calStep == 0:
+                return None
+            prev = self.calRaw[self.calStep - 1]
+            a = b = None
+            if self.calStep >= 2:
+                a, b = self.calRaw[max(self.calStep - 4, 0)], self.calRaw[self.calStep - 1]
+        elif self.calPass == PASS_DOWN:
+            prev = self.calRaw[NUM_GEARS - 1] if self.calStep >= DOWN_FIRST else self.calDown[self.calStep + 1]
+            a, b = self.calRaw[min(self.calStep + 2, NUM_GEARS - 1)], self.calRaw[max(self.calStep - 1, 0)]
+        else:
+            return None
+        d = None
+        if a is not None:
+            v = [b[k] - a[k] for k in range(3)]
+            n = math.sqrt(dot3(v, v))
+            if n > 0:
+                d = [x / n for x in v]
+        return prev, d
+
+    def cal_moved_on(self, mean, agreeing):                           # calMovedOn()
+        ref = self.cal_prev_ref()
+        if ref is None:
+            return True
+        prev, d = ref
+        v = [mean[k] - prev[k] for k in range(3)]
+        dist = math.sqrt(dot3(v, v))
+        along = dot3(v, d) if d else dist
+        self.behindNow = bool(d) and agreeing and along <= -BEHIND_UT
+        return dist >= TURN_MOVE_UT and along >= TURN_ALONG_UT
+
+    def cal_back_up(self):                                            # calBackUp()
+        down = self.calPass == PASS_DOWN
+        can = self.calStep < DOWN_FIRST if down else self.calStep >= 2
+        if not can:
+            if not self.behindSent:
+                self.behindSent = True
+                self.log("N,behind")
+            return
+        bad = self.calStep + 1 if down else self.calStep - 1
+        self.backOld = list(self.calDown[bad] if down else self.calRaw[bad])
+        if down:
+            self.calDownMask &= ~(1 << bad)
+        self.calStep = bad
+        self.log("N,behind")
+        self.log(("U,%d,d" if down else "U,%d") % self.calStep)
+        self.calRedo = True
+        self.cal_prompt()
+        self.backGate = True
+
+    def cal_back_gate(self, avg):                                     # calBackGate()
+        ref = self.cal_prev_ref()
+        if ref is None:
+            self.backGate = False
+            return True
+        prev = ref[0]
+        span = [self.backOld[k] - prev[k] for k in range(3)]
+        L = math.sqrt(dot3(span, span))
+        if L <= 0:
+            self.backGate = False
+            return True
+        if dot3([avg[k] - prev[k] for k in range(3)], span) / L <= 0.5 * L:
+            self.backGate = False
+            self.turnHist = []
+            self.pendingCap = False
+        self.stabPct = 0
+        return False
+
+    def cal_travel_dir(self, mean):                                   # calTravelDir()
+        if self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN):
+            i = self.calStep
+            j = i - 1 if self.calPass == PASS_FIX_UP else i + 1
+            v = [self.pathPts[i][k] - self.pathPts[j][k] for k in range(3)]
+        else:
+            ref = self.cal_prev_ref()
+            if ref is None:
+                return [0.0, 0.0, 0.0]
+            v = [mean[k] - ref[0][k] for k in range(3)]
+        n = math.sqrt(dot3(v, v))
+        return [x / n for x in v] if n > 0 else [0.0, 0.0, 0.0]
+
+    def cal_fix_gate(self, avg):                                      # calFixGate()
+        r, _ = self.locate(self.pathPts, avg)
+        i = self.calStep
+        if self.calPass == PASS_FIX_UP:
+            past = r < 0.5 * (GEAR_EDGES[i - 1] + GEAR_EDGES[i])
+        else:
+            past = r > 0.5 * (GEAR_EDGES[i] + GEAR_EDGES[i + 1])
+        if past:
+            self.fixArmed = True
+            self.turnHist = []
+            self.pendingCap = False
+            self.stabPct = 0
+            return False
+        if not self.fixArmed:
+            self.stabPct = 0
+            return False
+        return True
+
     def cal_on_turn(self, avg):
         if self.calState != CAL_WAITING or not self.crank["ok"]:
             return
         self.lastTurnAvg = list(avg)
+        if self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN) and not self.cal_fix_gate(avg):
+            return
+        if getattr(self, "backGate", False) and not self.cal_back_gate(avg):
+            return
         if getattr(self, "settleSince", 0) and u32(self.millis() - self.settleSince) >= SETTLE_GIVEUP_MS:
             self.calState = CAL_POINT_CHECK
             self.pendingCap = False
@@ -444,17 +701,24 @@ class Firmware:
         if getattr(self, "pendingCap", False):
             self.pendingCap = False
             drift = dot3([avg[k] - self.pendingMean[k] for k in range(3)], self.pendingDir)
-            suspect = self.calStep > 0 and (drift >= SUSPECT_DRIFT_UT or
-                                            (self.pendingCreep >= SUSPECT_CREEP_UT and drift >= SUSPECT_DRIFT_SLOW_UT))
+            self.pendingCreep = dot3([avg[k] - self.pendingFirst[k] for k in range(3)], self.pendingDir)
+            hasDir = any(self.pendingDir)
+            suspect = hasDir and (drift >= SUSPECT_DRIFT_UT or
+                                  (self.pendingCreep >= SUSPECT_CREEP_UT and drift >= SUSPECT_DRIFT_SLOW_UT))
             if not suspect:
-                return self.cal_store_point(self.pendingMean)
-            if not getattr(self, "settleSince", 0):
-                self.settleSince = self.millis() or 1
-            self.log("W,%d,%.1f,%.1f" % (self.calStep + 1, drift, self.pendingCreep))
-            self.turnHist = [list(avg)]
-            self.stabPct = 34
-            return
-        if len(self.turnHist) == 3:
+                n = len(self.turnHist)
+                m = [(self.pendingMean[k] * n + avg[k]) / (n + 1) for k in range(3)]
+                if dist3(avg, self.pendingMean) <= TURN_AGREE_UT and self.cal_moved_on(m, False):
+                    self.stabPct = 100
+                    return self.cal_store_point(m)
+            else:
+                if not getattr(self, "settleSince", 0):
+                    self.settleSince = self.millis() or 1
+                self.log("W,%d,%.1f,%.1f" % (self.calStep + 1, drift, self.pendingCreep))
+                self.turnHist = [list(avg)]
+                self.stabPct = 34
+                return
+        if len(self.turnHist) == 2:
             self.turnHist = self.turnHist[1:]
         self.turnHist.append(list(avg))
         while len(self.turnHist) > 1:
@@ -463,19 +727,14 @@ class Firmware:
                 break
             self.turnHist = self.turnHist[1:]
         mean = self.turn_hist_mean()
-        moved = self.calStep == 0 or dist3(mean, self.calRaw[self.calStep - 1]) >= TURN_MOVE_UT
-        self.stabPct = min(100, len(self.turnHist) * 34) if moved else 0
-        if moved and self.autoCapture and len(self.turnHist) == 3:
+        moved = self.cal_moved_on(mean, len(self.turnHist) >= 2)
+        if self.behindNow and self.calPass in (PASS_UP, PASS_DOWN):
+            return self.cal_back_up()
+        self.stabPct = (67 if len(self.turnHist) >= 2 else 34) if moved else 0
+        if moved and self.autoCapture and len(self.turnHist) == 2:
             self.pendingMean = list(mean)
-            if self.calStep > 0:
-                d = [mean[k] - self.calRaw[self.calStep - 1][k] for k in range(3)]
-                n = math.sqrt(dot3(d, d))
-                self.pendingDir = [x / n if n > 0 else 0.0 for x in d]
-                c = [self.turnHist[2][k] - self.turnHist[0][k] for k in range(3)]
-                self.pendingCreep = dot3(c, self.pendingDir)
-            else:
-                self.pendingDir = [0.0, 0.0, 0.0]
-                self.pendingCreep = 0.0
+            self.pendingDir = self.cal_travel_dir(mean)
+            self.pendingFirst = list(self.turnHist[0])
             self.pendingCap = True
 
     def cal_capture(self):
@@ -490,8 +749,11 @@ class Firmware:
             if not self.turnHist:
                 self.log("N,noturn")
                 return
+            if (self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN) and not self.fixArmed) or getattr(self, "backGate", False):
+                self.log("N,notmoved")
+                return
             mean = self.turn_hist_mean()
-            if self.calStep > 0 and dist3(mean, self.calRaw[self.calStep - 1]) < TURN_MOVE_UT:
+            if not self.cal_moved_on(mean, False):
                 self.log("N,notmoved")
                 return
             return self.cal_store_point(mean)
@@ -506,13 +768,31 @@ class Firmware:
         if self.calState == CAL_POINT_CHECK:
             self.calState = CAL_WAITING
             self.calRedo = True
-            self.log("U,%d" % self.calStep)
+            self.fixArmed = False
+            self.log(("U,%d,d" if self.calPass == PASS_DOWN else "U,%d") % self.calStep)
             return self.cal_prompt()
-        if self.calState != CAL_WAITING or self.calStep == 0:
+        if self.calState != CAL_WAITING:
+            return
+        if self.calPass == PASS_DOWN:
+            if self.calStep < DOWN_FIRST:
+                self.calStep += 1
+                self.calDownMask &= ~(1 << self.calStep)
+                self.log("U,%d,d" % self.calStep)
+            else:
+                self.calPass = PASS_UP
+                self.calStep = NUM_GEARS - 1
+                self.log("U,%d" % self.calStep)
+            return self.cal_prompt()
+        if self.calPass != PASS_UP or self.calStep == 0:
             return
         self.calStep -= 1
         self.log("U,%d" % self.calStep)
         self.cal_prompt()
+
+    def cal_skip_down(self):                                           # calSkipDown()
+        if self.calPass != PASS_DOWN or self.calState not in (CAL_WAITING, CAL_POINT_CHECK):
+            return
+        self.cal_finish()
 
     def cal_auto_check(self):
         if self.crank["ok"]:
@@ -533,8 +813,56 @@ class Firmware:
             self.cal_capture()
 
     # ------------------------------------------------------------- gear
+    def up_for_path(self, i):                                        # upForPath()
+        for ps, pt, _, g in self.suspects:
+            if ps == 'u' and pt == i + 1:
+                return g
+        return self.cal["pts"][i]
+
+    def build_path(self):                                              # buildPath()
+        cal = self.cal
+        flagged = {pt - 1 for _, pt, _, _ in self.suspects}
+        mask = cal.get("downMask", 0) & ~sum(1 << i for i in flagged)
+        self.pathPts = [list(self.up_for_path(i)) for i in range(NUM_GEARS)] + [None]
+        for i in range(1, NUM_GEARS):
+            if mask & (1 << i):
+                self.pathPts[i] = [0.5 * (cal["pts"][i][k] + cal["down"][i][k]) for k in range(3)]
+        self.pathPts[NUM_GEARS] = [self.pathPts[NUM_GEARS - 1][k] + cal["pts"][NUM_GEARS][k]
+                                   - cal["pts"][NUM_GEARS - 1][k] for k in range(3)]
+        tan, hs = {}, []
+        for i in range(1, NUM_GEARS):
+            v = [self.pathPts[i + 1][k] - self.pathPts[i - 1][k] for k in range(3)]
+            n = math.sqrt(dot3(v, v))
+            tan[i] = [x / n for x in v] if n > 0 else [0.0, 0.0, 0.0]
+            if mask & (1 << i):
+                hs.append(dot3([cal["pts"][i][k] - cal["down"][i][k] for k in range(3)], tan[i]) - 2 * EDGE_BIAS_UT)
+        stick = max(STICK_MIN_UT, st_median(hs)) if hs else STICK_DEFAULT_UT
+        for i in range(1, NUM_GEARS):
+            u, t = self.up_for_path(i), tan[i]
+            eu = [u[k] - EDGE_BIAS_UT * t[k] for k in range(3)]
+            if mask & (1 << i):
+                ed = [cal["down"][i][k] + EDGE_BIAS_UT * t[k] for k in range(3)]
+            else:
+                ed = [eu[k] - stick * t[k] for k in range(3)]
+            if dot3([eu[k] - ed[k] for k in range(3)], t) < 0.1:
+                m = [0.5 * (eu[k] + ed[k]) for k in range(3)]
+                eu = [m[k] + 0.05 * t[k] for k in range(3)]
+                ed = [m[k] - 0.05 * t[k] for k in range(3)]
+            self.edgeUpR[i], _ = self.locate(self.pathPts, eu)
+            self.edgeDownR[i], _ = self.locate(self.pathPts, ed)
+
+    @staticmethod
+    def locate(pts, b):
+        best, bestRes = 1e30, 0.0
+        for i in range(NUM_GEARS):
+            d, t = dist_to_segment(b, pts[i], pts[i + 1])
+            if d < best:
+                best = d
+                bestRes = GEAR_EDGES[i] + t * (GEAR_EDGES[i + 1] - GEAR_EDGES[i])
+        return bestRes, best
+
     def locate_on_path(self, b):
-        pts = self.cal["pts"]
+        pts = self.pathPts
         best, bestRes = 1e30, 0.0
         for i in range(NUM_GEARS):
             d, t = dist_to_segment(b, pts[i], pts[i + 1])
@@ -555,14 +883,11 @@ class Firmware:
             self.offPathHold = False
         self.resistance = res
         candidate = self.stableGear
-        lo, hi = GEAR_EDGES[self.stableGear - 1], GEAR_EDGES[self.stableGear]
-        band = HYST_FRACTION * (hi - lo)
-        if self.resistance < lo - band or self.resistance >= hi + band:
-            candidate = NUM_GEARS
-            for g in range(1, NUM_GEARS + 1):
-                if self.resistance < GEAR_EDGES[g]:
-                    candidate = g
-                    break
+        r = self.resistance
+        while candidate < NUM_GEARS and r >= self.edgeUpR[candidate]:
+            candidate += 1
+        while candidate > 1 and r < self.edgeDownR[candidate - 1]:
+            candidate -= 1
         if not useDwell:
             self.stableGear = self.pendingGear = candidate
             return
@@ -572,6 +897,343 @@ class Firmware:
             self.pendingGear, self.pendingSince = candidate, now
         elif u32(now - self.pendingSince) >= GEAR_DWELL_MS:
             self.stableGear = candidate
+
+    # ------------------------------------------------------------- the check (calCheck), as in the sketch
+    @staticmethod
+    def interp_point(p, good, lo, hi, i):                            # interpPoint()
+        a, b = i - 1, i + 1
+        while a >= lo and not good[a]:
+            a -= 1
+        while b <= hi and not good[b]:
+            b += 1
+        if a < lo or b > hi:
+            return None
+        f = (GEAR_EDGES[i] - GEAR_EDGES[a]) / (GEAR_EDGES[b] - GEAR_EDGES[a])
+        return [p[a][k] + f * (p[b][k] - p[a][k]) for k in range(3)]
+
+    @staticmethod
+    def unit_dir(p, a, b):                                            # unitDir()
+        v = [p[b][k] - p[a][k] for k in range(3)]
+        n = math.sqrt(dot3(v, v))
+        return [x / n for x in v] if n > 0 else [0.0, 0.0, 0.0]
+
+    def chk_tangent(self, good, i):                                   # chkTangent()
+        a, b = i - 1, i + 1
+        while a >= 0 and not good[a]:
+            a -= 1
+        while b <= CHK_LAST and not good[b]:
+            b += 1
+        return self.unit_dir(self.cal["pts"], i if a < 0 else a, i if b > CHK_LAST else b)
+
+    def chk_shape(self, good, i):                                     # chkShape(): (resid, chord)
+        P = self.cal["pts"]
+        L = [j for j in range(i - 1, -1, -1) if good[j]][:2]
+        R = [j for j in range(i + 1, CHK_LAST + 1) if good[j]][:2]
+        if not L or not R:
+            return 0.0, 0.0
+        idx = L[::-1] + R
+        iL = len(L) - 1
+        chord = dist3(P[R[0]], P[L[0]])
+        if len(idx) < 3:
+            return dist_to_segment(P[i], P[L[0]], P[R[0]])[0], chord
+        x = [0.0]
+        for k in range(1, len(idx)):
+            x.append(x[-1] + dist3(P[idx[k]], P[idx[k - 1]]))
+        mean = sum(x) / len(x)
+        sc = 0.5 * (x[-1] - x[0])
+        if sc <= 0:
+            return dist_to_segment(P[i], P[L[0]], P[R[0]])[0], chord
+        x = [(v - mean) / sc for v in x]
+        M = [[0.0] * 6 for _ in range(3)]
+        for k, j in enumerate(idx):
+            f = [1.0, x[k], x[k] * x[k]]
+            for a in range(3):
+                for b in range(3):
+                    M[a][b] += f[a] * f[b]
+                for ax in range(3):
+                    M[a][3 + ax] += f[a] * P[j][ax]
+        for c in range(3):
+            piv = max(range(c, 3), key=lambda r: abs(M[r][c]))
+            if abs(M[piv][c]) < 1e-6:
+                return dist_to_segment(P[i], P[L[0]], P[R[0]])[0], chord
+            M[c], M[piv] = M[piv], M[c]
+            inv = 1.0 / M[c][c]
+            M[c] = [v * inv for v in M[c]]
+            for r in range(3):
+                if r != c:
+                    f = M[r][c]
+                    M[r] = [M[r][k] - f * M[c][k] for k in range(6)]
+        best2 = 1e30
+        for st in range(41):
+            u = x[iL] + (x[iL + 1] - x[iL]) * st / 40.0
+            d2 = sum((M[0][3 + ax] + u * (M[1][3 + ax] + u * M[2][3 + ax]) - P[i][ax]) ** 2 for ax in range(3))
+            best2 = min(best2, d2)
+        return math.sqrt(best2), chord
+
+    def chk_off_up(self, good, b):                                    # chkOffUp()
+        best, prev = 1e30, -1
+        for j in range(CHK_LAST + 1):
+            if not good[j]:
+                continue
+            if prev >= 0:
+                best = min(best, dist_to_segment(b, self.cal["pts"][prev], self.cal["pts"][j])[0])
+            prev = j
+        return best
+
+    def chk_order(self, p, good, lo, hi, sign):                      # chkOrder()
+        out, h = [], -1
+        for j in range(hi - lo + 1):
+            i = lo + j if sign > 0 else hi - j
+            if not good[i]:
+                continue
+            if h >= 0:
+                d = self.unit_dir(self.cal["pts"], constrain(min(h, i) - 1, 0, CHK_LAST),
+                                  constrain(max(h, i) + 1, 0, CHK_LAST))
+                x = sign * dot3([p[i][k] - p[h][k] for k in range(3)], d)
+                if x < CHECK_ORDER_UT:
+                    out.append((h, i, 1.0 + (CHECK_ORDER_UT - x)))
+            h = i
+        return out
+
+    def chk_round(self):                                              # chkRound(): (pass, idx, why) or None
+        cal = self.cal
+        mask = cal.get("downMask", 0)
+        exU, exD, exP = self.chkExU, self.chkExD, self.chkExP
+        gU = [i <= CHK_LAST and not exU[i] and not exP[i] for i in range(NUM_GEARS + 1)]
+        gD = [bool((mask >> i) & 1) and 1 <= i <= DOWN_FIRST and not exD[i] and not exP[i]
+              for i in range(NUM_GEARS + 1)]
+        self.chkGU, self.chkGD = gU, gD
+        best = [1.0, None]
+
+        def consider(sc, ps, i, w):
+            if sc > best[0]:
+                best[0], best[1] = sc, (ps, i, w)
+
+        for i in range(1, CHK_LAST + 1):
+            if not gU[i]:
+                continue
+            r, chord = self.chk_shape(gU, i)
+            thr = CHECK_SHAPE_UT + CHECK_SHAPE_FRAC * chord
+            if r > thr:
+                consider(r / thr, 'u', i, "offpath")
+        for i in range(1, DOWN_FIRST + 1):
+            if not gD[i]:
+                continue
+            d = self.chk_off_up(gU, cal["down"][i])
+            if d > CHECK_OFF_UT:
+                consider(d / CHECK_OFF_UT, 'd', i, "offpath")
+        s, q, t = {}, {}, {}
+        for i in range(1, DOWN_FIRST + 1):
+            if not (gU[i] and gD[i]):
+                continue
+            t[i] = self.chk_tangent(gU, i)
+            o = [cal["pts"][i][k] - cal["down"][i][k] for k in range(3)]
+            s[i] = dot3(o, t[i])
+            r = [o[k] - s[i] * t[i][k] for k in range(3)]
+            q[i] = math.sqrt(dot3(r, r))
+        self.chkHaveSmed = len(s) >= CHECK_MIN_PAIRS
+        self.chkSmed = st_median(list(s.values())) if self.chkHaveSmed else 0.0
+        dev = {}
+        if self.chkHaveSmed:
+            for i in s:
+                stepMin = min(dist3(cal["pts"][i], cal["pts"][i - 1]), dist3(cal["pts"][i + 1], cal["pts"][i]))
+                dev[i] = (s[i] - self.chkSmed) / (CHECK_PAIR_UT + CHECK_PAIR_FRAC * stepMin)
+        vu = self.chk_order(cal["pts"], gU, 0, CHK_LAST, +1)
+        vd = self.chk_order(cal["down"], gD, 1, DOWN_FIRST, -1) if mask else []
+        inU = {x for h, i, _ in vu for x in (h, i)}
+        inD = {x for h, i, _ in vd for x in (h, i)}
+        for i in sorted(s):
+            sc = max(abs(dev[i]) if i in dev else 0.0, q[i] / CHECK_PERP_UT)
+            if sc <= 1:
+                continue
+            if i in inU and i not in inD:
+                consider(sc, 'u', i, "updown")
+                continue
+            if i in inD and i not in inU:
+                consider(sc, 'd', i, "updown")
+                continue
+            gu = self.interp_point(cal["pts"], gU, 0, CHK_LAST, i)
+            gd = self.interp_point(cal["down"], gD, 1, DOWN_FIRST, i)
+            eu = abs(dot3([cal["pts"][i][k] - gu[k] for k in range(3)], t[i])) if gu else 0.0
+            ed = abs(dot3([cal["down"][i][k] - gd[k] for k in range(3)], t[i])) if gd else 0.0
+            if eu > CHECK_BLAME_RATIO * ed:
+                consider(sc, 'u', i, "updown")
+            elif ed > CHECK_BLAME_RATIO * eu:
+                consider(sc, 'd', i, "updown")
+            else:
+                consider(sc, 'p', i, "pair")
+        for h, i, sc in vu:
+            if h in dev and i in dev:
+                j = h if abs(dev[h]) > abs(dev[i]) else i
+            else:
+                g = -1
+                for m in range(h):
+                    if gU[m]:
+                        g = m
+                steps = []
+                for m in range(max(0, h - 3), min(CHK_LAST, i + 3)):
+                    if len(steps) < 8 and m != h and m != g and gU[m] and gU[m + 1]:
+                        steps.append(dist3(cal["pts"][m + 1], cal["pts"][m]))
+                over = len(steps) >= 2 and g >= 0 and dist3(cal["pts"][h], cal["pts"][g]) > CHECK_OVERSHOOT * st_median(steps)
+                j = h if over else i
+            consider(sc, 'u', j, "behind")
+        for h, i, sc in vd:
+            j = (h if abs(dev[h]) > abs(dev[i]) else i) if (h in dev and i in dev) else i
+            consider(sc, 'd', j, "behind")
+        return best[1]
+
+    def chk_prior(self):                                              # chkPrior()
+        if not getattr(self, "prev", None):
+            return
+        P, Q = self.cal["pts"], self.prev
+        bad = [not self.chkGU[i] for i in range(CHK_LAST + 1)]
+        settled = False
+        for rnd in range(PRIOR_MAX + 1):
+            good = [i for i in range(CHK_LAST + 1) if not bad[i]]
+            shift = [st_median([P[i][k] - Q[i][k] for i in good]) for k in range(3)]
+            worst, wi = 0.0, -1
+            for i in range(1, CHK_LAST + 1):
+                if bad[i]:
+                    continue
+                d = math.sqrt(sum((P[i][k] - Q[i][k] - shift[k]) ** 2 for k in range(3)))
+                if d > worst:
+                    worst, wi = d, i
+            if worst <= PRIOR_UT:
+                settled = True
+                break
+            if rnd == PRIOR_MAX:
+                break
+            bad[wi] = True
+            self.chkExU[wi] = "prior"
+        if not settled:
+            for i in range(CHK_LAST + 1):
+                if self.chkExU[i] == "prior":
+                    self.chkExU[i] = None
+
+    def chk_prior_guess(self, i):                                     # chkPriorGuess()
+        P, Q = self.cal["pts"], self.prev
+        a = next((j for j in range(i - 1, -1, -1) if self.chkGU[j] and not self.chkExU[j]), -1)
+        b = next((j for j in range(i + 1, CHK_LAST + 1) if self.chkGU[j] and not self.chkExU[j]), -1)
+        if a < 0 or b < 0:
+            return list(P[i])
+        da, db = dist3(Q[i], Q[a]), dist3(Q[b], Q[i])
+        f = da / (da + db) if da + db > 0 else 0.5
+        return [P[a][k] + f * (P[b][k] - P[a][k]) for k in range(3)]
+
+    def cal_check(self, emit=True):                                    # calCheck()
+        self.suspects = []
+        if not self.calValid:
+            if emit:
+                self.log("F,end,0")
+            return []
+        cal = self.cal
+        n = NUM_GEARS + 1
+        self.chkExU, self.chkExD, self.chkExP = [None] * n, [None] * n, [False] * n
+        for _ in range(CHECK_MAX_ROUNDS):
+            c = self.chk_round()
+            if c is None:
+                break
+            ps, i, why = c
+            if ps == 'u':
+                self.chkExU[i] = why
+            elif ps == 'd':
+                self.chkExD[i] = why
+            else:
+                self.chkExP[i] = True
+        self.chk_round()
+        self.chk_prior()
+        sm = self.chkSmed if self.chkHaveSmed else 0.0
+        gU, gD = self.chkGU, self.chkGD
+
+        def add(ps, i, why, g):
+            if len(self.suspects) < MAX_SUSPECTS:
+                self.suspects.append((ps, i + 1, why, g))
+
+        for i in range(1, CHK_LAST + 1):
+            if not self.chkExU[i]:
+                continue
+            t = self.chk_tangent(gU, i)
+            if self.chkExU[i] == "prior":
+                g = self.chk_prior_guess(i)
+            elif self.chkHaveSmed and gD[i]:
+                g = [cal["down"][i][k] + sm * t[k] for k in range(3)]
+            else:
+                g = self.interp_point(cal["pts"], gU, 0, CHK_LAST, i) or list(cal["pts"][i])
+            add('u', i, self.chkExU[i], g)
+        for i in range(1, DOWN_FIRST + 1):
+            if not self.chkExD[i]:
+                continue
+            t = self.chk_tangent(gU, i)
+            if self.chkHaveSmed and gU[i]:
+                g = [cal["pts"][i][k] - sm * t[k] for k in range(3)]
+            else:
+                g = self.interp_point(cal["down"], gD, 1, DOWN_FIRST, i)
+                if g is None:
+                    gu = self.interp_point(cal["pts"], gU, 0, CHK_LAST, i)
+                    g = [gu[k] - sm * t[k] for k in range(3)] if gu else list(cal["down"][i])
+            add('d', i, self.chkExD[i], g)
+        for i in range(1, DOWN_FIRST + 1):
+            if not self.chkExP[i]:
+                continue
+            t = self.chk_tangent(gU, i)
+            add('u', i, "pair", [cal["down"][i][k] + sm * t[k] for k in range(3)])
+            add('d', i, "pair", [cal["pts"][i][k] - sm * t[k] for k in range(3)])
+        if emit:
+            for ps, pt, why, g in self.suspects:
+                self.log("F,%s,%d,%s,%.1f,%.1f,%.1f" % (ps, pt, why, g[0], g[1], g[2]))
+            self.log("F,end,%d" % len(self.suspects))
+        return self.suspects
+
+    def line(self, text):                                              # handleLine(): text without '#'
+        f = text.split(",")
+        cmd = f[0][:1].upper()
+        ps = f[1][:1].lower() if len(f) > 1 and f[1] else ""
+        point = int(f[2]) if len(f) > 2 else 0
+        pass_ok = ps in ("u", "d")
+        if cmd == "R" and len(f) == 3 and pass_ok:
+            return self.cal_fix_start(ps == "d", point)
+        if cmd == "G" and len(f) == 3 and pass_ok:
+            for sp, spt, _, g in self.suspects:
+                if sp != ps or spt != point:
+                    continue
+                if self.calState != CAL_IDLE:
+                    return self.log("E,fail,busy calibrating")
+                up = [list(x) for x in self.cal["pts"]]
+                down = [list(x) for x in self.cal["down"]]
+                (up if ps == "u" else down)[point - 1] = list(g)
+                return self.cal_commit(up, down, self.cal["downMask"], False)
+            return self.log("E,fail,that point isn't in the latest check")
+        if cmd == "P" and len(f) == 6 and pass_ok:
+            if not self.calValid:
+                return self.log("E,fail,no calibration to edit")
+            i = point - 1
+            if i < 0 or i > NUM_GEARS - 1 or (ps == "d" and not 1 <= i <= DOWN_FIRST):
+                return self.log("E,fail,no such point")
+            if not self.staging:
+                self.stageUp = [list(x) for x in self.cal["pts"]]
+                self.stageDown = [list(x) for x in self.cal["down"]]
+                self.stageMask = self.cal["downMask"]
+                self.staging = True
+            try:
+                q = [float(x) for x in f[3:6]]
+            except ValueError:
+                return self.log("E,fail,bad number")
+            if ps == "u":
+                self.stageUp[i] = q
+            else:
+                self.stageDown[i] = q
+                self.stageMask |= 1 << i
+            return self.log("E,ok,staged")
+        if cmd == "W" and len(f) == 1:
+            if not self.staging:
+                return self.log("E,fail,nothing staged")
+            if self.calState != CAL_IDLE:
+                return self.log("E,fail,busy calibrating")
+            return self.cal_commit(self.stageUp, self.stageDown, self.stageMask, False)
+        if cmd == "X" and len(f) == 1:
+            self.staging = False
+            return self.log("E,ok,discarded")
+        self.log("E,fail,unknown command")
 
     def on_turn_boundary(self, result, avg, periodMs, now):
         self.selfRevs = (self.selfRevs + 1) & 0xFFFF
@@ -665,6 +1327,8 @@ class Firmware:
                 self.cal_abort("cancelled by user")
         elif ch == 'a':
             self.autoCapture = not self.autoCapture
+        elif ch == 's':
+            self.cal_skip_down()
 
     def short_press(self):                                             # handleShortPress()
         if self.calState in (CAL_WAITING, CAL_CONFIRM, CAL_POINT_CHECK):
@@ -677,9 +1341,17 @@ class Firmware:
             self.cal_abort("cancelled by user")
 
     def status_fields(self):                                           # printStatus() (subset)
+        ps = "-" if self.calState == CAL_IDLE else {PASS_UP: "u", PASS_DOWN: "d", PASS_FIX_UP: "ru",
+                                                    PASS_FIX_DOWN: "rd"}[self.calPass]
         return dict(gear=self.stableGear if self.calValid else 0, cad=self.cadenceRpm, cal=self.calState,
                     step=self.calStep, stab=self.stabPct,
-                    lturns=self.learnLast["turns"] if self.calState == CAL_LEARN else 0)
+                    lturns=self.learnLast["turns"] if self.calState == CAL_LEARN else 0, pass_=ps)
+
+
+def st_median(v):
+    v = sorted(v)
+    n = len(v)
+    return 0.0 if not n else (v[n // 2] if n % 2 else 0.5 * (v[n // 2 - 1] + v[n // 2]))
 
 
 def tick_millis(k):

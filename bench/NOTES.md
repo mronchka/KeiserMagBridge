@@ -190,6 +190,97 @@ Backups:
 
 **Results:** all three test suites pass. Compile: 19% storage, 58% RAM, no warnings.
 
+## First bike calibration on v3.1 and the ride test (2026-10-16)
+
+- **Calibration** (from the phone app, logged over USB):
+  - Crank learned first time (6 regular turns at 68 rpm).
+  - 25 points in about 3½ minutes, with 4 "hold still" notices that settled by themselves. Path 134.4 µT.
+  - Two points went backwards. Gear 20 was saved before the lever moved (the rider says it captured early). Gear 22 overshot to about gear 23's position, so 23 landed behind it.
+  - The top end was hard work at 60–80 rpm, and point 25 is the brake, so it can't really be pedalled.
+- **Ride test:**
+  - Gear is mostly right. Gears 11–14 read about one low near the gear edges.
+  - The "Not calibrated" flash is on the phone side: every USB status line had `V` and a valid gear.
+  - Watts were about 40 % below the console (112 vs 180 at gear 14, 66 rpm).
+- **Watts:** the sketch uses KBikeBLE's table, which copies Keiser's console v4.06 (Keiser's dynamometer-measured "actual" power). Keiser's v1.15 → v4.06 chart shows the old v1.15 console reading gear 14 as 264 W at 90 rpm: × 0.65 at 66 rpm ≈ 173 W, matching this console's 180 W. So this console is most likely v1.15. **Decision: keep v4.06 (measured power) for Zwift.**
+- **Per-turn scatter at a held lever** (97 turns, 2026-10-15): one turn is off by 0.35 µT typically, 1.16 µT at the 90th percentile; 2 turns 0.25 / 1.08; 3 turns 0.19 / 0.91. Consecutive turns are correlated (lag-1 0.58).
+
+## v3.2 (2026-10-16, built and tested)
+
+Folder `KeiserMagBridge_v3_2/`. Backup of v3.1 before it: `bench/backups/KeiserMagBridge_v3_1.final.2026-10-16.ino` (v3.1 is also in git). Protocol: `bench/PROTOCOL.md`, "v3.2 additions".
+
+- **Faster capture, same precision:** 2 agreeing turns, then the check turn. If the check turn agrees and the lever wasn't still moving, the point is the average of all 3. That's one turn less per point than v3.1.
+  - The "still moving" check uses creep from the first agreeing turn to the check turn, which keeps v3.1's 3-turn span. The first try measured creep over 2 turns and let a slowly creeping lever through (11 points instead of 1).
+- **Forward only:** a point needs ≥ 1.0 µT from the previous point, with ≥ 0.5 µT of that in the pass's direction (the direction of the previous step, or the up path for the down pass). In the 2026-10-16 calibration, good steps bend by at most cos 0.58 from the previous step. Agreeing turns ≥ 0.5 µT behind send `N,behind`, so the page can suggest Undo.
+- **No pedalling into the brake:** the top point is point 24 + (gear-24 width ÷ gear-23 width) × (24 − 23).
+- **Down pass:** after point 24, the rider comes down through "first shows gear 22" … "first shows gear 1" (points 23..2). Point 24 gets no down reading, because the rider starts the pass right on that edge.
+  - The path for gear and watts runs through the middle of each up/down pair.
+  - Each measured edge switches gear at its own up and down readings (a band of at least 10 % of the gear width). Unmeasured edges keep the old 20 % band. `s` skips the rest.
+- **Check after every save and on `k`** (`F` lines), deliberately conservative:
+  - `behind`: a point not 0.5 µT past the one before. The later point is blamed, unless the step into the earlier one was more than 1.6 × the usual nearby step (an overshoot).
+  - `updown`: an up/down offset more than max(1.5 µT, 0.6 × the smaller neighbouring step) away from the median offset.
+  - Guess: the other pass plus the median offset, else interpolation in proportion to Keiser's gear table. Nothing is changed without the rider (`#G`).
+- **`#` line commands:**
+  - `#R,u|d,N`: redo one point by pedalling. It only captures after the reading has been in the far half of the neighbouring gear and come back.
+  - `#G,u|d,N`: use the guess.
+  - `#P,u|d,N,x,y,z` + `#W` / `#X`: load points over USB.
+- **Prompts:** any steady pace, no "60–80 rpm".
+- **Calibration file v5:** v4 + `downMask` + down points. v4 files load, without down points.
+- Compile: 22 % storage, 59 % RAM, no warnings.
+
+**Tests** (`bench/tests/test_fw_v32.py`, a closed-loop simulated rider on the real crank waveform and a curved lever path; plus the older suites, all passing):
+- **5 riders at 45–100 rpm:** 24 up + 22 down points each, in order, all within 0.6 µT of where the rider stopped, and the check flags nothing.
+- **Turns per point:** median 4.0 from one capture to the next, including a 0.6 s reaction and the turn the lever moved in. That's about 1 turn less than v3.1.
+- **Gear display vs the console:** realistic shifting, 3 s holds, console stickiness 0.4–0.8 µT.
+
+  | Holds | v3.2 | Up points only (v3.1) |
+  |---|---|---|
+  | Inside a gear | 100 % | 96 % |
+  | Within 1.2 µT of an edge | 90 % | 86 % |
+
+- **Slow rider:** no point saved before the lever moved. **Overshoot at point 10:** `N,behind`, then undo and redo, with all points in order.
+- **The check on the real 2026-10-16 calibration:** flags exactly gear 20 (`behind`) and gear 22 (`behind`, overshoot). Its guesses are (25.1, 34.2, −103.5) and (30.2, 35.8, −103.5), against the hand estimates (25.4, 34.3, −103.5) and (30.7, 35.9, −103.5). The hand-corrected version passes clean.
+- **Edit commands:** `#G`, `#P`/`#W` (staging, refusing a broken path, top recomputed), `#R` (armed only after going below, saved where the rider stopped), `s`, undo at the first down point, v4 load.
+- **Gear-change recording (2026-10-15):** v3.2 saved 24 up points by 518 s; v3.1 saved 22 by 528 s and missed two held positions that v3.2 caught. It showed more "hold still" notices (15 vs 5), because that rider shifted without pausing.
+
+**v3.2 review fixes (independent review, 2026-10-16):**
+- **Watchdog:** long phone output (`k`, `p`) could block for up to about 8 s at about 65 ms per piece. It now feeds the watchdog per piece, the readable check lines go to USB only, and the `F` lines go out from `loop()`.
+- **Forward rule:** it's re-checked on the 3-turn average.
+- **Forward direction:** it uses a longer chord, so one reversed step can't block the next point or the down pass.
+- **Flagged points:** they're kept out of the path; a flagged up point uses its guess there, while the stored point stays unchanged.
+- **`#` line input:** it resets on connect/disconnect, after 1.5 s, and on overflow.
+- **Validation:** the up pass is checked right after point 24.
+- **Top point:** it's worked out at 0.3 × the 23→24 step. It was about 1 step, but the pedalled top on 2026-10-16 was 1.9 µT past point 24 for a 6.4 µT step. Edits that don't touch points 23 and 24 keep the stored top.
+- **Staged edits:** they're cleared by a new calibration or a redo, and kept when `#W` fails; bad numbers are refused.
+
+**The board goes back by itself:** if agreeing turns sit behind the previous point, that point overshot. The board goes back to it (`N,behind` + `U`, flag `B`), asks the rider to drop into the gear before it and come back, and takes it again once the reading has gone back at least halfway. Simulated overshoots on the up and down passes were each redone within 0.2 µT of the console edge, and no clean calibration triggered it.
+
+**Post-calibration study (agent, 2026-10-16; scratch `calcheck_study/`):**
+- **Smoothing doesn't work:** gear spacing can't be smoothed. Leave-one-out interpolation along the hand-corrected real calibration is off by 1.0 µT at the median and 6.3 µT at worst. The path shape can be smoothed (0.26 µT off the neighbours' curve), so whole-chain smoothing or isotonic fits can't tell faults from real irregularity. The second pass is what pins down the spacing.
+- **Switch points: adopted.** Edge = saved point ∓ 0.25 µT along the path (riders stop just past the change), switching exactly there. Coming down, the console's stickiness comes from the pair, else the median pair, else 0.6 µT. There's no extra margin, because any margin made it worse.
+
+  | Simulated match with the console | Before | After |
+  |---|---|---|
+  | All turns | 93.8 % | 95.9 % |
+  | Held turns | 94.2 % | 97.1 % |
+  | Up pass only | 75.0 % (the old 20 % band) | 94.6 % |
+
+  In `test_fw_v32` B, the near-edge holds went from 86–90 % to 94–95 %, and the mid-gear holds are 100 %.
+- **Detection: built (2026-10-16, at the rider's request, before any real up+down data).** It's the study's greedy check:
+  - It scores 4 tests: shape against the neighbours' quadratic, a down point off the up path, the up/down pair offset along and across the path, and order.
+  - It sets aside the worst point, rescores, and repeats up to 8 times.
+  - It adds the previous calibration as a prior: kept in `/keiser_cal_prev.bin` and saved whenever a new calibration replaces one. Points more than 2 µT off after the median shift are flagged; more than 6 means the board moved, so the comparison is ignored.
+  - Reasons: `behind`, `offpath`, `updown`, `pair` (two F lines), `prior`.
+  - **Checks:**
+    - The fw_model port matches the study's `new_check3` on all 2,850 simulated calibrations (10 fault types, with and without the down pass): the same flags, reasons and guesses (`scratchpad/calcheck_study/parity.py`). The C++ was written to mirror the model line by line; it isn't run on the host.
+    - Real 2026-10-16 calibration: it still flags exactly 20 and 22, with the same guesses. The study's "0.05 µT" figure for 20 was circular (the hand estimate was itself a midpoint).
+    - The detection limit is about 2 µT out of place. A down point 2 µT early scores 1.0, right at the threshold; 3 µT is flagged.
+    - `test_fw_v32` H: a 3 µT early down point, a 2.5 µT sideways up point, and an up-only point 2.5 µT early. The last is caught only with the prior, and its guess lands 0.13 µT off. A clean calibration against a shifted prior flags nothing, and a moved board isn't compared.
+  - Cost: +4 KB flash, +2.4 KB RAM. Timing on the board isn't measured yet (the study estimated about 0.6 ms per round, 6 ms at worst).
+  - The thresholds are still the study's, tuned on simulated noise. Check them against the first real up+down calibration.
+- **Where:** keep everything on the board (no phone needed; the calibration lives there; a few ms of work). The phone only shows the results and drives `#R`/`#G`.
+
+**Known, not changed:** after a very fast, very large lever move (60+ µT in about 2 s, ~10 gears), the turn detector can take up to ~8 s to resync. The lever axis is 81 % along the crank axis, so the move looks like one long dip. At brisk but normal shifting speeds, the right gear shows within 1.25 s.
+
 ## Next session
 
 1. Mount the board in its 3D-printed case at a new spot, on the flywheel side of the resistance unit and away from the drive pulley's magnet path. Use the paperclip trick to find the magnet.

@@ -211,7 +211,8 @@ for _ in range(50):
     nv = math.sqrt(fw.dot3(v, v))
     Lv = [x / nv for x in v]
 sh = step_window("shift")
-caps = f.captures
+caps = [c for c in f.captures if isinstance(c[1], int)]          # the up pass
+downs = [c for c in f.captures if not isinstance(c[1], int)]
 pos = [fw.dot3(p, Lv) for _, _, p in caps]
 if pos and pos[-1] < pos[0]:
     pos = [-p for p in pos]
@@ -223,7 +224,9 @@ in_shift = [c for c in caps if sh[0] <= c[0] <= sh[1]]
 # recording has the lever moved back down, which a real calibration wouldn't.
 pos_shift = [p for p, c in zip(pos, caps) if c[0] <= sh[1]]
 mono = all(b > a - 0.5 for a, b in zip(pos_shift, pos_shift[1:]))
-print(f"   captured during the gear-change step: {len(in_shift)} (about 20 lever moves were made)")
+print(f"   captured during the gear-change step: {len(in_shift)} (about 20 lever moves were made); "
+      f"down-pass points after it: {len(downs)}")
+print("   W lines (point, drift, creep): " + "  ".join(l[2:] for _, l in f.out if l.startswith("W,")))
 check(15 <= len(in_shift) <= 25, "auto-capture takes roughly one point per lever move during the gear changes")
 check(mono, "points captured up to the end of the gear-change step are in lever order (0.5 uT slack)")
 

@@ -3,9 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark" id="metaScheme">
+<meta name="theme-color" content="#000000" id="metaTheme">
+<script>
+  // Dark unless the rider picked light on this phone (header button).
+  (function () {
+    var t = 'dark';
+    try { if (localStorage.getItem('m3theme') === 'light') t = 'light'; } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('metaScheme').content = t;
+    document.getElementById('metaTheme').content = t === 'light' ? '#f2f2f7' : '#000000';
+  })();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
 <style>
@@ -39,8 +48,8 @@
   --radius: 14px;
   --gap: 14px;
 }
-@media (prefers-color-scheme: light) {
-  :root {
+/* Dark is the default whatever the phone is set to; the header button switches to light. */
+:root[data-theme="light"] {
     --bg: #f2f2f7;
     --surface: #ffffff;
     --surface2: #e5e5ea;
@@ -61,7 +70,6 @@
     --bad: #b0000d;
     --bad-ink: #ffffff;
     --bad-bg: #fbdcdc;
-  }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -91,7 +99,7 @@ header {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: env(safe-area-inset-top) var(--pad-r) 0 var(--pad-l);
   min-height: calc(60px + env(safe-area-inset-top));
   background: var(--surface);
@@ -108,9 +116,15 @@ header h1 { font-size: 1.1rem; margin: 0; font-weight: 700; letter-spacing: .01e
 .dot.busy { background: var(--warn); }
 .dot.off { background: var(--bad); }
 .hdr-btn {
-  flex: none; min-height: 48px; padding: 0 14px; border-radius: 12px;
+  flex: none; min-height: 48px; padding: 0 12px; border-radius: 12px;
   border: 1px solid transparent; background: var(--surface2); font-size: .9rem; font-weight: 600;
 }
+/* light/dark switch: shows the mode it switches to */
+.theme-btn { width: 48px; padding: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+.theme-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.theme-btn .i-sun circle { fill: currentColor; stroke: none; }
+.theme-btn .i-moon path { fill: currentColor; stroke: none; }
+:root[data-theme="light"] .theme-btn .i-sun, :root:not([data-theme="light"]) .theme-btn .i-moon { display: none; }
 
 /* ---------- main ---------- */
 main {
@@ -207,7 +221,7 @@ main {
 .gear-note.bad { color: var(--bad); background: var(--bad-bg); }
 
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.tile { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 10px 8px 12px; text-align: center; min-width: 0; }
+.tile { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 12px 10px 14px; text-align: center; min-width: 0; }
 .tile .v { font-size: clamp(1.9rem, 9.5vw, 3.2rem); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.05; overflow: hidden; text-overflow: clip; white-space: nowrap; }
 .tile .u { font-size: .85rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
 .stale .v, .stale.gear { opacity: .35; }
@@ -248,22 +262,19 @@ main {
    around it, one instruction underneath. Grey = waiting for the lever to move,
    blue = holding (counting turns / held steady), green = captured. */
 #calActive { display: flex; flex-direction: column; align-items: stretch; gap: var(--gap); }
-/* cadence slider: a thin 40-110 rpm line whose 60-80 stretch is green; the dot carries the rpm.
-   Only out-of-range or stopped gets words underneath. */
-.cadg { width: 100%; max-width: 340px; align-self: center; padding: 18px 22px 0; }
-.cadg-track { position: relative; height: 4px; border-radius: 2px; background: var(--surface2); }
-.cadg-win { position: absolute; top: 0; height: 100%; left: 28.57%; width: 28.57%; border-radius: 2px; background: var(--ok); }
+/* cadence dot: one dot carrying the rpm, green at any workable pace, red when too slow
+   or too fast for turn detection. Only out-of-range or stopped gets words underneath. */
+.cadg { align-self: center; display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
 .cadg-dot {
-  position: absolute; top: 50%; left: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--ok); color: var(--ok-ink); font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums;
-  box-shadow: 0 0 0 3px var(--bg), 0 2px 8px rgba(0, 0, 0, .35);
-  transition: left .5s cubic-bezier(.22, 1, .36, 1), background-color .25s, color .25s;
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+  background: var(--ok); color: var(--ok-ink); font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  transition: background-color .25s, color .25s;
 }
+.cadg-dot small { font-size: .7rem; font-weight: 600; margin-top: 1px; opacity: .85; }
 .cadg-dot.bad { background: var(--bad); color: var(--bad-ink); }
 .cadg-dot.idle { background: var(--surface2); color: var(--muted); }
-.cadg-ticks { position: relative; height: 14px; margin-top: 16px; font-size: .72rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-.cadg-ticks span { position: absolute; top: 0; transform: translateX(-50%); }
 .cadg-cap { text-align: center; font-size: .9rem; font-weight: 600; margin-top: 2px; min-height: 1.3em; }
 .cadg-cap.bad { color: var(--bad); }
 .cadg-cap.warn { color: var(--warn); }
@@ -342,6 +353,18 @@ main {
 }
 .hold-banner .hb-t { font-size: 1.25rem; font-weight: 800; line-height: 1.3; }
 .hold-banner .hb-s { font-size: .95rem; font-weight: 600; margin-top: 4px; }
+/* [v3.2] down pass: a dot measured on the way down turns a settled blue (normal size);
+   the point being measured (down pass or redo) gets a ring as well as the usual highlight. */
+.stage .pt.down { background: var(--accent); }
+.stage .pt.ring { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+/* [v3.2] N,behind: the agreeing turns sit behind the previous point */
+.behind-hint {
+  border: 2px solid var(--warn); background: var(--warn-bg); border-radius: 14px;
+  padding: 10px 14px; font-size: 1rem; font-weight: 600; line-height: 1.4; text-align: center;
+}
+.behind-hint b { color: var(--warn); }
+.cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 56px; font-size: 1rem; }
+#calActive.redoing .cal-btns .btn.danger { grid-column: 1 / -1; }
 @keyframes crank-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .disc-in .crank { animation: none; }
@@ -367,8 +390,79 @@ main {
 .result .stat .u { font-size: .85rem; color: var(--muted); font-weight: 700; }
 .result .marginal { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); font-weight: 600; }
 .x-btn { min-width: 48px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 1.2rem; font-weight: 700; }
-ol.steps { margin: 8px 0 0; padding-left: 1.3em; }
-ol.steps li { margin: 4px 0; }
+.result .downinfo { margin-top: 10px; font-size: .95rem; }
+/* [v3.2] review card: points the bridge's check flagged after saving (F lines) */
+.review { border-color: var(--warn); }
+.review h2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rv-item { border-top: 1px solid var(--line); padding: 14px 0 4px; }
+.rv-item:first-of-type { margin-top: 8px; }
+.rv-t { font-size: 1.05rem; line-height: 1.4; }
+.rv-t b { color: var(--warn); }
+.rv-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 28px; margin-top: 10px; font-size: 1rem; }
+.rv-links .linkbtn { min-height: 44px; }
+.rv-msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: .95rem; }
+.rv-msg.bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); }
+.rv-msg.busy { background: var(--accent-bg); color: var(--text); border: 1px solid var(--accent); }
+/* [v3.2] confirm ride: compare the bridge's gear with the console at a few gears */
+.rck { display: flex; flex-direction: column; gap: 12px; }
+.rck h2 { margin: 0; }
+.rck p { margin: 0; }
+.rck-step { font-size: .85rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.rck-task { font-size: 1.25rem; font-weight: 700; line-height: 1.35; }
+.rck .gear-ring { --ring: min(46vw, 26vh, 210px); border-width: 6px; align-self: center; }
+.rck-q { font-size: 1.3rem; font-weight: 700; line-height: 1.35; text-align: center; }
+.rck-note { text-align: center; color: var(--warn); font-weight: 600; font-size: .95rem; min-height: 1.4em; }
+.rck .cal-btns .btn { min-height: 64px; font-size: 1.2rem; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.stepper .btn { width: 64px; min-height: 56px; padding: 0; font-size: 1.7rem; }
+.stepper output { font-size: 2.6rem; font-weight: 800; min-width: 2.2ch; text-align: center; font-variant-numeric: tabular-nums; }
+.rck-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.rck-row .k { font-weight: 700; }
+.rck-row .v { font-variant-numeric: tabular-nums; text-align: right; }
+.rck-row.miss .v { color: var(--warn); font-weight: 700; }
+.rck-row .btn { min-height: 48px; padding: 4px 14px; font-size: .95rem; flex: none; }
+/* calibration walkthrough (idle screen) */
+#calIdle { display: flex; flex-direction: column; gap: 28px; }
+.onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }
+.onb-art { position: relative; width: 100%; height: min(230px, 30vh); display: grid; place-items: center; }
+.onb-art .art { grid-area: 1 / 1; display: grid; place-items: center; opacity: 0; transform: translateX(24px); transition: opacity .3s, transform .35s cubic-bezier(.22, 1, .36, 1); pointer-events: none; }
+.onb-art .art.before { transform: translateX(-24px); }
+.onb-art .art.on { opacity: 1; transform: none; }   /* after .before so the current page sits centred */
+.art-disc {
+  --d: min(190px, 26vh);
+  width: var(--d); height: var(--d); border-radius: 50%; background: var(--surface); border: 8px solid var(--surface2);
+  padding: 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.art-disc.blue { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.art-disc.small { --d: min(128px, 17vh); border-width: 6px; }
+.art-lbl { font-size: .75rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
+.art-disc.blue .art-lbl { color: var(--accent-ink); opacity: .85; }
+.art-big { font-size: calc(var(--d) * .4); font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.art-crank { width: 46%; height: 46%; color: var(--accent); animation: crank-spin 1.4s linear infinite; }
+.art-row { display: flex; align-items: center; gap: 10px; }
+.art-mini {
+  width: min(78px, 20vw); height: min(78px, 20vw); border-radius: 50%; background: var(--surface); border: 3px solid var(--line);
+  display: grid; place-items: center; font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.art-mini.blue { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.art-mini.green { background: var(--ok); border-color: var(--ok); }
+.art-mini svg { width: 46%; height: 46%; }
+.art-mini svg path { stroke: var(--ok-ink); }
+.art-arrow { font-size: 1.8rem; color: var(--muted); }
+.art-ring { position: relative; width: min(220px, 30vh); height: min(220px, 30vh); display: grid; place-items: center; }
+.art-ring i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--line); }
+.art-ring i.done { background: var(--ok); }
+.onb-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; margin: 18px 0 0; line-height: 1.15; }
+.onb-text { font-size: 1.05rem; color: var(--muted); margin: 10px 0 0; line-height: 1.4; max-width: 30em; min-height: 4.2em; }
+.onb-dots { display: flex; gap: 8px; margin: 18px 0 0; }
+.onb-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: background-color .25s, width .25s; }
+.onb-dots i.on { background: var(--text); width: 22px; border-radius: 4px; }
+.onb-btns { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 22px; }
+.linkbtn.onb-back { min-height: 44px; color: var(--muted); text-decoration: none; font-weight: 600; }
+.linkbtn.onb-back[hidden] { display: block !important; visibility: hidden; }
+.onb-more { display: flex; flex-direction: column; gap: 12px; }
+@media (prefers-reduced-motion: reduce) { .onb-art .art, .onb-dots i { transition: none; } .art-crank { animation: none; } }
 
 /* ---------- console ---------- */
 #view-console { gap: 10px; }
@@ -385,7 +479,7 @@ ol.steps li { margin: 4px 0; }
 .log .sent { color: var(--accent); }
 .log .sys { color: var(--warn); }
 .qbtns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.qbtns .btn { padding: 6px 2px; font-size: .88rem; line-height: 1.3; flex-direction: column; gap: 0; }
+.qbtns .btn { padding: 8px; font-size: .88rem; line-height: 1.3; flex-direction: column; gap: 0; }
 .qbtns .btn .k { font-family: var(--mono); font-size: .8rem; color: var(--muted); font-weight: 600; }
 .sendrow { display: flex; gap: 8px; }
 .sendrow input {
@@ -478,7 +572,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   #view-ride .chips { grid-column: 1 / -1; }
   #view-ride .tiles { grid-template-columns: 1fr; align-content: center; }
   #view-ride .tiles { gap: 6px; }
-  #view-ride .tile { padding: 4px 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  #view-ride .tile { padding: 8px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   #view-ride .tile .v { font-size: 1.9rem; }
   #view-ride .gear-wrap { padding: 4px 8px; gap: 8px; }
   .gear-ring { --ring: min(58vh, 34vw); border-width: 6px; }
@@ -493,6 +587,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 <header>
   <h1>M3 Bridge</h1>
   <span class="conn-pill" aria-live="polite"><span class="dot" id="connDot"></span><span id="connText">Not connected</span></span>
+  <button class="hdr-btn theme-btn" id="themeBtn" type="button" aria-label="Switch to light mode">
+    <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+    <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+  </button>
   <button class="hdr-btn" id="hdrBtn" type="button" hidden>Disconnect</button>
 </header>
 
@@ -532,35 +630,97 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   <!-- CALIBRATE -->
   <section class="view" id="view-cal" aria-label="Calibrate">
     <div class="card result" id="resultCard" hidden></div>
+    <!-- [v3.2] gears the bridge's check flagged after saving (F lines); filled by renderReview() -->
+    <div class="card review" id="reviewCard" role="region" aria-label="Check these gears" hidden></div>
+
+    <!-- [v3.2] confirm ride: app-only walkthrough comparing the bridge's gear with the console -->
+    <div class="card rck" id="rideCheck" role="region" aria-label="Gear check" hidden>
+      <div class="rck" id="rckOffer">
+        <h2>Check a few gears</h2>
+        <p>Ride for about a minute and compare the bridge's gear with the Keiser console at four gears.</p>
+        <p class="small muted">Watts will read a little below the console on purpose: the bridge uses Keiser's measured power scale. So only the gear is checked.</p>
+        <button class="btn primary big" id="rckStart" type="button">Start the gear check</button>
+        <button class="btn wide" id="rckSkip" type="button">Skip</button>
+      </div>
+      <div class="rck" id="rckRun" hidden>
+        <div class="rck-step" id="rckStep">Check 1 of 4</div>
+        <div class="rck-task" id="rckTask"></div>
+        <div class="gear-ring" role="img" id="rckRing" aria-label="Bridge gear">
+          <div class="gear-label">BRIDGE</div>
+          <div class="gear dim" id="rckGear">--</div>
+        </div>
+        <div class="rck-note" id="rckNote" role="status"></div>
+        <div id="rckAsk" class="rck">
+          <div class="rck-q" id="rckQ"></div>
+          <div class="cal-btns">
+            <button class="btn primary" id="rckYes" type="button">Yes</button>
+            <button class="btn" id="rckNo" type="button">No</button>
+          </div>
+        </div>
+        <div id="rckPick" class="rck" hidden>
+          <div class="rck-q">What does the console show?</div>
+          <div class="stepper">
+            <button class="btn" id="rckMinus" type="button" aria-label="One gear lower">−</button>
+            <output id="rckVal" aria-live="polite">1</output>
+            <button class="btn" id="rckPlus" type="button" aria-label="One gear higher">+</button>
+          </div>
+          <button class="btn primary wide" id="rckSave" type="button">Save and go on</button>
+        </div>
+        <button class="btn wide" id="rckQuit" type="button">Skip the rest</button>
+      </div>
+      <div class="rck" id="rckDone" hidden>
+        <h2 id="rckDoneTitle">Gear check</h2>
+        <div id="rckSum"></div>
+        <p class="small muted" id="rckSaved"></p>
+        <button class="btn primary wide" id="rckClose" type="button">Done</button>
+      </div>
+    </div>
 
     <div id="calIdle">
-      <div class="card">
-        <h2>Calibrate gears</h2>
-        <div id="calIntroV2">
-          <p class="muted">You will record 25 lever positions. Hold the lever still at each one.</p>
-          <ol class="steps muted small">
-            <li>Point 1: gear lever all the way down.</li>
-            <li>Points 2 to 24: move the lever up until the console first shows the next gear, then stop pedalling.</li>
-            <li>Point 25: gear lever all the way up.</li>
-          </ol>
-          <p class="muted small">With auto-capture on, each point is taken once the reading has held steady for about 2 seconds. Otherwise tap CAPTURE.</p>
+      <!-- One step at a time, Apple-style: a picture, a title, one sentence. Steps come from
+           CAL_INTRO (crank mode on v3 firmware, hold-still on v2); the last page starts. -->
+      <div class="onb" id="onb" aria-roledescription="walkthrough">
+        <div class="onb-art" aria-hidden="true">
+          <div class="art" data-art="pedal">
+            <div class="art-disc">
+              <svg class="art-crank" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="14" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="4.4 3"></circle>
+                <path d="M24 24 V7" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+                <rect x="15" y="2" width="18" height="6" rx="3" fill="currentColor"></rect>
+                <circle cx="24" cy="24" r="4" fill="currentColor"></circle>
+              </svg>
+            </div>
+          </div>
+          <div class="art" data-art="check">
+            <div class="art-disc"><div class="art-lbl">RPM</div><div class="art-big">72</div></div>
+          </div>
+          <div class="art" data-art="shift">
+            <div class="art-row">
+              <div class="art-mini">7</div><span class="art-arrow">›</span>
+              <div class="art-mini blue">7</div><span class="art-arrow">›</span>
+              <div class="art-mini green"><svg viewBox="0 0 84 84"><path d="M20 44 L36 59 L65 27" fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+            </div>
+          </div>
+          <div class="art" data-art="still">
+            <div class="art-disc blue"><div class="art-lbl">HOLD</div><div class="art-big">7</div></div>
+          </div>
+          <div class="art" data-art="ring">
+            <div class="art-ring" id="artRing"><div class="art-disc small"><div class="art-lbl">BOTTOM</div><div class="art-big">1</div></div></div>
+          </div>
         </div>
-        <div id="calIntroV3" hidden>
-          <p class="muted">Calibration is done <b>while pedalling</b>. Keep pedalling the whole time; the console shows the gear while you pedal.</p>
-          <ol class="steps muted small">
-            <li>First the bridge learns your crank: pedal steadily at 60–80 rpm for 5 to 15 seconds. It beeps twice when done. Check the rpm matches the console.</li>
-            <li>Point 1: gear lever all the way down.</li>
-            <li>Points 2 to 24: move the lever up until the console first shows the next gear, then hold it there.</li>
-            <li>Point 25: gear lever all the way up.</li>
-          </ol>
-          <p class="muted small">With auto-capture on, each point is taken once 3 pedal turns in a row agree. Otherwise tap CAPTURE.</p>
+        <h2 class="onb-title" id="onbTitle" aria-live="polite"></h2>
+        <p class="onb-text" id="onbText"></p>
+        <div class="onb-dots" id="onbDots" aria-hidden="true"></div>
+        <div class="onb-btns">
+          <button class="btn primary big" id="onbNext" type="button">Continue</button>
+          <button class="btn primary big" id="calStart" type="button" hidden>Start calibration</button>
+          <button class="linkbtn onb-back" id="onbBack" type="button">Back</button>
         </div>
-        <div class="btn-stack">
-          <button class="btn primary big" id="calStart" type="button">Start calibration</button>
-          <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
-        </div>
-        <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:8px 0 0"></p>
-        <p class="small muted" style="margin:12px 0 0">Every finished calibration is saved on this phone automatically. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>
+      </div>
+      <div class="onb-more">
+        <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
+        <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:0"></p>
+        <p class="small muted" style="margin:0;text-align:center">Every finished calibration is saved on this phone. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>
       </div>
     </div>
 
@@ -570,8 +730,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="hb-s">It will capture by itself once the lever stops.</div>
       </div>
       <div class="cadg" id="cadG" role="img" aria-label="Cadence" hidden>
-        <div class="cadg-track"><i class="cadg-win"></i><b class="cadg-dot idle" id="cadDot">--</b></div>
-        <div class="cadg-ticks" aria-hidden="true"><span style="left:28.57%">60</span><span style="left:57.14%">80</span></div>
+        <b class="cadg-dot idle"><span id="cadDot">--</span><small>rpm</small></b>
         <div class="cadg-cap" id="cadCap"></div>
       </div>
       <div class="small" id="calWait" role="status" hidden style="color:var(--warn);font-weight:600;text-align:center">Waiting for the bridge…</div>
@@ -607,11 +766,16 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           </div>
         </div>
       </div>
+      <div class="behind-hint" id="behindHint" role="alert" hidden></div>
       <div class="cal-say" id="calSay" aria-live="polite">
         <div class="h" id="calHead"></div>
         <div class="s" id="calSub"></div>
       </div>
       <div id="calCount">0 of 25</div>
+      <div class="rv-links" id="fixLinks" hidden>
+        <button class="linkbtn" id="fixGuess" type="button">Use best guess instead</button>
+        <button class="linkbtn" id="fixSkip" type="button">Skip this gear</button>
+      </div>
       <div class="btn-stack" id="confirmBtns" hidden style="margin-top:0">
         <button class="btn primary big" id="btnConfirm" type="button">Yes, it matches</button>
         <button class="btn secondary wide" id="btnRelearn" type="button">Learn again</button>
@@ -620,6 +784,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <button class="btn primary capture" id="btnCapture" type="button">CAPTURE</button>
         <button class="btn" id="btnUndo" type="button">UNDO</button>
         <button class="btn danger" id="btnCancel" type="button">CANCEL</button>
+        <button class="btn skipdown" id="btnSkipDown" type="button" hidden aria-label="Finish without the down pass: save the gears measured so far">Finish without the down pass</button>
       </div>
     </div>
 
@@ -691,7 +856,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     <div class="small muted" id="turnInfo" hidden></div>
     <div class="log" id="log" role="log" aria-live="off"></div>
     <button class="switch-row" id="rawToggle" type="button" role="switch" aria-checked="false">
-      <span><span class="t">Show machine lines</span><br><span class="s">S, C, K, A, U, Q, G, M, Y lines, plus the first 10 D and T lines</span></span>
+      <span><span class="t">Show machine lines</span><br><span class="s">S, C, K, A, U, Q, F, E, G, M, Y lines, plus the first 10 D and T lines</span></span>
       <span class="switch" aria-hidden="true"></span>
     </button>
     <div class="qbtns">
@@ -702,7 +867,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       <button class="btn" type="button" id="clearLog">Clear<span class="k">log</span></button>
     </div>
     <form class="sendrow" id="sendForm" autocomplete="off">
-      <input id="sendInput" maxlength="1" placeholder="1 char" aria-label="Command character" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+      <input id="sendInput" maxlength="40" placeholder="1 char or #cmd" aria-label="Command: one character, or a # command"autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
       <button class="btn primary" type="submit">Send</button>
     </form>
     <p class="small muted" style="margin:0">Debug (d) is chatty. Send it again to turn it off.</p>
@@ -757,6 +922,12 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var DEMO_SUSPECT = params.get('suspect') === '1';     // demo v3: every 4th point gets 1-2 W lines (hold still), then settles
   var DEMO_STUCK = params.get('stuck') === '1';         // demo v3: point 6 never settles: W lines, then P and cal=5
   var DEMO_LEARNFAIL = params.get('learnfail') === '1';   // demo v3: the first crank learning fails
+  var DEMO_V31 = params.get('v31') === '1';             // demo: v3.1 instead of v3.2 (with &v3=1, or on its own)
+  if (DEMO_V31) DEMO_V3 = true;
+  var DEMO_V32 = DEMO_V3 && !DEMO_V31;                  // demo: &v3=1 simulates v3.2 by default
+  var DEMO_REVIEW = params.get('review') === '1';       // demo v3.2: the check flags up point 20 and down point 23 after saving
+  var DEMO_BEHIND = params.get('behind') === '1';       // demo v3.2: point 7 overshot: N,behind + U + B at point 8
+  var DEMO_STUBBORN = params.get('stubborn') === '1';   // demo v3.2 (with &review=1): gear 20 stays flagged after redos
 
   var DIAG_STEPS = [
     { label: 'Hands off — lever down', text: "Push the lever all the way down. Don't touch the bike.", secs: 8 },
@@ -776,6 +947,22 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var T_RAW_SHOWN = 10;
   var LEARN_DONE_MS = 1400; // after crank learning: keep the finished (green) bar on screen this long
   var CAPTURE_FLASH_MS = 1000; // [v3] after each captured point: show the ring green at 3/3 this long
+  // [v3.2] down pass: down points 23 .. 2 (step 22 .. 1); point 24 has no down reading
+  var DOWN_FIRST_STEP = 22;
+  var DOWN_POINTS = 22;
+  var UNCAL_HOLD_MS = 2000;    // once calibrated was seen, "Not calibrated" needs 2 s of uncalibrated S lines
+  var EDIT_TIMEOUT_MS = 8000;  // [v3.2] no E line after a # command: give up waiting
+  var STALL_MS = 10000;        // [v3.2] pedalling but no turn counted at a point this long: the "still on gear N?" hint
+  var FIX_MAX_TRIES = 2;       // [v3.2] guided fixes: redos per flagged point before offering the guess or skip
+  var S_FLAGS_RE = /^[A-Z]*$/;
+  var PASS_RE = /^(-|u|d|ru|rd)$/;
+  // [v3.2] confirm ride: four checks, app only (nothing is sent to the bridge)
+  var RIDE_CHECKS = [
+    { gear: 5, pace: 'easy', label: 'Low gear', task: 'Shift to about gear 5 and pedal at an easy pace.' },
+    { gear: 12, pace: 'easy', label: 'Middle gear, easy', task: 'Shift to about gear 12 and pedal at an easy pace.' },
+    { gear: 12, pace: 'fast', label: 'Middle gear, faster', task: 'Stay in that gear and pedal faster.' },
+    { gear: 19, pace: 'steady', label: 'High gear', task: 'Shift to about gear 19 and pedal steadily.' }
+  ];
 
   function $(id) { return document.getElementById(id); }
   // Only touch the DOM when visibility really changes (no needless re-layout on every status line).
@@ -800,6 +987,26 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     view: 'ride',
     q: null,             // collecting Q lines: {points:[], crank, timer}
     v3: false,           // [v3] S lines carry src
+    v31: false,          // [v3.1] S lines carry lturns (13 fields)
+    v32: false,          // [v3.2] S lines carry pass (14 fields)
+    downPoints: [],      // [v3.2] [{point, x, y, z}] measured on the way down (points 23..2)
+    behind: null,        // [v3.2] N,behind for {pass, step, at}; alone (no U) it is a gentle hint for that step
+    overshoot: null,     // [v3.2] the board went back to an overshot point: {pass, step} being measured again
+    stallSince: 0,       // [v3.2] pedalling with stab 0 at this step since (stuck hint after 10 s)
+    stallKey: '',
+    fixTries: {},        // [v3.2] guided fixes: redos started per flagged point ('u20': 2)
+    fixPaused: false,    // [v3.2] guided fixes wait for the rider (cancelled, refused, 2 tries, or a stored readback)
+    fixAfter: '',        // [v3.2] '' | 'skip' | 'guess': what to do once the current redo is cancelled
+    fList: null,         // [v3.2] F lines being collected until F,end
+    review: null,        // [v3.2] {items:[{pass, point, reason, gx, gy, gz}], source}
+    reviewKept: {},      // [v3.2] 'u20' etc. the rider chose to keep (this calibration)
+    edit: null,          // [v3.2] pending # command: {kind:'R'|'G', pass, point, g, timer}
+    editErr: '',         // [v3.2] last E,fail text, shown on the review card
+    check: null,         // [v3.2] confirm ride: {phase:'offer'|'run'|'done', idx, results, picking, val, recordId}
+    checkDone: false,    // [v3.2] the gear check was offered and finished or skipped for this calibration
+    calSeen: false,      // a calibrated S line was seen on this connection
+    uncalSince: 0,       // first of the current run of uncalibrated S lines
+    lastGear: 0,         // last calibrated gear
     lastTurn: null,      // last T line
     tShown: 0            // T lines logged since Turns was last toggled
   };
@@ -874,7 +1081,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   // ===================================================================
   // Line parser
   // ===================================================================
-  var MACHINE_RE = /^([SCKAUQGMYDLNWP]),/;
+  var MACHINE_RE = /^([SCKAUQGMYDLNWPFE]),/;
 
   function handleLine(raw) {
     var line = raw;
@@ -926,6 +1133,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'N': ok = onN(parts); break;
         case 'W': ok = onW(parts); break;
         case 'P': ok = onP(parts); break;
+        case 'F': ok = onF(parts); break;
+        case 'E': ok = onE(parts); break;
       }
     } catch (e) { console.warn('parse error', line, e); ok = false; }
     if (state.showRaw || !ok) logLine(ok ? line : line + '   (malformed, ignored)', ok ? 'raw' : 'rawbad');
@@ -933,15 +1142,28 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
   // S,<gear>,<res>,<watts>,<cad>,<cal>,<step>,<stab>,<off>,<flags>
   function onS(p) {
-    if (p.length < 9) return false;
+    var n = p.length;
+    if (n < 9) return false;
+    if (!/^\d{1,2}$/.test(p[1].trim()) || !/^\d$/.test(p[5].trim())) return false;
     var gear = int(p[1]), cal = int(p[5]);
     if (!fin(gear) || gear < 0 || gear > 99) return false;
     if (!fin(cal) || cal < 0 || cal > 5) return false;
     // [v3] 12th field src: B board / W pod / - none. Its presence marks v3 firmware.
-    var srcRaw = p.length >= 12 ? p[11].trim() : '';
+    var srcRaw = n >= 12 ? p[11].trim() : '';
     var src = srcRaw === 'B' || srcRaw === 'W' || srcRaw === '-' ? srcRaw : '';
     if (cal >= 3 && !src) return false;   // cal=3 only exists on v3, cal=4 and 5 on v3.1
     var flagStr = (p[9] || '').trim();
+    var passRaw = n >= 14 ? p[13].trim() : '';
+    // Once the connection is known to be v3+ only well-formed lines count. A lost 20-byte piece
+    // glues two lines together ("S,1,2.5,0,0.0,0,0,0,S,1,..."): field 10 is then a number, not
+    // the flags, and the gear flashed "Not calibrated" for one line.
+    if (state.v32) { if (n !== 14 || !PASS_RE.test(passRaw)) return false; }
+    else if (state.v31) { if (n !== 13 && n !== 14) return false; }
+    else if (state.v3) { if (n < 12 || n > 14) return false; }
+    if (state.v3 || n >= 12) {
+      if (!src || !S_FLAGS_RE.test(flagStr)) return false;
+      if (n === 14 && !PASS_RE.test(passRaw)) return false;
+    }
     var flags = {};
     for (var i = 0; i < flagStr.length; i++) flags[flagStr.charAt(i)] = true;
     var step = int(p[6]);
@@ -960,13 +1182,33 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       rec: int(p[10]),     // optional 11th field: samples recorded so far
       src: src,            // [v3] '' on v2
       lturns: int(p[12]),  // [v3.1] turns seen while learning the crank; NaN on earlier firmware
+      pass: n === 14 ? passRaw : '',   // [v3.2] - u d ru rd; '' on earlier firmware
       pedalling: src ? (src !== '-' && !!flags.R) : true
     };
     var prevCal = state.s ? state.s.cal : 0;
+    var prevPass = state.s ? state.s.pass : '';
     state.s = s;
     state.sAt = Date.now();
-    if (src) state.v3 = true;   // latched until disconnect
-    if (src && p.length >= 13 && fin(s.lturns)) state.v31 = true;   // [v3.1] 13th field lturns
+    // Firmware level, latched until disconnect, only from lines of the exact length.
+    if (src && n >= 12 && n <= 14) state.v3 = true;
+    if (src && (n === 13 || n === 14) && fin(s.lturns)) state.v31 = true;   // [v3.1] 13th field lturns
+    if (src && n === 14 && s.pass) state.v32 = true;                          // [v3.2] 14th field pass
+    // "Not calibrated" debounce (renderRide): keep the last good gear through short runs of
+    // uncalibrated lines once calibrated has been seen on this connection.
+    if (gear > 0 && flags.V) { state.calSeen = true; state.uncalSince = 0; state.lastGear = gear; }
+    else if (!state.uncalSince) state.uncalSince = state.sAt;
+    // [v3.2] N,behind and the overshoot redo belong to one point
+    if (state.behind && (state.behind.step !== s.step || state.behind.pass !== s.pass || cal === 0)) state.behind = null;
+    if (state.overshoot && (state.overshoot.step !== s.step || state.overshoot.pass !== s.pass || cal === 0)) state.overshoot = null;
+    // [v3.2] stuck hint: pedalling in the up or down pass, but no turn has counted (stab 0) at this point
+    var stallable = state.v32 && !state.learnFailed && (s.pass === 'u' || s.pass === 'd') && cal === 1 && s.pedalling &&
+      s.stab === 0 && !flags.B && !flags.M && s.step > 0 && s.step < TOTAL_POINTS - 1;
+    if (!stallable) { state.stallSince = 0; state.stallKey = ''; }
+    else if (!state.stallSince || state.stallKey !== s.pass + s.step) { state.stallSince = state.sAt; state.stallKey = s.pass + s.step; }
+    if (s.pass === 'd' && prevPass === 'u' && cal !== 0) {
+      toast('Top done. Now back down, one gear at a time');
+      try { if (navigator.vibrate) navigator.vibrate([60, 60, 60]); } catch (e) {}
+    }
     if (cal === 5 && prevCal !== 5) {
       // [v3.1] the point couldn't settle for 15 s: the board waits for redo (u) or capture anyway (n)
       if (!state.stuck || state.stuck.point !== s.step + 1) {
@@ -977,12 +1219,25 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (cal === 0) state.redo = 0;
     if (prevCal === 0 && cal !== 0) {
       // A fresh calibration starts at step 0. A later step after a reconnect is the same run continuing.
-      if (s.step > 0 && state.points.length) state.calEnded = false;
+      // [v3.2] A redo (#R) of one point of the saved calibration is not a new run.
+      if (s.pass === 'ru' || s.pass === 'rd') onRedoStarted(s);
+      else if (s.step > 0 && state.points.length) state.calEnded = false;
       else onCalStarted();
     }
     if (prevCal !== 0 && cal === 0) {
       // Ended: K or A normally arrives just before this. If neither does, keep what was captured.
       setTimeout(function () { if (!state.calEnded) savePartialCal('ended without a result'); }, 1500);
+      // [v3.2] a redo that ended without E/K/A (e.g. cancelled): stop waiting for it
+      var ed0 = state.edit;
+      if (ed0 && ed0.kind === 'R' && ed0.started) {
+        setTimeout(function () {
+          if (state.edit === ed0 && !ed0.okd) {
+            state.edit = null;
+            if (state.fixAfter) redoStopped(); else if (reviewItems().length) state.fixPaused = true;
+            renderReview(); render();
+          }
+        }, 3000);
+      }
     }
     if (cal === 3 && prevCal !== 3) state.learnFailed = false;   // (re)learning the crank
     if (prevCal === 3 && cal === 4) {
@@ -1002,12 +1257,20 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   // C,<point>,<x>,<y>,<z>
   function onC(p) {
     if (p.length < 2) return false;
+    if (p[1].trim() === 'down') return onCDown(p);   // [v3.2]
     var point = int(p[1]);
     if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
     var pt = { point: point, x: num(p[2]), y: num(p[3]), z: num(p[4]) };
-    state.points = state.points.filter(function (q) { return q.point < point; });
+    if (isRedoing()) {
+      // [v3.2] a redo replaces that one point and keeps the rest
+      state.points = state.points.filter(function (q) { return q.point !== point; });
+    } else {
+      state.points = state.points.filter(function (q) { return q.point < point; });
+      state.downPoints = [];   // an up point after the down pass started can only be a new run
+    }
     state.points.push(pt);
-    state.capturedAt = Date.now(); state.capturedPoint = point;   // renderCal: green 3/3 flash
+    state.behind = null; state.overshoot = null;
+    state.capturedAt = Date.now(); state.capturedPoint = point; state.capturedDown = false;   // renderCal: green 3/3 flash
     if (state.w && state.w.point === point) state.w.resolved = true;   // settled and captured
     if (state.stuck && state.stuck.point === point) state.stuck = null;
     if (state.redo === point) state.redo = 0;                            // redone
@@ -1016,6 +1279,48 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     renderPoints();
     render();
     return true;
+  }
+
+  // [v3.2] C,down,<point>,<x>,<y>,<z>: down point captured (23 down to 2)
+  function onCDown(p) {
+    var point = int(p[2]);
+    if (!fin(point) || point < 2 || point > TOTAL_POINTS - 1) return false;
+    var pt = { point: point, x: num(p[3]), y: num(p[4]), z: num(p[5]) };
+    // Down points come 23, 22, ... 2: anything at or below this one is from before an undo.
+    state.downPoints = state.downPoints.filter(function (q) { return isRedoing() ? q.point !== point : q.point > point; });
+    state.downPoints.push(pt);
+    state.behind = null; state.overshoot = null;
+    state.capturedAt = Date.now(); state.capturedPoint = point; state.capturedDown = true;
+    if (state.w && state.w.point === point) state.w.resolved = true;
+    if (state.stuck && state.stuck.point === point) state.stuck = null;
+    if (state.redo === point && state.redoPass === 'd') state.redo = 0;
+    setTimeout(render, CAPTURE_FLASH_MS + 50);
+    try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+    renderPoints();
+    render();
+    return true;
+  }
+
+  function isRedoing() {
+    return !!(state.s && (state.s.pass === 'ru' || state.s.pass === 'rd')) || !!(state.edit && state.edit.kind === 'R' && state.edit.started);
+  }
+
+  // [v3.2] the board started a #R redo: one point of the saved calibration, by pedalling
+  function onRedoStarted(s) {
+    var pass = s.pass === 'rd' ? 'd' : 'u', point = s.step + 1;
+    if (!state.edit || state.edit.kind !== 'R') state.edit = { kind: 'R', pass: pass, point: point };
+    state.edit.started = true;
+    clearTimeout(state.edit.timer);   // the redo can take a while; E arrives when it is saved
+    state.calEnded = true;            // not a new run: never saved as an incomplete calibration
+    state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
+    state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
+    if (state.check && state.check.phase === 'run') state.check.phase = 'done';
+    showView('cal');
+  }
+
+  function editLabel(ed) {
+    if (!ed) return '';
+    return (ed.kind === 'R' ? 'redo of ' : 'best guess for ') + pointWords(ed.pass, ed.point);
   }
 
   // K,<ok>,<span>,<minstep>,<minstepAt>,<msg>
@@ -1028,23 +1333,129 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       span: num(p[2]), minstep: num(p[3]), minAt: int(p[4]),
       msg: p.slice(5).join(',').trim()
     };
+    // [v3.2] after an edit (#R / #G) the board saves again and sends K
+    var ed = state.edit && state.edit.okd ? state.edit : null;
+    if (ed) { clearTimeout(ed.timer); state.edit = null; r.edit = editLabel(ed); }
+    r.down = state.v32 && !state.learnFailed ? state.downPoints.length : -1;   // no down pass with the hold-still method
     state.result = r;
     state.calEnded = true;
+    state.wantReadback = false;
     logLine(r.ok
-      ? 'Calibration saved: span ' + fmt(r.span, 1) + ' µT, smallest step ' + fmt(r.minstep, 1) + ' µT at gear ' + (fin(r.minAt) ? r.minAt : '?')
+      ? 'Calibration saved' + (r.edit ? ' (' + r.edit + ')' : '') + ': span ' + fmt(r.span, 1) + ' µT, smallest step ' + fmt(r.minstep, 1) + ' µT at gear ' + (fin(r.minAt) ? r.minAt : '?')
       : 'Calibration rejected: ' + (r.msg || 'no reason given'), 'sys');
     try { if (navigator.vibrate) navigator.vibrate(r.ok ? [60, 60, 60] : [300]); } catch (e) {}
-    try {
-      r.recordId = saveCalRecord('run', r, state.points);
-    } catch (e) { console.warn('save failed', e); }
+    if (r.edit && state.points.length < TOTAL_POINTS) {
+      // Edited a calibration this page didn't watch being made (e.g. after a reload):
+      // read the stored one back once the F list is in, instead of saving a partial copy.
+      state.wantReadback = true;
+    } else {
+      try {
+        r.recordId = saveCalRecord('run', { ok: r.ok, span: r.span, minstep: r.minstep, minAt: r.minAt, msg: r.msg, edit: r.edit, down: state.v32 ? state.downPoints : null }, state.points);
+      } catch (e) { console.warn('save failed', e); }
+    }
+    // Older firmware sends no F list: offer the gear check straight away.
+    if (r.ok && !state.v32) { state.review = null; maybeOfferCheck(); }
     renderResult();
+    renderReview();
     renderBadge();
+    return true;
+  }
+
+  // [v3.2] F,<u|d>,<point>,<reason>,<gx>,<gy>,<gz> ... F,end,<count>: points that look wrong
+  function onF(p) {
+    var kind = (p[1] || '').trim();
+    if (kind === 'end') {
+      var count = int(p[2]);
+      if (!fin(count) || count < 0) return false;
+      var items = state.fList || [];
+      state.fList = null;
+      if (items.length !== count) logLine('Check list: expected ' + count + ' flagged point' + (count === 1 ? '' : 's') + ', received ' + items.length + '.', 'bad');
+      var flagged = items.filter(function (it) { return !state.reviewKept[it.pass + it.point]; });
+      // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
+      // after an edit (wantReadback) carries on with the guided fixes.
+      var stored = state.qJustEnded && !state.qFromEdit;
+      state.review = { items: flagged, source: stored ? 'stored' : 'run' };
+      state.qJustEnded = false;
+      state.qFromEdit = false;
+      if (items.length) {
+        logLine('The bridge flagged ' + items.length + ' point' + (items.length === 1 ? '' : 's') + ': ' +
+          items.map(function (it) { return pointWords(it.pass, it.point) + ' (' + it.reason + ')'; }).join('; ') + '.', 'sys');
+      }
+      if (state.wantReadback) {
+        // save the edited calibration first; its F list (after Q,end) drives what comes next
+        state.wantReadback = false;
+        state.qFromEdit = true;
+        requestStoredCal();
+      } else if (flagged.length) {
+        try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {}
+        if (stored) state.fixPaused = true;
+        fixNext();
+      } else {
+        state.review = null;
+        maybeOfferCheck();
+      }
+      renderReview();
+      renderBadge();
+      return true;
+    }
+    if (kind !== 'u' && kind !== 'd') return false;
+    var point = int(p[2]);
+    if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
+    if (!state.fList) state.fList = [];
+    state.fList = state.fList.filter(function (it) { return !(it.pass === kind && it.point === point); });
+    state.fList.push({ pass: kind, point: point, reason: (p[3] || '').trim(), gx: num(p[4]), gy: num(p[5]), gz: num(p[6]) });
+    return true;
+  }
+
+  // [v3.2] E,ok,<what> / E,fail,<reason>: answer to a # command
+  function onE(p) {
+    var kind = (p[1] || '').trim(), text = p.slice(2).join(',').trim();
+    var ed = state.edit;
+    if (kind === 'ok') {
+      state.editErr = '';
+      if (ed) {
+        clearTimeout(ed.timer);
+        ed.okd = true;   // K follows
+        // A guess isn't sent back as a C line: apply it here so the saved copy matches the bridge.
+        if (ed.kind === 'G' && ed.g && fin(ed.g.x)) {
+          var list = ed.pass === 'd' ? 'downPoints' : 'points';
+          state[list] = state[list].filter(function (q) { return q.point !== ed.point; });
+          state[list].push({ point: ed.point, x: ed.g.x, y: ed.g.y, z: ed.g.z });
+          renderPoints();
+        }
+        toast(ed.kind === 'R' ? 'Redone and saved' : 'Best guess used and saved');
+      }
+      logLine('Edit done' + (text ? ' (' + text + ')' : '') + '.', 'sys');
+    } else if (kind === 'fail') {
+      if (ed) { clearTimeout(ed.timer); state.edit = null; }
+      logLine('Edit refused: ' + (text || 'no reason given'), 'bad');
+      if (ed && ed.kind === 'R' && state.fixAfter) {
+        redoStopped();   // the rider chose Skip / Use best guess: this is just the redo being cancelled
+      } else {
+        state.editErr = text || 'no reason given';
+        toast('Not changed: ' + state.editErr);
+        if (state.fixAfter === '' && reviewItems().length) state.fixPaused = true;   // wait for the rider
+      }
+    } else return false;
+    renderReview();
+    render();
     return true;
   }
 
   // A,<reason>
   function onA(p) {
     var reason = p.slice(1).join(',').trim();
+    if (state.edit && state.edit.kind === 'R' && state.edit.started) {
+      // [v3.2] a redo was cancelled: the saved calibration is unchanged
+      clearTimeout(state.edit.timer);
+      state.edit = null;
+      logLine('Redo cancelled: ' + (reason || 'no reason given') + '. The saved calibration is unchanged.', 'sys');
+      if (state.fixAfter) redoStopped();
+      else { toast('Redo cancelled'); if (reviewItems().length) state.fixPaused = true; }
+      renderReview();
+      render();
+      return true;
+    }
     state.result = { type: 'A', reason: reason || 'no reason given' };
     logLine('Calibration aborted: ' + state.result.reason, 'sys');
     state.result.recordId = savePartialCal('aborted: ' + state.result.reason);
@@ -1058,14 +1469,29 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (p.length < 2) return false;
     var step = int(p[1]);
     if (!fin(step) || step < 0 || step >= TOTAL_POINTS) return false;
+    var down = (p[2] || '').trim() === 'd';   // [v3.2] U,<step>,d: undo in the down pass
     // After undo the current step is <step>, so points 1..step remain captured.
     // [v3.1] A redo after cal=5 keeps the same step: that point was never added (no C line), so nothing is lost.
     var wasStuck = (state.s && state.s.cal === 5) || (state.stuck && state.stuck.point === step + 1);
-    if (wasStuck) state.redo = step + 1;
+    if (wasStuck) { state.redo = step + 1; state.redoPass = down ? 'd' : 'u'; }
+    // [v3.2] N,behind then U one point back: the board went back to the overshot point by itself
+    var b = state.behind;
+    if (!wasStuck && b && Date.now() - b.at < 5000 && (down ? b.pass === 'd' && step === b.step + 1 : b.pass === 'u' && step === b.step - 1)) {
+      state.overshoot = { pass: down ? 'd' : 'u', step: step };
+      try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {}
+    }
     state.stuck = null;
+    state.behind = null;
+    state.stallSince = 0;
     if (state.w) state.w.resolved = true;
-    state.points = state.points.filter(function (q) { return q.point <= step; });
-    if (state.s) state.s.step = step;
+    // Down pass: point step+1 is being measured again, so only the points above it remain.
+    if (down) state.downPoints = state.downPoints.filter(function (q) { return q.point > step + 1; });
+    else {
+      state.points = state.points.filter(function (q) { return q.point <= step; });
+      // [v3.2] undo from the first down point goes back to up point 24 (and the worked-out top goes too)
+      if (state.downPoints.length || (state.s && state.s.pass === 'd')) state.downPoints = [];
+    }
+    if (state.s) { state.s.step = step; if (state.v32 && state.s.cal !== 0 && (state.s.pass === 'd') !== down) state.s.pass = down ? 'd' : 'u'; }
     renderPoints();
     render();
     return true;
@@ -1115,12 +1541,36 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var r = (p[1] || '').trim();
     if (r === 'notmoved') toast('Not saved: move the lever to the next gear first');
     else if (r === 'noturn') toast('Keep pedalling: no full turn yet');
+    else if (r === 'behind') {
+      // [v3.2] the agreeing turns sit behind the previous point: that point overshot. Normally a U line
+      // follows and the board goes back to it (onU turns this into state.overshoot). Alone (point 2,
+      // the first down point) it stays a gentle hint until the step changes.
+      var s = state.s;
+      state.behind = s ? { pass: s.pass, step: s.step, at: Date.now() } : { pass: '', step: -1, at: Date.now() };
+      logLine('This reading is behind the last point.', 'sys');
+      try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {}
+      render();
+    }
     else return false;
     return true;
   }
 
   function onCalStarted() {
     state.points = [];
+    state.downPoints = [];
+    state.behind = null;
+    state.overshoot = null;
+    state.stallSince = 0;
+    state.review = null;
+    state.reviewKept = {};
+    state.fixTries = {};
+    state.fixPaused = false;
+    state.fixAfter = '';
+    state.fList = null;
+    state.editErr = '';
+    state.check = null;
+    state.checkDone = false;
+    if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
     state.result = null;
     state.calEnded = false;
     state.partialSaved = -1;
@@ -1133,6 +1583,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     setHidden('storedMsg', true);
     renderPoints();
     renderResult();
+    renderReview();
   }
 
   // Save the points of a calibration that ended without a K line (abort, disconnect,
@@ -1143,7 +1594,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (!n || state.partialSaved === n) return null;
     state.partialSaved = n;
     try {
-      var id = saveCalRecord('run', { ok: false, partial: true, msg: reason }, state.points);
+      var id = saveCalRecord('run', { ok: false, partial: true, msg: reason, down: state.v32 ? state.downPoints : null }, state.points);
       logLine('Saved the ' + n + ' captured point' + (n > 1 ? 's' : '') + ' as an incomplete calibration.', 'sys');
       return id;
     } catch (e) { console.warn('partial save failed', e); return null; }
@@ -1157,7 +1608,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (state.conn !== 'connected') { toast('Not connected'); return; }
     if (state.q) clearTimeout(state.q.timer);
     setHidden('storedMsg', true);
-    state.q = { points: [], timer: 0 };
+    state.q = { points: [], down: [], timer: 0 };
     state.q.timer = setTimeout(function () {
       if (state.q) { state.q = null; toast('No reply. The bridge may need firmware v2.'); }
     }, 10000);
@@ -1181,23 +1632,34 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       var q = state.q;
       if (q) clearTimeout(q.timer);
       state.q = null;
+      state.qJustEnded = true;   // [v3.2] the F list that follows belongs to the stored calibration
       if (!q || !q.points.length) return true; // stray end without points
-      var info = { ok: true, span: num(p[2]), minstep: num(p[3]), minAt: int(p[4]), msg: 'stored', crank: q.crank || null };
+      var info = { ok: true, span: num(p[2]), minstep: num(p[3]), minAt: int(p[4]), msg: 'stored', crank: q.crank || null,
+        down: state.v32 || q.down.length ? q.down : null };
       saveCalRecord('stored', info, q.points);
       toast('Stored calibration saved');
+      return true;
+    }
+    if (kind === 'down') {
+      // [v3.2] Q,down,<point>,<x>,<y>,<z>: stored down point (23..2)
+      var dp = int(p[2]);
+      if (!fin(dp) || dp < 2 || dp > TOTAL_POINTS - 1) return false;
+      if (!state.q) state.q = { points: [], down: [], timer: 0 };
+      state.q.down = state.q.down.filter(function (x) { return x.point !== dp; });
+      state.q.down.push({ point: dp, x: num(p[3]), y: num(p[4]), z: num(p[5]) });
       return true;
     }
     if (kind === 'crank') {
       // [v3] Q,crank,<ux>,<uy>,<uz>,<depth>,<sign>
       var crank = { ux: num(p[2]), uy: num(p[3]), uz: num(p[4]), depth: num(p[5]), sign: int(p[6]) };
       if (!fin(crank.ux) || !fin(crank.uy) || !fin(crank.uz)) return false;
-      if (!state.q) state.q = { points: [], timer: 0 };
+      if (!state.q) state.q = { points: [], down: [], timer: 0 };
       state.q.crank = crank;
       return true;
     }
     var point = int(kind);
     if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
-    if (!state.q) state.q = { points: [], timer: 0 }; // 'k' typed in the console
+    if (!state.q) state.q = { points: [], down: [], timer: 0 }; // 'k' typed in the console
     clearTimeout(state.q.timer);
     state.q.timer = setTimeout(function () { state.q = null; }, 10000);
     state.q.points = state.q.points.filter(function (x) { return x.point !== point; });
@@ -1633,6 +2095,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   function saveCalRecord(source, info, pointsIn) {
     var d = new Date();
     var pts = pointsIn.slice().sort(function (a, b) { return a.point - b.point; });
+    var downs = info.down ? info.down.slice() : null;   // [v3.2] null = firmware without a down pass
     var stored = source === 'stored';
     var result = stored ? 'stored' : info.partial ? 'incomplete (' + pts.length + ' of ' + TOTAL_POINTS + ' points)' : (info.ok ? 'saved' : 'rejected');
     var lines = [
@@ -1648,26 +2111,53 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       '# points: ' + pts.length + ' of ' + TOTAL_POINTS,
       (info.crank ? '# crank: ux=' + fmt(info.crank.ux, 3) + ', uy=' + fmt(info.crank.uy, 3) + ', uz=' + fmt(info.crank.uz, 3) +
         ', depth_uT=' + fmt(info.crank.depth, 1) + ', sign=' + (fin(info.crank.sign) ? info.crank.sign : '') : null),
+      (info.edit ? '# edit: ' + ascii(info.edit) : null),
       '# labels: point 1 = lever all the way down (Bottom); points 2-24 = where the console first shows that gear; point 25 = lever all the way up (Top)',
-      'point,label,x_uT,y_uT,z_uT,dist_prev_uT'
+      // [v3.2] down points: same gear edge as the up point, approached from above
+      (downs ? '# down_points: ' + downs.length + ' of ' + DOWN_POINTS + ' (down point N = coming down, where the console first shows gear N-1; empty when not measured)' : null),
+      'point,label,x_uT,y_uT,z_uT,dist_prev_uT' + (downs ? ',down_x_uT,down_y_uT,down_z_uT' : '')
     ].filter(function (l) { return l !== null; });
+    var downBy = {};
+    if (downs) downs.forEach(function (q) { downBy[q.point] = q; });
     for (var i = 0; i < pts.length; i++) {
       var p = pts[i];
       var prev = i > 0 && pts[i - 1].point === p.point - 1 ? pts[i - 1] : null;
-      var dd = dist3(p, prev);
-      lines.push([p.point, pointLabel(p.point), fmt(p.x, 1), fmt(p.y, 1), fmt(p.z, 1), fin(dd) ? dd.toFixed(2) : '']
-        .map(function (v) { return csvCell(v === '--' ? '' : v); }).join(','));
+      var dd = dist3(p, prev), dn = downBy[p.point];
+      var row = [p.point, pointLabel(p.point), fmt(p.x, 1), fmt(p.y, 1), fmt(p.z, 1), fin(dd) ? dd.toFixed(2) : ''];
+      if (downs) row = row.concat(dn ? [fmt(dn.x, 1), fmt(dn.y, 1), fmt(dn.z, 1)] : ['', '', '']);
+      lines.push(row.map(function (v) { return csvCell(v === '--' ? '' : v); }).join(','));
     }
-    var title = stored ? 'Stored calibration' : info.partial ? 'Calibration incomplete' : (info.ok ? 'Calibration saved' : 'Calibration rejected');
+    var title = stored ? 'Stored calibration' : info.partial ? 'Calibration incomplete' : (info.ok ? (info.edit ? 'Calibration edited' : 'Calibration saved') : 'Calibration rejected');
     var summary = info.partial
       ? 'incomplete (' + pts.length + ' of ' + TOTAL_POINTS + ' points) · ' + info.msg
       : 'Span ' + fmt(info.span, 1) + ' µT · smallest step ' + fmt(info.minstep, 1) + ' µT' +
       (fin(info.minAt) ? ' at gear ' + info.minAt : '') + ' · ' + pts.length + ' points' +
+      (downs ? ' · down ' + downs.length + ' of ' + DOWN_POINTS : '') +
+      (info.edit ? ' · ' + info.edit : '') +
       (!stored && !info.ok && info.msg ? ' · ' + info.msg : '');
     return addRecord({
       id: newId(d), type: 'cal', source: source, partial: !!info.partial, ts: d.toISOString(), title: title, summary: summary,
       filename: 'keiser-cal-' + fileStamp(d) + '.csv'
     }, lines.join('\n') + '\n');
+  }
+
+  // Add '#' comment lines to a saved record, just above its header row (e.g. the gear check).
+  function appendRecordComments(id, comments, summaryAdd) {
+    var rec = findRecord(id), csv = rec ? getCsv(id) : null;
+    if (!rec || csv === null || csv === undefined) return false;
+    var lines = csv.split('\n'), at = 0;
+    while (at < lines.length && lines[at].charAt(0) === '#') at++;
+    lines.splice.apply(lines, [at, 0].concat(comments.map(function (c) { return '# ' + ascii(c); })));
+    csv = lines.join('\n');
+    memCsv[id] = csv;
+    rec.size = csv.length;
+    if (summaryAdd) rec.summary += ' · ' + summaryAdd;
+    if (rec.persisted) {
+      try { localStorage.setItem(STORE_PREFIX + id, csv); } catch (e) { rec.persisted = false; }
+      saveIndex();
+    }
+    renderSaved();
+    return true;
   }
 
   function saveDiagRecord(dump) {
@@ -1968,7 +2458,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   }
 
   // ===================================================================
-  // Command writes: one char per write, serialized through a promise queue
+  // Command writes: one char per write (# commands in 20-byte pieces), serialized through a promise queue
   // ===================================================================
   var writeChain = Promise.resolve();
   var enc = (typeof TextEncoder !== 'undefined') ? new TextEncoder() : null;
@@ -1990,10 +2480,33 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     return writeChain;
   }
 
+  // [v3.2] Multi-character command (e.g. "#R,u,20"): ends with \n and goes out in <=20-byte
+  // writes, in order, each awaited, through the same queue as single characters. If a piece
+  // fails the rest is dropped and a lone \n is sent so the board discards the partial line.
+  function sendCmd(str) {
+    if (state.conn !== 'connected') { toast('Not connected'); return null; }
+    var text = String(str).replace(/[\r\n]+/g, '') + '\n';
+    logLine('> ' + text.slice(0, -1), 'sent');
+    var pieces = [];
+    for (var i = 0; i < text.length; i += 20) pieces.push(text.slice(i, i + 20));   // commands are ASCII: 1 char = 1 byte
+    var failed = false;
+    pieces.forEach(function (piece) {
+      writeChain = writeChain
+        .then(function () { return failed ? null : writeChar(piece); })
+        .catch(function (err) {
+          failed = true;
+          logLine('Write failed (' + text.slice(0, -1) + '): ' + (err && err.message ? err.message : err), 'bad');
+          return writeChar('\n').catch(function () {});
+        });
+    });
+    return writeChain;
+  }
+
+  // Write one character, or one <=20-byte piece of a # command.
   function writeChar(c) {
     if (DEMO) { sim.receive(c); return Promise.resolve(); }
     if (!rxChar) return Promise.reject(new Error('not connected'));
-    var data = enc ? enc.encode(c) : new Uint8Array([c.charCodeAt(0)]);
+    var data = enc ? enc.encode(c) : new Uint8Array(String(c).split('').map(function (ch) { return ch.charCodeAt(0) & 255; }));
     var props = rxChar.properties || {};
     if (typeof rxChar.writeValueWithoutResponse === 'function' && props.writeWithoutResponse !== false) {
       return rxChar.writeValueWithoutResponse(data);
@@ -2128,6 +2641,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         state.s = null;
         state.v3 = false;          // re-detected from the next S lines
         state.v31 = false;
+        state.v32 = false;
+        state.calSeen = false; state.uncalSince = 0;
+        state.behind = null; state.fList = null; state.overshoot = null; state.stallSince = 0;
+        state.fixAfter = ''; state.qFromEdit = false; state.qJustEnded = false;
+        if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }   // a redo still running is picked up again from its S lines
         state.lastTurn = null;
         renderTurnInfo();
         keepAwake(false);
@@ -2190,7 +2708,25 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   function render() {
     renderRide();
     renderCal();
+    renderReview();
+    renderRideCheck();
     renderBadge();
+  }
+
+  // Calibrated for display. Once a calibrated line has been seen on this connection, a run of
+  // uncalibrated S lines must last UNCAL_HOLD_MS before the page says "Not calibrated"; until
+  // then the last good gear stays. One odd line can't flash the warning.
+  function rideCalibrated() {
+    var s = state.s;
+    if (!s) return false;
+    if (s.gear > 0 && s.flags.V) return true;
+    return state.calSeen && state.lastGear > 0 && !!state.uncalSince && Date.now() - state.uncalSince < UNCAL_HOLD_MS;
+  }
+  function rideGear() {
+    var s = state.s;
+    if (!s) return 0;
+    if (s.gear > 0 && s.flags.V) return s.gear;
+    return rideCalibrated() ? state.lastGear : 0;
   }
 
   function renderRide() {
@@ -2198,9 +2734,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var gearEl = $('gear'), note = $('gearNote'), goCal = $('goCal');
     // Late S lines never change what is shown: the last values stay, with a small note.
     var f = s ? s.flags : {};
+    var calibrated = rideCalibrated();
     setChip('chipP', !!f.P);
     setChip('chipZ', !!f.Z);
-    setChip('chipV', !!f.V);
+    setChip('chipV', calibrated);
     setHidden('chipS', !f.S);
     setHidden('chipH', !f.H);
     setHidden('chipG', !f.G);
@@ -2209,7 +2746,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
     gearEl.className = 'gear';
     note.className = 'gear-note';
-    setHidden('goCal', !(s && !(s.gear > 0 && s.flags.V) && !transferActive()));
+    setHidden('goCal', !(s && !calibrated && !transferActive()));
 
     if (!s) {
       gearEl.textContent = '--';
@@ -2227,9 +2764,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     cs.className = 'src' + (s.src && !s.pedalling ? ' off' : '');
     cs.textContent = !s.src ? '' : !s.pedalling ? 'not pedalling' : s.src === 'B' ? 'from crank magnet' : 'from Wahoo pod';
 
-    var calibrated = s.gear > 0 && !!s.flags.V;
+    var gearNow = rideGear();
     if (transferActive()) {
-      gearEl.textContent = calibrated ? String(s.gear) : '--';
+      gearEl.textContent = calibrated ? String(gearNow) : '--';
       gearEl.classList.add('dim');
       note.textContent = 'Sending diagnostics recording...';
       return;
@@ -2242,7 +2779,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (stale) note.textContent = 'Waiting for the bridge…';
       return;
     }
-    gearEl.textContent = String(s.gear);
+    gearEl.textContent = String(gearNow);
     if (s.flags.S) {
       note.textContent = 'Magnetometer saturated';
       note.classList.add('bad');
@@ -2263,7 +2800,75 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   }
 
   var RING_C = 2 * Math.PI * 112;
-  var CAD_LO = 60, CAD_HI = 80;   // cadence asked for while calibrating (crank mode)
+  // Any steady cadence works while calibrating (crank mode). Outside these limits the
+  // dot turns red: below ~30 a turn takes over 2 s and may time out (3 s); above ~120
+  // the dip detector risks counting twice per turn (learning rejects over 130).
+  var CAD_LO = 30, CAD_HI = 120;
+
+  // Calibration walkthrough: one step per page. Kept free of firmware details that may
+  // change (how the top point is taken) so it stays true. Steps marked v32 show only
+  // with firmware v3.2 (the down pass).
+  var CAL_INTRO = {
+    crank: [
+      { art: 'pedal', title: 'Keep pedalling', text: 'The bridge reads the gear on every pedal turn, so pedal the whole time at a steady pace.' },
+      { art: 'check', title: 'A quick cadence check', text: 'First it learns your pedal stroke. Then check the rpm matches your Keiser console.' },
+      { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear, then hold it. The circle turns green when it’s saved.' },
+      { art: 'ring', title: 'Bottom to top', text: 'Start with the lever all the way down and work up. It takes a few minutes.' },
+      { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, come back down the same way: stop where the console first shows each lower gear. You can finish early.' }
+    ],
+    still: [
+      { art: 'ring', title: 'Bottom to top', text: 'You’ll set the lever at each gear, starting all the way down and working up.' },
+      { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear. The circle turns green when it’s saved.' },
+      { art: 'still', title: 'Then stop and hold', text: 'At each gear stop pedalling and keep the lever still for a couple of seconds.' }
+    ]
+  };
+  var onbIdx = 0, onbKey = '';
+
+  function onbSteps() {
+    return state.v3 ? CAL_INTRO.crank.filter(function (st) { return !st.v32 || state.v32; }) : CAL_INTRO.still;
+  }
+
+  function renderOnb() {
+    var steps = onbSteps();
+    if (onbIdx > steps.length - 1) onbIdx = steps.length - 1;
+    var st = steps[onbIdx], last = onbIdx === steps.length - 1;
+    var arts = document.querySelectorAll('#onb .art');
+    for (var i = 0; i < arts.length; i++) arts[i].classList.toggle('on', arts[i].getAttribute('data-art') === st.art);
+    var key = (state.v3 ? 'crank' : 'still') + (state.v32 ? '32-' : '') + onbIdx;  // the step list switches once v3 is detected
+    if (key !== onbKey) {
+      $('onbTitle').textContent = st.title;
+      $('onbText').textContent = st.text;
+      onbKey = key;
+    }
+    var dots = $('onbDots');
+    if (dots.children.length !== steps.length) {
+      dots.innerHTML = '';
+      for (var d = 0; d < steps.length; d++) dots.appendChild(document.createElement('i'));
+    }
+    for (var k = 0; k < dots.children.length; k++) dots.children[k].className = k === onbIdx ? 'on' : '';
+    setHidden('onbNext', last);
+    setHidden('calStart', !last);
+    setHidden('onbBack', onbIdx === 0);
+    var ring = $('artRing');
+    if (ring.getElementsByTagName('i').length !== TOTAL_POINTS) {
+      for (var p = 0; p < TOTAL_POINTS; p++) {
+        var a = (-90 + p * 360 / TOTAL_POINTS) * Math.PI / 180, dot = document.createElement('i');
+        dot.style.left = (50 + 46 * Math.cos(a)).toFixed(2) + '%';
+        dot.style.top = (50 + 46 * Math.sin(a)).toFixed(2) + '%';
+        ring.appendChild(dot);
+      }
+    }
+  }
+
+  function onbGo(delta) {
+    var n = onbSteps().length, next = Math.max(0, Math.min(n - 1, onbIdx + delta));
+    if (next === onbIdx) return;
+    // the outgoing picture slides out the way we're moving
+    var cur = document.querySelector('#onb .art.on');
+    if (cur) cur.classList.toggle('before', delta > 0);
+    onbIdx = next;
+    renderOnb();
+  }
 
   // The 25 points as dots on a circle around the disc (positions in % of the stage).
   function buildCalDots() {
@@ -2284,21 +2889,23 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var s = state.s, connected = state.conn === 'connected';
     // Staleness never switches the view: an active calibration stays on screen with the last values.
     var active = !!(s && s.cal !== 0);
+    var checkRun = !active && !!state.check && state.check.phase === 'run';   // [v3.2] gear check running
     setHidden('calWait', !(active && !transferActive() && Date.now() - state.sAt > WAIT_NOTE_MS));
-    setHidden('calIdle', active);
+    setHidden('calIdle', active || checkRun);
     setHidden('calActive', !active);
+    // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
+    if (state.result) setHidden('resultCard', resultCardHidden());
     $('calStart').disabled = !connected || !s;
     $('calStart').textContent = connected ? 'Start calibration' : 'Connect first';
     var v3 = state.v3;   // latched per connection
-    setHidden('calIntroV2', v3);
-    setHidden('calIntroV3', !v3);
+    if (!active) renderOnb();
 
     // auto-capture toggle reflects the A flag
     var at = $('autoToggle');
     at.setAttribute('aria-checked', s ? (s.flags.A ? 'true' : 'false') : 'mixed');
     at.disabled = !connected;
 
-    setHidden('pointsCard', state.points.length === 0 && !active);
+    setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
     if (!active) return;
 
     buildCalDots();
@@ -2307,11 +2914,19 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     // Crank mode: v3 firmware that found the crank (gear per pedal turn, keep pedalling).
     // After a failed crank learning it falls back to the v2 hold-still method.
     var crankMode = v3 && !state.learnFailed;
+    // [v3.2] the pass: '' or 'u' up, 'd' down (step 22..1, prompt gear = step), 'ru' / 'rd' redo of one point
+    var v32 = state.v32;
+    var pass = v32 ? s.pass : '';
+    var down = pass === 'd', redoing = pass === 'ru' || pass === 'rd';
+    // [v3.2] B: go back past the point first (a redo, or the board went back to an overshot point)
+    var mustPass = v32 && !!s.flags.B && s.cal === 1;
+    var overshot = !!state.overshoot && !redoing && state.overshoot.step === s.step && state.overshoot.pass === s.pass;
     var step = learning || confirming ? 0 : s.step;
+    var pGear = down || pass === 'rd' ? step : step + 1;   // the gear named in the prompt
     var stab = Math.round(s.stab);
     var turns = Math.max(0, Math.min(3, Math.round(stab / 100 * 3)));
     var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < CAPTURE_FLASH_MS;
-    var justLearned = !learning && !confirming && step === 0 && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
+    var justLearned = !learning && !confirming && step === 0 && !down && !redoing && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
     var stopped = crankMode && !learning && !confirming && !s.pedalling && s.cal === 1;
     var checking = s.cal === 5;   // [v3.1] point check
     renderPointCheck(checking, s);
@@ -2320,8 +2935,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var look, head, sub;
     if (learning) {
       look = 'learn';
-      head = crankMode ? 'Pedal at ' + CAD_LO + '–' + CAD_HI + ' rpm' : 'Pedal steadily';
-      sub = 'Steady, and keep the lever still';
+      head = 'Pedal steadily';
+      sub = 'Any comfortable pace, and keep the lever still';
     } else if (confirming) {
       look = 'confirm';
       head = 'Matches the console?';
@@ -2329,17 +2944,26 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     } else if (flash || justLearned) {
       look = 'green';
       head = justLearned ? 'Crank learned' : 'Got it';
-      sub = justLearned ? 'Now the 25 lever positions' : pointLabel(state.capturedPoint) + ' saved';
+      sub = justLearned ? 'Now the 25 lever positions'
+        : state.capturedDown ? 'Gear ' + (state.capturedPoint - 1) + ' (coming down) saved'
+        : v32 && state.capturedPoint === TOTAL_POINTS && !redoing ? 'Top worked out from gears 23 and 24'
+        : pointLabel(state.capturedPoint) + ' saved';
     } else if (stopped) {
       look = 'amber';
       head = 'Keep pedalling';
       sub = 'The gear is read on every pedal turn';
-    } else if (s.cal === 2 || stab > 0) {
+    } else if (!mustPass && (s.cal === 2 || stab > 0)) {
       look = 'blue';
       if (crankMode) {
         head = 'Hold it there';
-        sub = s.cal === 2 ? 'Saving…' : turns >= 3 && !auto ? 'Tap CAPTURE to save'
-          : turns >= 3 && state.v31 ? 'Checking the lever has stopped…' : 'Turn ' + Math.max(1, turns) + ' of 3';
+        if (s.cal === 2) sub = 'Saving…';
+        else if (v32) {
+          // [v3.2] 2 agreeing turns (34, 67), then the check turn
+          sub = turns >= 2 ? (auto ? 'Turn 3 of 3 · checking the lever has stopped…' : 'Tap CAPTURE to save') : 'Turn 1 of 3';
+        } else {
+          sub = turns >= 3 && !auto ? 'Tap CAPTURE to save'
+            : turns >= 3 && state.v31 ? 'Checking the lever has stopped…' : 'Turn ' + Math.max(1, turns) + ' of 3';
+        }
       } else {
         head = 'Hold still';
         sub = s.cal === 2 ? 'Saving…' : auto ? 'Saves when the ring fills' : 'Tap CAPTURE when ready';
@@ -2348,13 +2972,52 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       look = 'grey';
       var n = step + 1;
       var v31c = crankMode && state.v31;   // [v3.1] wording: "...FIRST shows gear N, then hold it there"
-      if (step === 0) { head = 'Lever all the way down'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      if (redoing) {
+        head = 'Redo gear ' + pGear + (pass === 'rd' ? ' (coming down)' : '');
+        sub = pass === 'ru'
+          ? (mustPass ? 'First move the lever DOWN below gear ' + pGear : 'Now up to where the console FIRST shows ' + pGear + ', then hold it there')
+          : (mustPass ? 'First move the lever UP above gear ' + pGear : 'Now down to where the console FIRST shows ' + pGear + ', then hold it there');
+      } else if (mustPass || overshot) {
+        // [v3.2] the board went back to an overshot point: go back past it (B), then return to it
+        var upw = !down, back = upw ? pGear - 1 : pGear + 1;
+        head = mustPass ? 'Keep going: ' + (upw ? 'down' : 'up') + ' into gear ' + back
+          : 'Now ' + (upw ? 'up' : 'down') + ' to where gear ' + pGear + ' first shows';
+        sub = mustPass ? 'Then back ' + (upw ? 'up' : 'down') + ' to where the console FIRST shows ' + pGear
+          : 'Keep pedalling and hold it there';
+      } else if (down) {
+        head = 'Shift down to ' + pGear;
+        sub = (step >= DOWN_FIRST_STEP && !state.downPoints.length ? 'Now back down. ' : 'Keep pedalling. ') +
+          'Move the lever DOWN to where the Keiser console FIRST shows ' + pGear + ', then hold it there';
+      } else if (step === 0) { head = 'Lever all the way down'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      else if (step >= TOTAL_POINTS - 1 && v32 && crankMode) { head = 'Working out the top'; sub = 'From gears 23 and 24. Keep pedalling'; }
       else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
       else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Stop where the Keiser console FIRST shows ' + n + ', then hold it there'; }
       else { head = 'Shift up to ' + n; sub = 'Stop as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
     }
     $('calHead').textContent = head;
     $('calSub').textContent = sub;
+
+    // [v3.2] one amber note next to the circle, most important first:
+    // overshoot (the board went back), N,behind alone (gentle), or "still on gear N?" after 10 s.
+    var bt = '', dirWord = down ? 'down' : 'up';
+    var bh = !!state.behind && !checking && state.behind.step === s.step && state.behind.pass === s.pass;
+    var stalled = !checking && !redoing && look === 'grey' && !overshot && !mustPass &&
+      !!state.stallSince && state.stallKey === s.pass + s.step && now - state.stallSince > STALL_MS;
+    if (overshot && !checking) {
+      bt = down
+        ? '<b>Gear ' + pGear + ' was saved a little too far down.</b> Shift UP into gear ' + (pGear + 1) + ', then back down to where the console first shows gear ' + pGear + '.'
+        : '<b>Gear ' + pGear + ' was saved a little too far up.</b> Shift DOWN into gear ' + (pGear - 1) + ', then back up to where the console first shows gear ' + pGear + '.';
+    } else if (bh) {
+      bt = redoing
+        ? '<b>This reading is behind the gear before it.</b> Check the console and move the lever on past it.'
+        : '<b>Not quite there yet.</b> Keep moving the lever ' + dirWord + ' until the console first shows gear ' + pGear + '.';
+    } else if (stalled) {
+      var on = down ? pGear + 1 : pGear - 1;
+      bt = '<b>Still on gear ' + on + '?</b> Move ' + dirWord + ' until the console first shows gear ' + pGear +
+        '. If it already shows ' + pGear + ', ease back ' + (down ? 'up' : 'down') + ' into gear ' + on + '.';
+    }
+    setHidden('behindHint', !bt);
+    if (bt && $('behindHint').innerHTML !== bt) $('behindHint').innerHTML = bt;
 
     // disc
     $('disc').className = 'disc' + (look === 'blue' ? ' blue' : look === 'green' ? ' green' : look === 'amber' ? ' amber' : look === 'learn' ? ' learn' : '') +
@@ -2368,6 +3031,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (confirming) {
         $('discLbl').textContent = 'RPM';
         $('discBig').textContent = fin(s.cad) && s.cad > 0 ? String(Math.round(s.cad)) : '--';
+      } else if (redoing || down) {
+        $('discLbl').textContent = redoing ? 'REDO' : 'DOWN TO';
+        $('discBig').textContent = String(Math.max(1, pGear));
       } else {
         $('discLbl').textContent = step === 0 ? 'BOTTOM' : step >= TOTAL_POINTS - 1 ? 'TOP' : 'GEAR';
         $('discBig').textContent = String(step === 0 ? 1 : Math.min(24, step + 1));
@@ -2389,14 +3055,26 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
     // the 25 dots
     var dots = $('calDots').children;
-    var doneCount = flash ? state.capturedPoint : step;
-    for (var j = 0; j < TOTAL_POINTS; j++) {
-      var cls = 'pt';
-      if (!learning && !confirming) {
-        if (j < doneCount) cls += ' done';
-        else if (j === step && !flash) cls += ' cur' + (look === 'blue' ? ' blue' : '');
+    if (down || redoing) {
+      // [v3.2] all 25 green from the up pass; measured on the way down = settled blue;
+      // the point being measured has a ring.
+      var downBy = {};
+      state.downPoints.forEach(function (q) { downBy[q.point] = true; });
+      for (var dj = 0; dj < TOTAL_POINTS; dj++) {
+        var dc = 'pt ' + (downBy[dj + 1] ? 'down' : 'done');
+        if (dj === step && !flash) dc = 'pt cur ring' + (look === 'blue' ? ' blue' : '');
+        dots[dj].className = dc;
       }
-      dots[j].className = cls;
+    } else {
+      var doneCount = flash ? state.capturedPoint : step;
+      for (var j = 0; j < TOTAL_POINTS; j++) {
+        var cls = 'pt';
+        if (!learning && !confirming) {
+          if (j < doneCount) cls += ' done';
+          else if (j === step && !flash) cls += ' cur' + (look === 'blue' ? ' blue' : '');
+        }
+        dots[j].className = cls;
+      }
     }
 
     // cadence slider (crank mode only: the v2 method needs the flywheel still)
@@ -2409,23 +3087,25 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         capCls = stopped ? 'warn' : '';
       } else if (rpm < CAD_LO || rpm > CAD_HI) {
         dotCls = 'bad'; capCls = 'bad';
-        cap = rpm < CAD_LO ? 'Speed up' : 'Ease off';
+        cap = rpm < CAD_LO ? 'Too slow — speed up a little' : 'Too fast — ease off a little';
       } else cap = '';
       var dot = $('cadDot');
-      dot.className = 'cadg-dot' + (dotCls ? ' ' + dotCls : '');
+      dot.parentNode.className = 'cadg-dot' + (dotCls ? ' ' + dotCls : '');
       dot.textContent = dotCls === 'idle' ? '--' : String(rpm);
-      dot.style.left = (dotCls === 'idle' ? 0 : Math.max(0, Math.min(100, (rpm - 40) / 70 * 100))).toFixed(1) + '%';
       $('cadCap').textContent = cap;
       $('cadCap').className = 'cadg-cap' + (capCls ? ' ' + capCls : '');
-      $('cadG').setAttribute('aria-label', dotCls === 'idle' ? (cap || 'Cadence: waiting for pedal turns') : 'Cadence ' + rpm + ' rpm, target ' + CAD_LO + ' to ' + CAD_HI);
+      $('cadG').setAttribute('aria-label', dotCls === 'idle' ? (cap || 'Cadence: waiting for pedal turns') : 'Cadence ' + rpm + ' rpm' + (cap ? ', ' + cap : ''));
     }
 
     // buttons
     var noPoint = learning || confirming;
     $('calActive').classList.toggle('nopoint', noPoint);
+    $('calActive').classList.toggle('redoing', redoing);
     setHidden('calCount', noPoint);
-    $('calCount').textContent = step + ' of ' + TOTAL_POINTS;
-    var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0;
+    $('calCount').textContent = redoing ? 'Redoing ' + pointWords(pass === 'rd' ? 'd' : 'u', step + 1)
+      : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
+      : step + ' of ' + TOTAL_POINTS;
+    var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0 && !down && !redoing;
     setHidden('confirmBtns', !(confirming || relearnHere));
     setHidden('btnConfirm', !confirming);
     $('btnRelearn').textContent = confirming ? 'Learn again' : 'Try learning the crank again';
@@ -2433,15 +3113,19 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     $('btnRelearn').disabled = !connected;
     $('calActive').classList.toggle('checking', checking);
     setHidden('btnCapture', noPoint || checking);
-    setHidden('btnUndo', noPoint || checking);
+    setHidden('btnUndo', noPoint || checking || redoing);
+    // [v3.2] down pass: save what's measured and skip the rest (s), with a second-tap confirm
+    setHidden('btnSkipDown', !(down && !checking && (s.cal === 1 || s.cal === 2)));
+    $('btnSkipDown').disabled = !connected;
     // Auto-capture on: a small secondary "Capture now", usable once 2 of 3 turns agree
     // (or the hold timer is two-thirds done). Off: the big CAPTURE button.
     var cap = $('btnCapture');
     cap.classList.toggle('lite', auto);
     cap.classList.toggle('primary', !auto);
     cap.textContent = auto ? 'Capture now' : 'CAPTURE';
-    cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped;
-    $('btnUndo').disabled = !connected || step === 0 || s.cal !== 1;
+    cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped || mustPass;
+    // Undo: at the first down point it goes back to up point 24 (the board allows it).
+    $('btnUndo').disabled = !connected || s.cal !== 1 || (!down && step === 0);
     $('btnCancel').disabled = !connected;
   }
 
@@ -2454,16 +3138,24 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     setHidden('calSay', checking);
     setHidden('calCheck', !checking);
     var n = checking ? s.step + 1 : 0;
+    var pass = state.v32 ? s.pass : '';
+    var downP = pass === 'd' || pass === 'rd';   // [v3.2] down point n = coming down to gear n-1
     if (checking) {
-      if (String(n) !== checkKey) {   // only rewrite the card when it changes
-        checkKey = String(n);
-        $('checkTitle').textContent = 'Point ' + n + ': the reading keeps changing';
-        $('checkBody').textContent = n >= TOTAL_POINTS
-          ? 'To redo it: push the lever back down a little, then all the way up again and hold.'
-          : 'To redo it: move the lever DOWN below gear ' + n + ', then up to where the console first shows gear ' + n + ', then hold it there.';
+      if (pass + n !== checkKey) {   // only rewrite the card when it changes
+        checkKey = pass + n;
+        if (downP) {
+          $('checkTitle').textContent = 'Gear ' + (n - 1) + ' (coming down): the reading keeps changing';
+          $('checkBody').textContent = 'To redo it: move the lever UP above gear ' + (n - 1) + ', then down to where the console first shows gear ' + (n - 1) + ', then hold it there.';
+          $('btnRedo').textContent = 'Redo gear ' + (n - 1);
+        } else {
+          $('checkTitle').textContent = 'Point ' + n + ': the reading keeps changing';
+          $('checkBody').textContent = n >= TOTAL_POINTS
+            ? 'To redo it: push the lever back down a little, then all the way up again and hold.'
+            : 'To redo it: move the lever DOWN below gear ' + n + ', then up to where the console first shows gear ' + n + ', then hold it there.';
+          $('btnRedo').textContent = 'Redo point ' + n;
+        }
         setHidden('checkDrift', false);
         $('checkDrift').textContent = 'It kept changing for 15 seconds, so the bridge stopped waiting.';
-        $('btnRedo').textContent = 'Redo point ' + n;
       }
     } else checkKey = '';
 
@@ -2475,21 +3167,33 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     $('btnRedo').disabled = !connected;
     $('btnKeep').disabled = !connected;
 
-    var redo = state.redo;
-    var showRedo = !checking && !holding && redo > 0 && (s.cal === 1 || s.cal === 2) && s.step === redo - 1;
-    setHidden('redoBanner', !showRedo);
+    var redo = state.redo, txt = '';
+    var redoDown = state.redoPass === 'd';
+    var showRedo = !checking && !holding && redo > 0 && (s.cal === 1 || s.cal === 2) && s.step === redo - 1 &&
+      (pass === 'd') === redoDown;
     if (showRedo) {
-      var txt = redo >= TOTAL_POINTS
-        ? 'Redo point 25: push the lever back down a little, then all the way up again and hold.'
-        : 'Redo point ' + redo + ': lever DOWN below gear ' + redo + ' first, then up to where the console first shows gear ' + redo + ', then hold.';
-      if ($('redoBanner').textContent !== txt) $('redoBanner').textContent = txt;
+      txt = redoDown
+        ? 'Redo gear ' + (redo - 1) + ' (coming down): lever UP above gear ' + (redo - 1) + ' first, then down to where the console first shows gear ' + (redo - 1) + ', then hold.'
+        : redo >= TOTAL_POINTS
+          ? 'Redo point 25: push the lever back down a little, then all the way up again and hold.'
+          : 'Redo point ' + redo + ': lever DOWN below gear ' + redo + ' first, then up to where the console first shows gear ' + redo + ', then hold.';
+    } else if (!checking && !holding && (pass === 'ru' || pass === 'rd')) {
+      // [v3.2] #R redo of one point of the saved calibration
+      var g = pass === 'ru' ? s.step + 1 : s.step;
+      var lead = fixInRedo() ? 'Gear ' + g + (pass === 'rd' ? ' (coming down)' : '') + ' needs another look: ' : 'Redo gear ' + g + (pass === 'rd' ? ' (coming down)' : '') + ': ';
+      showRedo = true;
+      txt = pass === 'ru'
+        ? lead + 'lever DOWN below gear ' + g + ' first, then up to where the console FIRST shows gear ' + g + ', then hold.'
+        : lead + 'from above gear ' + g + ', down to where the console FIRST shows gear ' + g + ', then hold.';
     }
+    setHidden('redoBanner', !showRedo);
+    if (showRedo && $('redoBanner').textContent !== txt) $('redoBanner').textContent = txt;
   }
 
   function renderBadge() {
     var b = $('calBadge');
     var calActive = state.s && state.s.cal !== 0;
-    b.hidden = state.view === 'cal' || !(calActive || (state.result && state.result.type));
+    b.hidden = state.view === 'cal' || !(calActive || (state.result && state.result.type) || reviewItems().length);
     var ph = diag.phase;
     setHidden('diagBadge', state.view === 'diag' || ph === 'idle' || ph === 'done' || ph === 'error');
   }
@@ -2500,10 +3204,23 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     return 'Gear ' + n;
   }
 
+  // [v3.2] a point in plain words: up point N = gear N going up; down point N = gear N-1 coming down
+  function pointWords(pass, n) {
+    if (pass === 'd') return 'gear ' + (n - 1) + ' (coming down)';
+    if (n === 1) return 'the bottom (lever all the way down)';
+    if (n === TOTAL_POINTS) return 'the top (lever all the way up)';
+    return 'gear ' + n + ' (going up)';
+  }
+  function capFirst(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
   function renderPoints() {
     var list = $('plist');
     var pts = state.points.slice().sort(function (a, b) { return a.point - b.point; });
     var html = '';
+    // [v3.2] down points under the up points: right column = gap to the same edge's up reading
+    var downs = state.downPoints.slice().sort(function (a, b) { return b.point - a.point; });
+    var upBy = {};
+    pts.forEach(function (q) { upBy[q.point] = q; });
     for (var i = 0; i < pts.length; i++) {
       var p = pts[i], prev = i > 0 && pts[i - 1].point === p.point - 1 ? pts[i - 1] : null;
       var dist = NaN;
@@ -2515,6 +3232,14 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         '</span><span class="d' + (fin(dist) && dist < MARGINAL_UT ? ' marg' : '') + '">' +
         (fin(dist) ? 'Δ ' + dist.toFixed(1) : '') + '</span></div>';
     }
+    if (downs.length) {
+      html += '<div class="prow"><span></span><span class="small muted" style="grid-column:2 / -1">Coming down (right: gap to the reading going up)</span></div>';
+      downs.forEach(function (q) {
+        var gap = dist3(q, upBy[q.point]);
+        html += '<div class="prow"><span class="n">' + q.point + '</span><span>Gear ' + (q.point - 1) + ' ↓</span><span class="xyz">' +
+          fmt(q.x, 1) + ', ' + fmt(q.y, 1) + ', ' + fmt(q.z, 1) + '</span><span class="d">' + (fin(gap) ? '↕ ' + gap.toFixed(1) : '') + '</span></div>';
+      });
+    }
     list.innerHTML = html;
     list.scrollTop = list.scrollHeight;
     renderCal();
@@ -2524,22 +3249,33 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
 
+  function resultCardHidden() {
+    return !!(state.s && state.s.cal !== 0) || !!(state.check && state.check.phase === 'run');
+  }
+
   function renderResult() {
     var card = $('resultCard'), r = state.result;
     if (!r) { card.hidden = true; card.innerHTML = ''; return; }
-    card.hidden = false;
+    card.hidden = resultCardHidden();
     var close = '<button class="x-btn" type="button" data-dismiss aria-label="Dismiss">×</button>';
     var html;
     if (r.type === 'K') {
       var marginal = r.ok && fin(r.minstep) && r.minstep < MARGINAL_UT;
       card.className = 'card result ' + (r.ok ? (marginal ? 'warn' : 'ok') : 'bad');
       html = '<h2>' + (r.ok ? 'Calibration saved' : 'Calibration rejected') + close + '</h2>';
+      if (r.edit) html += '<p>Changed: ' + esc(r.edit) + '.</p>';
       if (!r.ok) html += '<p><b>' + esc(r.msg || 'No reason given') + '</b></p>';
       else if (r.msg && r.msg.toLowerCase() !== 'saved') html += '<p>' + esc(r.msg) + '</p>';
       html += '<div class="stats">' +
         '<div class="stat"><div class="v">' + fmt(r.span, 1) + '</div><div class="u">Span (µT)</div></div>' +
         '<div class="stat"><div class="v">' + fmt(r.minstep, 1) + '</div><div class="u">Smallest step (µT)' +
         (fin(r.minAt) ? ' (gear ' + r.minAt + ')' : '') + '</div></div></div>';
+      // [v3.2] down pass
+      if (r.ok && r.down >= 0 && !r.edit) {
+        html += '<p class="downinfo">' + (r.down >= DOWN_POINTS ? 'Down pass: all ' + DOWN_POINTS + ' gears measured coming down.'
+          : r.down > 0 ? 'Down pass: ' + r.down + ' of ' + DOWN_POINTS + ' gears measured coming down.'
+          : 'Down pass skipped.') + '</p>';
+      }
       if (marginal) {
         html += '<div class="marginal">Marginal: the smallest step (' + fmt(r.minstep, 1) + ' µT at gear ' +
           (fin(r.minAt) ? r.minAt : '?') + ') is under ' + MARGINAL_UT + ' µT. That gear may flicker. Consider moving the sensor closer to the magnet and recalibrating.</div>';
@@ -2559,6 +3295,246 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (prec) html += '<p class="small">The points captured so far were saved as ' + esc(prec.filename) + ' (' + esc(prec.summary) + ').</p>' + recActionsHtml(prec.id);
     }
     card.innerHTML = html;
+  }
+
+  // ===================================================================
+  // [v3.2] Review card: points the bridge's check flagged after saving (F lines)
+  // ===================================================================
+  var REASON_TEXT = {
+    behind: 'isn’t past the gear before it',
+    updown: 'its up and down readings don’t agree',
+    offpath: 'is off the path the other gears make',
+    pair: 'its up and down readings don’t agree, and it isn’t clear which is off',
+    prior: 'moved since your last calibration'
+  };
+  function reviewItems() { return state.review ? state.review.items : []; }
+  function fixKey(it) { return it.pass + it.point; }
+  function fixCanRedo(it) { return it.point >= 2 && it.point <= (it.pass === 'd' ? TOTAL_POINTS - 2 : TOTAL_POINTS - 1); }
+  function fixGuess(it) { return fin(it.gx) ? { x: it.gx, y: it.gy, z: it.gz } : null; }
+  // The flagged point being redone right now (pass ru/rd matching the first item), or null.
+  function fixInRedo() {
+    var s = state.s, it = reviewItems()[0];
+    if (!it || !s || s.cal === 0 || (s.pass !== 'ru' && s.pass !== 'rd')) return null;
+    return (s.pass === 'rd' ? 'd' : 'u') === it.pass && s.step + 1 === it.point ? it : null;
+  }
+
+  // Guided fixes: redo the first flagged point straight away; after FIX_MAX_TRIES redos of the same
+  // point (or when the rider cancelled, or the bridge refused) wait on the card for the rider.
+  var fixWaitT = 0;
+  function fixNext() {
+    if (!state.review) return;
+    state.review.items = state.review.items.filter(function (it) { return !state.reviewKept[fixKey(it)]; });
+    var it = state.review.items[0];
+    if (!it) { state.review = null; state.fixPaused = false; maybeOfferCheck(); render(); return; }
+    var tries = state.fixTries[fixKey(it)] || 0;
+    if (state.fixPaused || tries >= FIX_MAX_TRIES || !fixCanRedo(it) || state.conn !== 'connected' || state.edit) { renderReview(); return; }
+    if (state.s && state.s.cal !== 0) {
+      // K and the F list come just before the status line says the board is idle: try again shortly
+      clearTimeout(fixWaitT);
+      fixWaitT = setTimeout(fixNext, 300);
+      renderReview();
+      return;
+    }
+    state.fixTries[fixKey(it)] = tries + 1;
+    startEdit('R', it.pass, it.point);
+  }
+
+  // Skip or Use best guess, from the card or from the redo screen (then the redo is cancelled first).
+  function fixAction(act) {
+    var it = reviewItems()[0];
+    if (!it) return;
+    state.editErr = '';
+    if (fixInRedo() || (state.edit && state.edit.kind === 'R')) {
+      state.fixAfter = act;
+      send('x');
+      return;
+    }
+    if (act === 'skip') { state.reviewKept[fixKey(it)] = true; fixNext(); }
+    else startEdit('G', it.pass, it.point, fixGuess(it));
+    renderReview();
+  }
+
+  // The redo was cancelled because the rider chose Skip or Use best guess.
+  function redoStopped() {
+    var act = state.fixAfter, it = reviewItems()[0];
+    state.fixAfter = '';
+    if (!it) return;
+    if (act === 'skip') { state.reviewKept[fixKey(it)] = true; fixNext(); return; }
+    // #G needs the board idle: wait for the status line to say so (at most ~3 s)
+    var tries = 0;
+    (function go() {
+      if (state.s && state.s.cal !== 0 && tries++ < 12) { setTimeout(go, 250); return; }
+      startEdit('G', it.pass, it.point, fixGuess(it));
+    })();
+  }
+
+  var reviewKey = '';
+  function renderReview() {
+    var card = $('reviewCard'), items = reviewItems();
+    var active = !!(state.s && state.s.cal !== 0);
+    var checkRun = !!state.check && state.check.phase === 'run';
+    var show = !active && !checkRun && items.length > 0;
+    renderFixLinks();
+    setHidden('reviewCard', !show);
+    if (!show) { reviewKey = ''; return; }
+    var connected = state.conn === 'connected', busy = !!state.edit;
+    var it = items[0], words = pointWords(it.pass, it.point), key2 = fixKey(it);
+    var tries = state.fixTries[key2] || 0, tired = tries >= FIX_MAX_TRIES || !fixCanRedo(it);
+    var key = key2 + it.reason + '|' + items.length + '|' + tries + '|' + busy + '|' + state.editErr + '|' + connected + '|' + state.fixPaused;
+    if (key === reviewKey) return;   // only rewrite when something changed (keeps focus and taps intact)
+    reviewKey = key;
+    var why = REASON_TEXT[it.reason] || 'looks wrong (' + it.reason + ')';
+    var dis = !connected || busy ? ' disabled' : '';
+    var html = '<h2>' + esc(capFirst(words.replace(/ \(.*\)$/, ''))) + ' needs another look' +
+      '<button class="x-btn" type="button" data-review="dismiss" aria-label="Stop checking gears">×</button></h2>' +
+      '<p class="rv-t">The bridge checked the saved calibration: <b>' + esc(words) + '</b> ' + esc(why) + '.</p>';
+    if (tired && fixCanRedo(it)) html += '<p class="small muted">It still looks off after ' + tries + ' tries. Use the bridge’s best guess, or keep it as it is.</p>';
+    else if (!busy) html += '<p class="small muted">Pedal it once more: the screen walks you through it.</p>';
+    html += '<div class="btn-stack" style="margin-top:12px">' +
+      (tired
+        ? '<button class="btn primary wide" type="button" data-review="guess"' + dis + ' aria-label="Use the bridge’s best guess for ' + esc(words) + '">Use best guess</button>'
+        : '<button class="btn primary wide" type="button" data-review="redo"' + dis + ' aria-label="Redo ' + esc(words) + ' by pedalling">Redo ' + esc(words.replace(/ \(.*\)$/, '')) + '</button>') +
+      '</div><div class="rv-links">' +
+      (tired ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
+      '<button class="linkbtn" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
+    if (items.length > 1) html += '<p class="small muted" style="margin-top:8px">Then ' + (items.length - 1) + ' more to look at.</p>';
+    if (busy) html += '<div class="rv-msg busy" role="status">' + (state.edit.kind === 'R' ? 'Starting the redo…' : 'Saving the best guess…') + '</div>';
+    if (state.editErr) html += '<div class="rv-msg bad" role="alert">Not changed: ' + esc(state.editErr) + '</div>';
+    card.innerHTML = html;
+  }
+
+  // On the redo screen of a flagged point: small "Use best guess instead" / "Skip" links.
+  function renderFixLinks() {
+    var it = fixInRedo();
+    setHidden('fixLinks', !it || !!state.fixAfter);
+    $('fixGuess').disabled = state.conn !== 'connected';
+    $('fixSkip').disabled = state.conn !== 'connected';
+  }
+
+  // Send #R (redo by pedalling) or #G (use the board's guess) for one point.
+  function startEdit(kind, pass, point, g) {
+    if (state.conn !== 'connected') { toast('Not connected'); return; }
+    if (state.edit) { toast('Still waiting for the bridge'); return; }
+    if (state.s && state.s.cal !== 0) { toast('Finish or cancel the calibration first'); return; }
+    state.editErr = '';
+    var ed = { kind: kind, pass: pass, point: point, g: g || null, timer: 0 };
+    ed.timer = setTimeout(function () {
+      if (state.edit === ed && !ed.started && !ed.okd) {
+        state.edit = null;
+        state.editErr = 'no answer from the bridge (it needs firmware v3.2)';
+        state.fixPaused = true;
+        renderReview();
+      }
+    }, EDIT_TIMEOUT_MS);
+    state.edit = ed;
+    sendCmd('#' + kind + ',' + pass + ',' + point);
+    renderReview();
+  }
+
+  // ===================================================================
+  // [v3.2] Gear check ("confirm ride"): app only, compares the bridge's
+  // live gear with the Keiser console at a few gears. Offered after a
+  // saved calibration once the review list is empty or dismissed.
+  // ===================================================================
+  function maybeOfferCheck() {
+    if (state.checkDone || state.check) return;
+    var r = state.result;
+    if (!r || r.type !== 'K' || !r.ok || reviewItems().length) return;
+    state.check = { phase: 'offer', idx: 0, results: [], picking: false, val: 1, app: 0 };
+    renderRideCheck();
+  }
+
+  function renderRideCheck() {
+    var c = state.check, active = !!(state.s && state.s.cal !== 0);
+    var show = !!c && !active && !(c.phase === 'offer' && reviewItems().length);
+    setHidden('rideCheck', !show);
+    if (!show) return;
+    setHidden('rckOffer', c.phase !== 'offer');
+    setHidden('rckRun', c.phase !== 'run');
+    setHidden('rckDone', c.phase !== 'done');
+    var connected = state.conn === 'connected';
+    $('rckStart').disabled = !connected;
+    if (c.phase !== 'run') return;
+    var st = RIDE_CHECKS[c.idx], s = state.s;
+    $('rckStep').textContent = 'Check ' + (c.idx + 1) + ' of ' + RIDE_CHECKS.length + ' · ' + st.label;
+    if ($('rckTask').textContent !== st.task) $('rckTask').textContent = st.task;
+    var g = rideGear(), stale = isStale(), live = connected && g > 0 && !stale;
+    var pedalling = !s || s.pedalling;
+    $('rckGear').textContent = live ? String(g) : '--';
+    $('rckGear').className = 'gear' + (live && pedalling ? '' : ' dim');
+    $('rckRing').setAttribute('aria-label', live ? 'Bridge gear ' + g : 'Bridge gear not known');
+    $('rckNote').textContent = !connected ? 'Not connected' : stale ? 'Waiting for the bridge…' : !live ? 'Not calibrated'
+      : !pedalling ? 'Keep pedalling: the gear updates on each pedal turn' : '';
+    setHidden('rckAsk', c.picking);
+    setHidden('rckPick', !c.picking);
+    if (!c.picking) {
+      var q = live ? 'Does the Keiser console show gear ' + g + '?' : 'Waiting for the bridge’s gear…';
+      if ($('rckQ').textContent !== q) $('rckQ').textContent = q;
+      $('rckYes').disabled = !live;
+      $('rckNo').disabled = !live;
+    } else {
+      $('rckVal').textContent = String(c.val);
+      $('rckMinus').disabled = c.val <= 1;
+      $('rckPlus').disabled = c.val >= 24;
+    }
+  }
+
+  function checkAnswer(consoleGear) {
+    var c = state.check;
+    if (!c || c.phase !== 'run') return;
+    var st = RIDE_CHECKS[c.idx];
+    var app = c.picking ? c.app : rideGear();
+    c.results.push({ label: st.label, target: st.gear, pace: st.pace, app: app, console: consoleGear });
+    c.picking = false;
+    if (c.idx + 1 < RIDE_CHECKS.length) c.idx++;
+    else finishCheck();
+    renderRideCheck();
+  }
+
+  // The gear edge between two gears: bridge 12 / console 13 means edge 13 is set too high;
+  // bridge 12 / console 11 means edge 12 is set too low. Either way, redo the higher one.
+  function edgeGear(app, cons) { return Math.max(2, Math.min(TOTAL_POINTS - 1, Math.max(app, cons))); }
+
+  function finishCheck() {
+    var c = state.check;
+    if (!c) return;
+    c.phase = 'done';
+    c.picking = false;
+    state.checkDone = true;
+    var res = c.results;
+    var miss = res.filter(function (r) { return r.app !== r.console; });
+    var rid = state.result && state.result.recordId, saved = false;
+    if (res.length && rid) {
+      var lines = ['gear_check: ' + res.length + ' of ' + RIDE_CHECKS.length + ' checks, ' + (res.length - miss.length) +
+        ' matched (bridge gear vs Keiser console; watts read below the console on purpose and were not compared)'];
+      res.forEach(function (r, i) {
+        lines.push('gear_check ' + (i + 1) + ': ' + r.label + ' (asked ~' + r.target + ', ' + r.pace + '), bridge=' + r.app +
+          ', console=' + r.console + ', ' + (r.app === r.console ? 'match' : 'MISMATCH'));
+      });
+      saved = appendRecordComments(rid, lines, 'gear check ' + (res.length - miss.length) + '/' + res.length + ' matched');
+    }
+    $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : miss.length ? 'Some gears differ' : 'All gears match';
+    var html = '', redone = {};
+    res.forEach(function (r) {
+      var ok = r.app === r.console;
+      html += '<div class="rck-row' + (ok ? '' : ' miss') + '"><span class="k">' + esc(r.label) + '</span><span class="v">' +
+        (ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console) + '</span></div>';
+      if (!ok && state.v32) {
+        var gg = edgeGear(r.app, r.console);
+        if (!redone[gg]) {
+          redone[gg] = true;
+          html += '<button class="btn primary wide" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
+        }
+      }
+    });
+    if (miss.length) {
+      html += '<p class="small muted" style="margin-top:10px">' + (state.v32
+        ? 'Redo remeasures where the console first shows that gear, going up.'
+        : 'If a gear is often off, calibrate again.') + '</p>';
+    }
+    $('rckSum').innerHTML = html;
+    var rec = rid ? findRecord(rid) : null;
+    $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').' : '';
   }
 
   // ===================================================================
@@ -2622,6 +3598,18 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (state.conn === 'disconnected') reconnect(); else connectClick();
   });
   $('hdrBtn').addEventListener('click', disconnect);
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    $('metaScheme').content = t;
+    $('metaTheme').content = t === 'light' ? '#f2f2f7' : '#000000';
+    $('themeBtn').setAttribute('aria-label', t === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+  }
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  $('themeBtn').addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(t);
+    try { localStorage.setItem('m3theme', t); } catch (e) {}
+  });
   Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
     b.addEventListener('click', function () { showView(b.getAttribute('data-view')); });
   });
@@ -2666,12 +3654,84 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (t && t.closest && t.closest('[data-dismiss]')) { state.result = null; renderResult(); renderBadge(); }
   });
 
+  // [v3.2] down pass: skip the rest and save (s), second tap confirms
+  $('btnSkipDown').addEventListener('click', function () {
+    twoTap($('btnSkipDown'), 'Tap again to finish now', function () { send('s'); });
+  });
+
+  // [v3.2] review card
+  $('reviewCard').addEventListener('click', function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest('[data-review]') : null;
+    if (!b || b.disabled) return;
+    var act = b.getAttribute('data-review');
+    if (act === 'dismiss') {
+      state.review = null;
+      state.fixPaused = false;
+    } else if (act === 'redo') {
+      state.editErr = '';
+      state.fixPaused = false;
+      fixNext();
+    } else if (act === 'guess' || act === 'skip') {
+      state.fixPaused = false;
+      fixAction(act);
+    }
+    if (!state.review) { state.editErr = ''; maybeOfferCheck(); }
+    renderReview();
+    renderRideCheck();
+    renderBadge();
+  });
+
+  // [v3.2] guided fixes: links on the redo screen
+  $('fixGuess').addEventListener('click', function () { fixAction('guess'); render(); });
+  $('fixSkip').addEventListener('click', function () { fixAction('skip'); render(); });
+
+  // [v3.2] gear check
+  $('rckStart').addEventListener('click', function () {
+    var c = state.check;
+    if (!c) return;
+    c.phase = 'run'; c.idx = 0; c.results = []; c.picking = false;
+    render();
+    try { $('rideCheck').scrollIntoView({ block: 'start' }); } catch (e) {}
+  });
+  $('rckSkip').addEventListener('click', function () { state.check = null; state.checkDone = true; render(); });
+  $('rckYes').addEventListener('click', function () { checkAnswer(rideGear()); });
+  $('rckNo').addEventListener('click', function () {
+    var c = state.check;
+    if (!c) return;
+    c.app = rideGear();
+    c.val = c.app > 0 ? c.app : 12;
+    c.picking = true;
+    renderRideCheck();
+  });
+  $('rckMinus').addEventListener('click', function () { var c = state.check; if (c && c.val > 1) { c.val--; renderRideCheck(); } });
+  $('rckPlus').addEventListener('click', function () { var c = state.check; if (c && c.val < 24) { c.val++; renderRideCheck(); } });
+  $('rckSave').addEventListener('click', function () { var c = state.check; if (c) checkAnswer(c.val); });
+  $('rckQuit').addEventListener('click', function () { finishCheck(); render(); });
+  $('rckClose').addEventListener('click', function () { state.check = null; render(); });
+  $('rckSum').addEventListener('click', function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest('[data-rck-redo]') : null;
+    if (b && !b.disabled) startEdit('R', 'u', +b.getAttribute('data-rck-redo'));
+  });
+
   // Saved-record actions anywhere on the page (saved list, result cards).
   document.addEventListener('click', function (ev) {
     var b = ev.target && ev.target.closest ? ev.target.closest('[data-rec-act]') : null;
     if (b) doRecAction(b.getAttribute('data-rec-act'), b.getAttribute('data-id'), b);
   });
 
+  $('onbNext').addEventListener('click', function () { onbGo(1); });
+  $('onbBack').addEventListener('click', function () { onbGo(-1); });
+  (function () {   // swipe between walkthrough pages
+    var x0 = null;
+    $('onb').addEventListener('pointerdown', function (e) { x0 = e.clientX; });
+    $('onb').addEventListener('pointerup', function (e) {
+      if (x0 === null) return;
+      var dx = e.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 50) onbGo(dx < 0 ? 1 : -1);
+    });
+    $('onb').addEventListener('pointercancel', function () { x0 = null; });
+  })();
   $('saveStored').addEventListener('click', requestStoredCal);
   $('goSaved').addEventListener('click', function () {
     showView('diag');
@@ -2707,7 +3767,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var inp = $('sendInput');
     var v = inp.value;
     if (!v) { toast('Type one character'); return; }
-    send(v.charAt(0));
+    if (v.charAt(0) === '#') sendCmd(v);   // [v3.2] edit commands, e.g. #G,u,20
+    else send(v.charAt(0));
     inp.value = '';
   });
 
@@ -2729,6 +3790,13 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var wPlan = {}, wSent = 0, mflag = false, firstW = 0, stuckDone = false;   // [v3.1] hold-still check
     var pauseUntil = 0;   // status lines held back until this time (simulated Bluetooth stall)
     this.pauseStatus = function (ms) { pauseUntil = Date.now() + ms; };
+    // [v3.2] passes, down points, the check (F), edits (#R / #G)
+    var passName = '-';          // - u d ru rd
+    var downPts = {};            // down point (23..2) -> [x, y, z]
+    var resolved = {};           // 'u20' etc.: flagged point fixed by #R or #G
+    var redoInfo = null;         // {pass, point, bUntil}: B flag until bUntil
+    var behindSent = false, backUntil = 0;   // &behind=1: overshoot at point 7; B until backUntil
+    var cmdBuf = null;           // '#...' command being received, up to \n
 
     // A plausible calibration path: 25 points, total ~146 µT, smallest step 3.8 µT at gear 6.
     var PATH = (function () {
@@ -2743,6 +3811,14 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       }
       return pts;
     })();
+
+    // [v3.2] down point k: the same edge as up point k, approached from above. It sits a little
+    // towards the lower gear (the console's stickiness). Point 23 is off with &review=1 (updown).
+    function downXYZ(k) {
+      var a = PATH[k - 1], b = PATH[k - 2], f = DEMO_REVIEW && k === 23 && !resolved.d23 ? 0.9 : 0.3;
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+    }
+    if (DEMO_V32 && startCalibrated) for (var dk = 2; dk <= TOTAL_POINTS - 2; dk++) downPts[dk] = downXYZ(dk);
 
     // One FIFO of <=20-byte notification chunks, like the real TX characteristic.
     // Items may also be functions (run in order, e.g. "transfer finished").
@@ -2888,6 +3964,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           if (++phaseT >= 6) { phase = 'settle'; phaseT = 0; }
         }
         var tgt = step <= 0 ? 1 : step >= 24 ? 24 : step + 1;
+        if (passName === 'd' || passName === 'rd') tgt = Math.max(1, step);   // [v3.2] coming down to gear step
         if (cal < 3) gear = tgt;
         res = gearToRes(gear) + (phase === 'move' && cal === 1 ? jitter(1.5) : jitter(0.1));
         watts = Math.round(cad * (0.4 + res * 0.045));
@@ -2947,13 +4024,15 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (mflag && cal !== 0) flags += 'M';
       if (recording) flags += 'G';
       if (dumping) flags += 'Y';
+      if (cal !== 0 && ((redoInfo && Date.now() < redoInfo.bUntil) || Date.now() < backUntil)) flags += 'B';   // [v3.2] go back past the point first
 
       if (DEMO_STALL && t % 48 === 0) pauseUntil = Date.now() + 3000;
       if (stream && !dumping && Date.now() >= pauseUntil) {   // status lines pause during a transfer or a stall
         var cadOut = DEMO_V3 && cal === 3 && lturns === 0 ? 0 : cad;   // no rpm until the first turns
         out(['S', calValid ? gear : 0, res.toFixed(1), Math.max(0, watts), cadOut.toFixed(1),
           cal, cal ? step : 0, Math.round(stab), off.toFixed(1), flags, samples.length]
-          .concat(DEMO_V3 ? [pedal ? 'B' : '-', cal === 3 ? lturns : 0] : []).join(','));
+          .concat(DEMO_V3 ? [pedal ? 'B' : '-', cal === 3 ? lturns : 0] : [])
+          .concat(DEMO_V32 ? [cal === 0 ? '-' : passName] : []).join(','));
       }
       if (debug && t % 4 === 0) {
         var p = PATH[Math.max(0, Math.min(24, gear - 1))];
@@ -2962,7 +4041,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       }
     }
 
-    function beginCapture() { cal = 2; capT = 2; }
+    function beginCapture() { cal = 2; capT = 2; if (DEMO_V32) stab = 100; }
 
     // [v3] one detected pedal turn
     function onTurn(period) {
@@ -2974,9 +4053,25 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       }
       if (cal === 3) lturns++;
       if (cal === 1 && phase === 'settle') {
-        if (agree < 3) {
+        // [v3.2] redo: turns don't count until the reading has been past the point (B flag)
+        if (redoInfo && Date.now() < redoInfo.bUntil) { agree = 0; stab = 0; return; }
+        // [v3.2] &behind=1: point 7 was taken too far up, so at point 8 the agreeing turns sit behind it.
+        // The board goes back to point 7 by itself (N,behind, U,6) and sets B until the lever has gone
+        // back down far enough.
+        if (DEMO_BEHIND && DEMO_V32 && passName === 'u' && step === 7 && !behindSent && agree >= 1) {
+          behindSent = true;
+          out('N,behind');
+          step = 6; agree = 0; stab = 0; phase = 'settle'; mflag = false; wSent = 0;
+          backUntil = Date.now() + (FAST > 1 ? 2000 : 4000);
+          out('U,6');
+          out('Point 7 went too far: going back to it. Shift down into gear 6, then up to where gear 7 first shows.');
+          return;
+        }
+        if (Date.now() < backUntil) { agree = 0; stab = 0; return; }
+        var need = DEMO_V32 ? 2 : 3;   // [v3.2] 2 agreeing turns, then the check turn
+        if (agree < need) {
           agree++;
-          stab = [0, 34, 68, 100][agree];
+          stab = DEMO_V32 ? [0, 34, 67][agree] : [0, 34, 68, 100][agree];
         } else if (auto) {
           // [v3.1] one more turn at stab 100: did the lever really stop?
           var stuckHere = DEMO_STUCK && step === 5 && !stuckDone;
@@ -2997,13 +4092,63 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       }
     }
 
+    function xyzStr(p, j) { return (p[0] + jitter(j)).toFixed(1) + ',' + (p[1] + jitter(j)).toFixed(1) + ',' + (p[2] + jitter(j)).toFixed(1); }
+
+    // [v3.2] the check after saving: F lines, then F,end
+    function sendF() {
+      var list = sendFList();
+      list.forEach(function (f) {
+        var a = PATH[f.point - 1], b = PATH[f.point - 2];   // guess: the up reading, or the usual up/down offset
+        var g = f.pass === 'u' ? a : [a[0] + (b[0] - a[0]) * 0.3, a[1] + (b[1] - a[1]) * 0.3, a[2] + (b[2] - a[2]) * 0.3];
+        out('F,' + f.pass + ',' + f.point + ',' + (f.pass === 'u' ? 'behind' : 'updown') + ',' + xyzStr(g, 0));
+      });
+      out('F,end,' + list.length);
+    }
+    function saveAll(human) {
+      cal = 0; step = 0; stab = 0; calValid = true; passName = '-'; redoInfo = null;
+      out(human || 'Calibration complete: 25 points, span 146.0 µT, smallest step 3.8 µT at gear 6.');
+      out('K,1,146.0,3.8,6,saved');
+      sendF();
+    }
+
     function capturePoint() {
+      if (DEMO_V32 && (passName === 'd' || passName === 'rd')) {
+        // [v3.2] down point step+1: coming down to gear step
+        var dp = step + 1;
+        if (passName === 'rd') resolved['d' + dp] = true;
+        downPts[dp] = downXYZ(dp);
+        out('C,down,' + dp + ',' + xyzStr(downPts[dp], 0.05));
+        out('Down point ' + dp + ' (gear ' + step + ' coming down) captured.');
+        mflag = false; wSent = 0;
+        if (passName === 'rd') { redoInfo = null; out('E,ok,redo'); saveAll('Redo saved.'); return; }
+        step--;
+        if (step < 1) { saveAll('Calibration complete: 25 points up, ' + Object.keys(downPts).length + ' down.'); return; }
+        cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+        return;
+      }
+      if (DEMO_V32 && passName === 'ru') {
+        if (!(DEMO_STUBBORN && step + 1 === 20)) resolved['u' + (step + 1)] = true;   // &stubborn=1: gear 20 stays flagged
+        out('C,' + (step + 1) + ',' + xyzStr(PATH[step], 0.05));
+        redoInfo = null;
+        out('E,ok,redo');
+        saveAll('Redo saved.');
+        return;
+      }
       var p = PATH[step];
       out(['C', step + 1, (p[0] + jitter(0.05)).toFixed(1), (p[1] + jitter(0.05)).toFixed(1), (p[2] + jitter(0.05)).toFixed(1)].join(','));
       out('Point ' + (step + 1) + ' captured.');
       mflag = false; wSent = 0;
       if (DEMO_STUCK && step === 5) stuckDone = true;
       step++;
+      if (DEMO_V32 && step === TOTAL_POINTS - 1) {
+        // [v3.2] the top point is worked out from 23 and 24, then straight into the down pass
+        // the top: 0.3 x the 23->24 step beyond point 24
+        var p23 = PATH[22], p24 = PATH[23];
+        out('C,25,' + xyzStr([p24[0] + 0.3 * (p24[0] - p23[0]), p24[1] + 0.3 * (p24[1] - p23[1]), p24[2] + 0.3 * (p24[2] - p23[2])], 0));
+        out('Top point worked out from points 23 and 24. Now come back down: point 23 first.');
+        passName = 'd'; step = DOWN_FIRST_STEP; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+        return;
+      }
       if (step >= TOTAL_POINTS) {
         cal = 0; step = 0; stab = 0; calValid = true;
         out('Calibration complete: 25 points, span 146.0 µT, smallest step 3.8 µT at gear 6.');
@@ -3013,8 +4158,62 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       cal = 1; stab = 0; phase = 'move'; phaseT = 0;
     }
 
-    this.receive = function (c) {
+    // Writes arrive as single characters, or as <=20-byte pieces of a '#...\n' command.
+    this.receive = function (str) {
       if (!connected) return;
+      for (var i = 0; i < str.length; i++) {
+        var ch = str.charAt(i);
+        if (cmdBuf !== null) {
+          if (ch === '\n' || ch === '\r') { var cmd = cmdBuf; cmdBuf = null; hashCmd(cmd); }
+          else if (cmdBuf.length < 64) cmdBuf += ch;
+          continue;
+        }
+        if (ch === '#' && DEMO_V32) { cmdBuf = ''; continue; }
+        if (ch === '\n' || ch === '\r') continue;
+        receiveChar(ch);
+      }
+    };
+
+    // [v3.2] '#' edit commands (without the '#')
+    function hashCmd(cmd) {
+      var a = cmd.split(','), k = a[0], pass = a[1], point = parseInt(a[2], 10);
+      if (k === 'X') { out('E,ok,cleared'); return; }
+      if (k === 'P') { out('E,ok,staged'); return; }
+      if (k === 'W') { out('E,ok,saved'); out('K,1,146.0,3.8,6,saved'); sendF(); return; }
+      if (k !== 'R' && k !== 'G') { out('E,fail,unknown command'); return; }
+      if (pass !== 'u' && pass !== 'd') { out('E,fail,bad pass'); return; }
+      if (cal !== 0) { out('E,fail,calibrating'); return; }
+      if (!calValid) { out('E,fail,no calibration'); return; }
+      if (k === 'G') {
+        var flagged = sendFList();
+        var hit = flagged.some(function (f) { return f.pass === pass && f.point === point; });
+        if (!hit) { out('E,fail,no guess for that point'); return; }
+        resolved[pass + point] = true;
+        if (pass === 'd') downPts[point] = downXYZ(point);
+        out('Using the best guess for ' + (pass === 'd' ? 'down' : 'up') + ' point ' + point + '.');
+        out('E,ok,guess');
+        out('K,1,146.0,3.8,6,saved');
+        sendF();
+        return;
+      }
+      if (!(point >= 2 && point <= (pass === 'd' ? TOTAL_POINTS - 2 : TOTAL_POINTS - 1))) { out('E,fail,bad point'); return; }
+      passName = 'r' + pass; step = point - 1; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
+      redoInfo = { pass: pass, point: point, bUntil: Date.now() + (FAST > 1 ? 1500 : 3500) };
+      out(pass === 'u'
+        ? 'Redo gear ' + point + ': move the lever DOWN below gear ' + point + ', then up to where the console FIRST shows gear ' + point + ', and hold it there.'
+        : 'Redo: from above, down to where the console first shows gear ' + (point - 1) + ', and hold it there.');
+    }
+    // the current F list without sending it
+    function sendFList() {
+      var l = [];
+      if (DEMO_REVIEW) {
+        if (!resolved.u20) l.push({ pass: 'u', point: 20 });
+        if (!resolved.d23 && downPts[23]) l.push({ pass: 'd', point: 23 });
+      }
+      return l;
+    }
+
+    function receiveChar(c) {
       if (DEMO_OLDFW && 'kgmey'.indexOf(c) >= 0) { out("Unknown command '" + c + "'. h = help."); return; }
       switch (c) {
         case '1': stream = true; break;
@@ -3023,7 +4222,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           if (cal !== 0) { out('Already calibrating. x = abort.'); break; }
           if (DEMO_V3) {
             cal = 3; step = 0; stab = 0; agree = 0; lturns = 0; wPlan = {}; wSent = 0; mflag = false; stuckDone = false;
-            out('Calibration started. Pedal steadily at 60-80 rpm so the bridge can learn your crank.');
+            passName = 'u'; redoInfo = null; behindSent = false; backUntil = 0;
+            if (DEMO_V32) { downPts = {}; resolved = {}; }
+            out(DEMO_V32 ? 'Calibration started. Pedal steadily so the bridge can learn your crank.'
+              : 'Calibration started. Pedal steadily at 60-80 rpm so the bridge can learn your crank.');
             break;
           }
           cal = 1; step = 0; stab = 0; phase = 'move'; phaseT = 0;
@@ -3035,9 +4237,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           if (cal === 5) { capturePoint(); break; }   // [v3.1] capture anyway
           if (cal === 4) {
             cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
-            out('Cadence confirmed: keep pedalling through all 25 points.');
+            out(DEMO_V32 ? 'Cadence confirmed: keep pedalling. Points 1 to 24 going up, then back down.'
+              : 'Cadence confirmed: keep pedalling through all 25 points.');
             break;
           }
+          if (redoInfo && Date.now() < redoInfo.bUntil) { out('Not captured: go past the gear first.'); break; }
           if (cal === 1) {
             // [v3.1] manual captures get the same checks as auto-capture
             if (step > 0 && phase === 'move') { out('Not captured: the lever has not moved from the previous point.'); out('N,notmoved'); break; }
@@ -3052,12 +4256,28 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           break;
         case 'u':
           if (cal === 0) { out('Not calibrating.'); break; }
+          if (passName === 'ru' || passName === 'rd') { out('Nothing to undo in a redo. x = cancel.'); break; }
+          var dn = DEMO_V32 && passName === 'd' ? ',d' : '';   // [v3.2] U,<step>,d in the down pass
           if (cal === 5) {
             // [v3.1] redo: same step; after moving the lever down and back up it settles
             cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
             mflag = false; wSent = 0; stuckDone = true;
-            out('U,' + step);
-            out('Redo: first move the lever DOWN below this gear.');
+            out('U,' + step + dn);
+            out(dn ? 'Redo: first move the lever UP above this gear.' : 'Redo: first move the lever DOWN below this gear.');
+            break;
+          }
+          if (dn) {
+            if (step >= DOWN_FIRST_STEP) {
+              // [v3.2] back from the first down point to up point 24
+              passName = 'u'; step = TOTAL_POINTS - 2; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
+              out('U,' + step);
+              out('Undo: back to point 24 going up.');
+              break;
+            }
+            step++; delete downPts[step + 1];
+            cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
+            out('U,' + step + ',d');
+            out('Undo: back to down point ' + (step + 1) + ' (gear ' + step + ').');
             break;
           }
           if (step === 0) { out('Nothing to undo.'); break; }
@@ -3065,9 +4285,20 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           out('U,' + step);
           out('Undo: back to point ' + (step + 1) + '.');
           break;
+        case 's':
+          // [v3.2] skip the rest of the down pass and save
+          if (!DEMO_V32 || passName !== 'd' || cal === 0) { out('s: only in the down pass.'); break; }
+          saveAll('Down pass stopped early: saved with ' + Object.keys(downPts).length + ' down points.');
+          break;
         case 'x':
           if (cal === 0) { out('Not calibrating.'); break; }
-          cal = 0; step = 0; stab = 0;
+          if (passName === 'ru' || passName === 'rd') {
+            // [v3.2] cancel a redo: the saved calibration is unchanged
+            cal = 0; step = 0; stab = 0; passName = '-'; redoInfo = null;
+            out('E,fail,redo cancelled');
+            break;
+          }
+          cal = 0; step = 0; stab = 0; passName = '-';
           out('A,cancelled by user');
           break;
         case 'a':
@@ -3088,8 +4319,12 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           PATH.forEach(function (p, i) {
             out('Q,' + (i + 1) + ',' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ',' + p[2].toFixed(1));
           });
+          if (DEMO_V32) {
+            for (var qd = TOTAL_POINTS - 2; qd >= 2; qd--) if (downPts[qd]) out('Q,down,' + qd + ',' + xyzStr(downPts[qd], 0));
+          }
           if (DEMO_V3) out('Q,crank,0.612,-0.354,0.707,4.8,-1');
           out('Q,end,146.0,3.8,6');
+          if (DEMO_V32) sendF();
           break;
         case 'g':
           if (dumping) { out('Busy sending the recording.'); break; }
@@ -3120,6 +4355,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           out('          p=show calibration  k=calibration as Q lines');
           out('          g=start recording  m=marker  e=stop  y=send recording');
           out('          d=debug stream on/off  h=help' + (DEMO_V3 ? '  t=turn stream on/off' : ''));
+          if (DEMO_V32) out('          s=finish without the rest of the down pass  #R,u|d,N  #G,u|d,N');
           break;
         case 't':
           if (!DEMO_V3) { out("Unknown command 't'. h = help."); break; }
@@ -3137,7 +4373,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       timer = setInterval(tick, 250);
       out('');
       out('Keiser M3 Bridge - phone console connected.');
-      out('Simulated firmware ' + (DEMO_V3 ? 'v3 (calibration while pedalling)' : 'v2') + '. Type h for help.');
+      out('Simulated firmware ' + (DEMO_V32 ? 'v3.2 (calibration while pedalling, up and down)' : DEMO_V3 ? 'v3.1 (calibration while pedalling)' : 'v2') + '. Type h for help.');
     };
     this.disconnect = function () {
       connected = false; stream = false; debug = false;
@@ -3173,7 +4409,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   renderDiag();
   if (DEMO) {
     setConn('idle');
-    logLine('Demo mode: no Bluetooth. URL options: &v3=1 firmware v3 (calibrate while pedalling), &uncal=1 start uncalibrated, &fast=1 short diagnostic steps, &drop=1 lose one line in the first recording transfer.', 'sys');
+    logLine('Demo mode: no Bluetooth. URL options: &v3=1 firmware v3.2 (calibrate while pedalling, up and down; &v31=1 for v3.1), &review=1 flag two points after saving, &behind=1 N,behind at point 8, &uncal=1 start uncalibrated, &fast=1 short steps, &drop=1 lose one line in the first recording transfer. See README.', 'sys');
   } else if (!navigator.bluetooth) {
     setConn('unsupported');
   } else {
@@ -3181,7 +4417,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   }
 
   // Expose a tiny hook for debugging in a desktop console.
-  window.M3Bridge = { state: state, diag: diag, handleLine: handleLine, send: send, renderSaved: renderSaved, addRecord: addRecord, onBytes: onBytes, sim: function () { return sim; } };
+  window.M3Bridge = { state: state, diag: diag, handleLine: handleLine, send: send, sendCmd: sendCmd, renderSaved: renderSaved, addRecord: addRecord, onBytes: onBytes, sim: function () { return sim; } };
 })();
 </script>
 </body>

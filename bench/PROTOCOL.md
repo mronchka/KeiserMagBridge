@@ -1,4 +1,4 @@
-# Bridge ↔ phone page protocol (sketch v2, v3, v3.1)
+# Bridge ↔ phone page protocol (sketch v2, v3, v3.1, v3.2)
 
 **v3 changes are marked [v3].** In v3 the board detects pedal turns itself from the crank magnet, and works out the gear from the average over each full turn. Calibration is done **while pedalling**. A page must still accept v2 lines: every field added in v3 goes at the end of a line, and new values are only used when present.
 
@@ -257,6 +257,90 @@ Y,end,<count>,<checksum>
 - **Checksum:** `(sum of all x + y + z) mod 65536`, as a non-negative integer, so the page can confirm nothing was lost.
 - **Speed:** the board sends about 8 lines per loop pass, so a 3-minute recording takes roughly 20–40 s over Bluetooth.
 - **During the send:** the `Y` flag is set and status lines pause. If `y` arrives while recording, the recording is stopped first.
+
+## v3.2 additions [v3.2]
+
+The page tells v3.2 from v3.1 by a 14th field on `S` lines, `pass`. Everything below is new in v3.2; older lines keep their meaning.
+
+### What changes for the rider
+
+- **Up pass:** point 1 (lever all the way down), then points 2–24, "where the console FIRST shows gear N". **Point 25 is no longer pedalled.** As soon as point 24 is saved, the board works out the top point from points 23 and 24 (0.3 × the 23→24 step beyond 24). It sends `C,25,...` by itself, so the page marks dot 25 done.
+- **Down pass (crank mode only), straight after the up pass:** the rider is still at gear 24 and comes back down. Down points are 23, 22, …, 2 (22 of them); point 24 has none, because the rider starts the pass right on that edge and the board can't tell a tiny move from noise (that edge keeps the normal stickiness). Down point `k` is "move the lever DOWN to where the console FIRST shows gear k−1". It measures the same gear edge as up point `k`, approached from above. Each gear edge then has an up and a down reading. The gear display copies the console's own stickiness from them, and the path used for watts runs through the middle of each pair. `s` skips the rest of the down pass and saves what has been measured. With the v2 hold-still method (no crank magnet), there is no down pass.
+- **Faster capture:** 2 agreeing turns, then 1 check turn. If the check turn agrees and the lever wasn't still moving, the point is the average of all 3 turns. `stab`: `0`, `34` (1 turn), `67` (2 turns agree; the board is now on the check turn: "Turn 3 of 3, checking the lever has stopped"), and `100` briefly when saved.
+- **Forward only:** a point is only taken once its reading is at least 1.0 µT from the previous point, with at least 0.5 µT of that **in the pass's direction**. Up: away from the previous point, along the direction of the previous step. Down: towards the lower gears, along the up-pass path. **If turns that agree sit 0.5 µT or more behind the previous point, that point went too far** (the lever overshot). The board goes back to it **by itself**: it sends `N,behind` and then `U,<step>` (`U,<step>,d` in the down pass), and prompts the point again. The rider doesn't tap anything. The page should say e.g. "Gear 22 was saved a little too far up. Shift DOWN into gear 21, then back up to where the console first shows gear 22." (Down pass: "…too far down. Shift UP into gear N+1, then back down to where the console first shows gear N.") Flag `B` stays set until the reading has gone back at least halfway from the point before. While it's set, say "keep going: into gear 21". Then the point is captured as usual. Where there is no point to go back to (point 2, or the first down point), `N,behind` comes alone, once.
+- **Any pace:** the prompts no longer ask for 60–80 rpm.
+
+### `S`: status, 14th field `pass`
+
+```
+S,<gear>,<res>,<watts>,<cad>,<cal>,<step>,<stab>,<off>,<flags>,<rec>,<src>,<lturns>,<pass>
+```
+
+| `pass` | Meaning |
+|---|---|
+| `-` | Not calibrating |
+| `u` | Up pass (also crank learning and the cadence check) |
+| `d` | Down pass. `step` is the 0-based point being measured (22 down to 1; the first prompt is "first shows gear 22"). The prompt gear is `step` itself ("first shows gear `step`"). |
+| `ru` | Redoing up point `step+1` (see `#R`) |
+| `rd` | Redoing down point `step+1` |
+
+New flag:
+
+| Flag | Meaning |
+|---|---|
+| `B` | Go back first. In a redo (`ru`/`rd`) or after the board went back to an overshot point (`N,behind`), the reading hasn't yet been past the point. Up: move the lever below gear N first. Down: move it above. Clears once it has. |
+
+### New and changed lines
+
+```
+C,<point>,<x>,<y>,<z>          up point captured (as before); C,25 now comes by itself
+C,down,<point>,<x>,<y>,<z>     down point captured (point 23 down to 2)
+U,<step>,d                     undo in the down pass (step = 0-based point now being measured)
+N,behind                       the previous point overshot; a U line follows when the board goes back to it
+Q,down,<point>,<x>,<y>,<z>     stored down points ('k'), after the 25 up Q lines
+F,<u|d>,<point>,<reason>,<gx>,<gy>,<gz>   a point that looks wrong, with the board's best guess
+F,end,<count>                  end of the check (count may be 0)
+E,ok,<what>                    an edit command worked (then K and the F list follow)
+E,fail,<reason>                an edit command was refused; nothing changed
+```
+
+`Q,down` lines and `C,down` lines start with a word in place of a number, so pages from before v3.2 ignore them.
+
+**The check (`F`)** runs after every saved calibration, after every edit, and at boot; `k` re-sends its result. It looks at one suspect at a time: the worst point is set aside, everything is scored again without it, and so on (up to 8). That way one bad point doesn't make its neighbours look bad. Reasons:
+
+| `reason` | Meaning |
+|---|---|
+| `behind` | The point isn't past the previous point of its pass (taken early, or the one before it overshot). |
+| `offpath` | Up point: off the smooth curve through its neighbours (the spacing itself is never judged; Keiser's gears are uneven). Down point: off the up path. |
+| `updown` | This gear edge's up and down readings disagree (along the path) more than the other edges' do, or are offset across the path; this one is the reading that's off. |
+| `pair` | As `updown`, but the board can't tell which of the two is off. It comes as two lines, `F,u,N,pair,…` and `F,d,N,pair,…`, so redo both. Needs 5 or more pairs. |
+| `prior` | Up point that moved more than 2 µT from the previous calibration (kept in flash), after allowing for an overall shift. If more than 6 would be flagged, the board was probably moved, and the comparison is dropped. |
+
+The guess (`gx,gy,gz`) is the board's estimate. It is:
+- the other pass's reading plus the usual up/down offset when it has one;
+- for `prior`, the point placed between its neighbours as it was in the previous calibration;
+- otherwise, the point interpolated between its neighbours in proportion to Keiser's gear table.
+
+The board never applies a guess by itself. The path for gear and watts uses the guess for a flagged up point, and leaves flagged down points out, until the rider redoes the point (`#R`) or accepts the guess (`#G`).
+
+Detection limit: a point roughly 2 µT or more out of place (along the path, or across it).
+
+### Edit commands (multi-character, start with `#`, end with `\n`)
+
+Over Bluetooth, a write carries at most 20 bytes, so split longer commands into 20-byte writes; the board joins them up to the `\n`.
+
+| Command | Meaning |
+|---|---|
+| `#R,u,<point>` | Redo up point 2–24 by pedalling (needs a saved calibration with the crank learned, and not calibrating). Prompt: "Redo gear N: move the lever DOWN below gear N, then up to where the console FIRST shows gear N, and hold it there." Flag `B` is set until the reading has been below the point. Then it captures like any point, saves, and sends `E,ok`, `K` and the `F` list. `x` cancels. |
+| `#R,d,<point>` | Redo down point 2–23: from above, down to where the console first shows gear `point−1`. |
+| `#G,<u|d>,<point>` | Use the board's best guess for a point from the latest `F` list. Saves, then `E,ok`, `K`, `F`. |
+| `#P,<u|d>,<point>,<x>,<y>,<z>` | Stage a value for a point (USB use). Nothing changes until `#W`. Each one answers `E,ok,staged`. |
+| `#W` | Check the staged calibration like a finished one, and save it if it passes. |
+| `#X` | Throw away staged values. |
+
+`s` (single character): skip the rest of the down pass and save now. Only while `pass` is `d`.
+
+**Stored format:** calibration v5 (v4 plus down points). A saved v4 calibration still loads, without down points.
 
 ## Beeps on the board (CLUE speaker)
 
