@@ -1,0 +1,77 @@
+[
+ {
+  "id": "events",
+  "title": "Session events timeline",
+  "description": "Event and phase windows (log seconds) from the session notes, used to label the charts; phases sit inside their numbered session event."
+ },
+ {
+  "id": "session_readings",
+  "title": "Spot 1 magnetometer readings",
+  "description": "Every field line of the spot-1 log (x, y, z in µT) with position s along the clean-sweep line, distance off that line, |B| and the event it falls in."
+ },
+ {
+  "id": "bench_readings",
+  "title": "Bench fridge-magnet test",
+  "description": "Every field line of the bench log, with change = distance in µT from the resting field (mean of 18.2–19.5 s)."
+ },
+ {
+  "id": "sweep_passes",
+  "title": "Clean sweep passes",
+  "description": "Readings from the clean up-pass (302.5–338 s) and down-pass (344–392 s), with progress through each pass measured in time from the lever-down end."
+ },
+ {
+  "id": "pedalling_segments",
+  "title": "Pedalling vs stopped segments",
+  "description": "Mean, spread and range of position s for each pedalling and stopped stretch (2 s trimmed off each end)."
+ },
+ {
+  "id": "reference_chain",
+  "title": "Follow-the-path reference chain",
+  "description": "The clean up-sweep (302.5–338 s) resampled every 4 µT of path length: the calibrated path used by the follow-the-path method."
+ },
+ {
+  "id": "method_sensitivity",
+  "title": "Method sensitivity along lever",
+  "description": "For each step of the reference chain, the share of real field change each method turns into position change (straight line = cosine of the angle to the line), over 4 µT and smoother 12 µT steps."
+ },
+ {
+  "id": "method_downsweep",
+  "title": "Methods on the down-sweep",
+  "description": "Each down-sweep reading (344–392 s) located by both methods: position in % of range and distance from the reference (off-line vs off-chain)."
+ },
+ {
+  "id": "method_known_truth",
+  "title": "Methods on known lever positions",
+  "description": "Readings where the lever position is mechanically known (fully down = 0 %, fully up = 100 %): each method's position error, health signal, and the share of readings its health flag catches (straight line > 15 µT, path > 8 µT)."
+ },
+ {
+  "id": "crank_revolution",
+  "title": "Slow crank revolution trace",
+  "description": "Readings around the slow crank turn (lever fully down): change from the starting reading, and both methods' position and health signal."
+ },
+ {
+  "id": "method_simulated",
+  "title": "Simulated curved path: estimates",
+  "description": "SIMULATED, not measured: a field path turning through 250° (radius 60 µT) with 0.2 µT noise; 101 test readings located by both methods after a 25-point calibration."
+ },
+ {
+  "id": "simulated_path",
+  "title": "Simulated curved path: shape",
+  "description": "SIMULATED, not measured: the noise-free simulated field path (top view, µT) and its 25 noisy calibration points with their straight-line positions."
+ },
+ {
+  "id": "phone_readings",
+  "title": "Phone-dictated readings",
+  "description": "Readings read aloud from the phone before tonight's log (first taping, then re-taped); position and off-line distance use their own line from the mean re-taped down to the mean re-taped up reading."
+ },
+ {
+  "id": "headline",
+  "title": "Spot 1 headline figures",
+  "description": "The headline figures for spot 1, each computed from the logs, with the pass limit where one applies (span at least 100 µT, crank effect at most 1.5 µT)."
+ },
+ {
+  "id": "findings",
+  "title": "Spot 1 computed findings",
+  "description": "Every other number quoted on the dashboard, computed from the logs by build_data.py (vectors in vx, vy, vz)."
+ }
+]

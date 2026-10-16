@@ -1,0 +1,981 @@
+<style>
+.km-page{font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-lg);max-width:76rem;margin-inline:auto;min-width:0}
+.km-page *{box-sizing:border-box}
+.km-head{display:flex;flex-direction:column;gap:var(--cds-gap-xs)}
+.km-title{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);line-height:1.2;margin:0;text-wrap:balance}
+.km-takeaway{font-size:var(--cds-font-size-body);margin:0;max-width:62ch;line-height:1.5}
+.km-meta{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:0}
+.km-page b.km-v,.km-page .km-strong{font-weight:600}
+.km-page{container-type:inline-size}
+.km-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cds-gap-md)}
+@container (min-width:34rem){.km-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container (min-width:62rem){.km-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.km-tile{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-md);display:flex;flex-direction:column;gap:var(--cds-gap-xs);min-width:0}
+.km-tile-label{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.km-tile-value{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);line-height:1.1}
+.km-tile-unit{font-family:var(--font-anthropic-sans);font-size:var(--cds-font-size-body);color:var(--color-fg-muted);margin-left:.2em}
+.km-tile-note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);line-height:1.4}
+.km-bad{color:var(--color-bad)}
+.km-ok{color:var(--color-ok)}
+.km-warn{color:var(--color-warn)}
+.km-chip{display:inline-flex;align-items:center;gap:.35em;font-size:var(--cds-font-size-caption);font-weight:var(--cds-font-weight-medium)}
+.km-chip::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:currentColor}
+.km-tabs{display:flex;gap:var(--cds-gap-xs);border-bottom:1px solid var(--color-border-line);overflow-x:auto;scrollbar-width:thin}
+.km-tab{font:inherit;font-size:var(--cds-font-size-body);color:var(--color-fg-muted);background:none;border:0;border-bottom:2px solid transparent;padding:var(--cds-pad-sm) var(--cds-pad-md);cursor:pointer;white-space:nowrap;margin-bottom:-1px}
+.km-tab:hover{color:var(--color-fg)}
+.km-tab[aria-selected="true"]{color:var(--color-fg);border-bottom-color:var(--color-fg);font-weight:var(--cds-font-weight-medium)}
+.km-tab:focus-visible{outline:2px solid var(--cds-chart-reference);outline-offset:2px}
+.km-panel{display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.km-panel[hidden]{display:none}
+.km-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:var(--cds-gap-md)}
+.km-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);display:flex;flex-direction:column;gap:var(--cds-gap-sm);min-width:0}
+.km-wide{grid-column:1/-1}
+.km-g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr))}
+.km-card h3{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0;line-height:1.3}
+.km-card h4{font-size:var(--cds-font-size-body);font-weight:var(--cds-font-weight-medium);margin:var(--cds-gap-sm) 0 0}
+.km-note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:0;line-height:1.45}
+.km-text{font-size:var(--cds-font-size-body);line-height:1.55;margin:0;max-width:68ch}
+.km-list{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:var(--cds-gap-xs);font-size:var(--cds-font-size-body);line-height:1.5;max-width:68ch}
+.km-chart{position:relative;width:100%;min-width:0}
+.km-chart svg{display:block;overflow:visible}
+.km-svg text{fill:var(--color-fg-muted);font-size:var(--cds-font-size-caption);font-family:var(--font-anthropic-sans)}
+.km-svg .km-lab{fill:var(--color-fg)}
+.km-svg .km-num{fill:var(--color-fg);font-weight:600}
+.km-svg .km-halo{stroke:var(--color-panel);stroke-width:4px;stroke-linejoin:round;paint-order:stroke}
+.km-grid-l line{stroke:var(--cds-chart-grid);stroke-width:1}
+.km-axis path,.km-axis line{stroke:var(--cds-chart-axis)}
+.km-axis text{fill:var(--color-fg-muted)}
+.km-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:var(--cds-gap-md)}
+.km-legend{display:flex;flex-wrap:wrap;gap:var(--cds-gap-xs) var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:0;padding:0;list-style:none}
+.km-legend li{display:inline-flex;align-items:center;gap:.4em}
+.km-sw{display:inline-block;width:.85rem;height:.6rem;border-radius:2px}
+.km-sw-line{height:2px;border-radius:1px}
+.km-sw-dot{width:.55rem;height:.55rem;border-radius:50%}
+.km-tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);border-radius:var(--cds-radius);box-shadow:var(--cds-shadow-popover);padding:var(--cds-pad-sm) var(--cds-pad-md);font-size:var(--cds-font-size-caption);line-height:1.45;white-space:nowrap;z-index:5;opacity:0;font-variant-numeric:tabular-nums}
+.km-tip-t{color:var(--cds-text-secondary)}
+.km-tip-r{display:flex;align-items:center;gap:.4em}
+.km-events{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:var(--cds-gap-sm) var(--cds-gap-md)}
+.km-events li{display:grid;grid-template-columns:1.9rem 1fr;gap:var(--cds-gap-sm);font-size:var(--cds-font-size-caption);line-height:1.4;align-items:start}
+.km-evnum{display:inline-flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:50%;border:1px solid var(--color-border-line);font-weight:600;font-variant-numeric:tabular-nums}
+.km-evname{font-weight:var(--cds-font-weight-medium);color:var(--color-fg)}
+.km-evt{color:var(--color-fg-muted);font-variant-numeric:tabular-nums}
+.km-tablewrap{overflow-x:auto;max-width:100%}
+.km-table{border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums;width:100%}
+.km-table th{text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);padding:var(--cds-pad-sm);border-bottom:1px solid var(--color-border-line);vertical-align:bottom;background:var(--color-panel)}
+.km-table td{padding:var(--cds-pad-sm);border-bottom:1px solid var(--color-border-line);vertical-align:top}
+.km-table td.km-n,.km-table th.km-n{text-align:right;white-space:nowrap}
+.km-table tr:last-child td{border-bottom:0}
+.km-stats{display:grid;grid-template-columns:auto repeat(2,minmax(0,1fr));gap:var(--cds-gap-xs) var(--cds-gap-md);font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums;align-items:center;max-width:30rem}
+.km-stats .km-h{color:var(--color-fg-muted)}
+.km-stats .km-r{text-align:right}
+.km-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:.4em;font-size:var(--cds-font-size-caption);font-weight:var(--cds-font-weight-medium);color:var(--color-warn);border:1px solid currentColor;border-radius:999px;padding:var(--cds-pad-xs) var(--cds-pad-sm)}
+.km-score{display:grid;grid-template-columns:1fr auto auto;gap:var(--cds-gap-xs) var(--cds-gap-md);font-size:var(--cds-font-size-body);align-items:center;font-variant-numeric:tabular-nums;max-width:34rem}
+.km-score .km-h{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.km-diagram svg{display:block;width:100%;height:auto;max-width:30rem}
+.km-fail{display:flex;align-items:center;justify-content:center;gap:.5em;min-height:inherit;height:100%;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.km-fail-dot{width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad)}
+.km-page [data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
+.km-page [data-dash-source-state=empty]{color:transparent}
+@media (prefers-reduced-motion:no-preference){.km-panel.km-in{animation:km-fade var(--cds-dur-slow) var(--cds-ease-out)}}
+@keyframes km-fade{from{opacity:.0}to{opacity:1}}
+</style>
+
+<div class="km-page">
+  <header class="km-head" id="km-header">
+    <h1 class="km-title" id="km-title">Keiser magnet bridge: spot <span class="km-v" data-source="findings" data-field="value" data-where="metric=spot" data-fmt="0">—</span> readings</h1>
+    <p class="km-takeaway" id="km-takeaway">This spot sees the full lever travel, <b class="km-v" data-source="headline" data-field="value" data-where="metric=lever_span">—</b> µT, but one slow turn of the crank moves the reading by <b class="km-v" data-source="headline" data-field="value" data-where="metric=crank_swing">—</b> µT (<span class="km-v" data-source="headline" data-field="value" data-where="metric=crank_share" data-fmt="0">—</span>% of that range), so this spot fails the crank-magnet check.</p>
+    <p class="km-meta">Adafruit CLUE magnetometer taped below the resistance magnets · <span class="km-v" data-source="findings" data-field="value" data-where="metric=n_readings" data-fmt="0">—</span> readings at about <span class="km-v" data-source="findings" data-field="value" data-where="metric=rate_hz">—</span> per second · log time <span class="km-v" data-source="findings" data-field="value" data-where="metric=t_first" data-fmt="0">—</span>–<span class="km-v" data-source="findings" data-field="value" data-where="metric=t_last" data-fmt="0">—</span> s · all values in µT (microtesla)</p>
+  </header>
+
+  <section class="km-tiles" id="km-tiles" aria-label="Headline figures">
+    <div class="km-tile">
+      <span class="km-tile-label" data-source="headline" data-field="label" data-where="metric=lever_span">Lever span</span>
+      <span class="km-tile-value"><span class="km-v" data-source="headline" data-field="value" data-where="metric=lever_span">—</span><span class="km-tile-unit">µT</span></span>
+      <span class="km-tile-note"><span class="km-chip km-ok">Pass</span> · needs at least <span class="km-v" data-source="headline" data-field="limit" data-where="metric=lever_span" data-fmt="0">—</span> µT</span>
+    </div>
+    <div class="km-tile">
+      <span class="km-tile-label">Crank-magnet swing</span>
+      <span class="km-tile-value"><span class="km-v" data-source="headline" data-field="value" data-where="metric=crank_swing">—</span><span class="km-tile-unit">µT</span></span>
+      <span class="km-tile-note">One slow crank turn, lever fixed fully down</span>
+    </div>
+    <div class="km-tile">
+      <span class="km-tile-label">Crank-magnet check</span>
+      <span class="km-tile-value km-bad"><span class="km-v" data-source="headline" data-field="status" data-where="metric=crank_swing" data-case="title">—</span></span>
+      <span class="km-tile-note">Limit <span class="km-v" data-source="headline" data-field="limit" data-where="metric=crank_swing">—</span> µT; this spot misses it by a wide margin</span>
+    </div>
+    <div class="km-tile">
+      <span class="km-tile-label">Resting noise</span>
+      <span class="km-tile-value"><span class="km-v" data-source="headline" data-field="value" data-where="metric=noise" data-fmt="2">—</span><span class="km-tile-unit">µT</span></span>
+      <span class="km-tile-note">Spread of the position while nothing moved</span>
+    </div>
+    <div class="km-tile">
+      <span class="km-tile-label">Pedalling shift</span>
+      <span class="km-tile-value"><span class="km-v" data-source="headline" data-field="value" data-where="metric=pedal_shift" data-sign="+">—</span><span class="km-tile-unit">µT</span></span>
+      <span class="km-tile-note">Mean while pedalling vs stopped, same gear</span>
+    </div>
+    <div class="km-tile">
+      <span class="km-tile-label">Off-line baseline</span>
+      <span class="km-tile-value"><span class="km-v" data-source="headline" data-field="value" data-where="metric=offpath_baseline">—</span><span class="km-tile-unit">µT</span></span>
+      <span class="km-tile-note">Clean sweep's largest distance from the straight line</span>
+    </div>
+  </section>
+
+  <nav class="km-tabs" role="tablist" aria-label="Dashboard sections">
+    <button class="km-tab" role="tab" id="overview" aria-controls="km-p-overview" aria-selected="true">Overview</button>
+    <button class="km-tab" role="tab" id="cases" aria-controls="km-p-cases" aria-selected="false">Interesting cases</button>
+    <button class="km-tab" role="tab" id="methods" aria-controls="km-p-methods" aria-selected="false">Straight line vs path</button>
+    <button class="km-tab" role="tab" id="phone" aria-controls="km-p-phone" aria-selected="false">Earlier phone readings</button>
+  </nav>
+
+  <!-- ============================================================ OVERVIEW -->
+  <section class="km-panel" id="km-p-overview" role="tabpanel" aria-labelledby="overview">
+    <div class="km-grid km-g2">
+      <article class="km-card km-wide" id="km-c-timeline">
+        <h3 id="km-h-timeline">Whole session, event by event</h3>
+        <p class="km-note">Position along the lever line s for every reading, with the numbered events from the session notes shaded. Hover for values.</p>
+        <ul class="km-legend" id="km-leg-timeline"></ul>
+        <div class="km-chart" id="km-ch-timeline" data-source="session_readings events findings" aria-label="Position s over the whole session"></div>
+        <h4 id="km-h-timeline-off">Distance off the straight line</h4>
+        <div class="km-chart" id="km-ch-timeline-off" data-source="session_readings events findings" aria-label="Off-line distance over the whole session"></div>
+        <ol class="km-events" id="km-events" data-source="events"></ol>
+      </article>
+
+      <article class="km-card" id="km-c-frame">
+        <h3 id="km-h-frame">How to read position and off-line</h3>
+        <p class="km-note">Two numbers per reading, both in µT.</p>
+        <div class="km-diagram" id="km-dg-frame" aria-label="Diagram of position and off-line distance"></div>
+        <p class="km-text">Each reading is a field vector (x, y, z). <span class="km-strong">Position s</span> is how far it has moved from the lever-down reading D toward the lever-up reading F, measured along the straight line between them; a full lever sweep is <span class="km-v" data-source="findings" data-field="value" data-where="metric=line_len">—</span> µT. <span class="km-strong">Off-line</span> is how far the reading sits from that line. Lever movement mostly changes s; anything else shows up as off-line distance, or as a shift in s that the lever did not cause.</p>
+      </article>
+
+      <article class="km-card" id="km-c-field">
+        <h3 id="km-h-field">Field-space map</h3>
+        <p class="km-note">Every reading placed by position s and off-line distance.</p>
+        <ul class="km-legend" id="km-leg-field"></ul>
+        <div class="km-chart" id="km-ch-field" data-source="session_readings" aria-label="Scatter of off-line distance against position"></div>
+        <p class="km-text">The clean sweep traces one smooth curve that never strays more than <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_max_off">—</span> µT from the line. Readings taken while the crank or rider moved land well away from it, up to <span class="km-v" data-source="findings" data-field="value" data-where="metric=repeat_off_max">—</span> µT off the line.</p>
+      </article>
+
+      <article class="km-card km-wide" id="km-c-next">
+        <h3 id="km-h-next">What this means and what to do next</h3>
+        <p class="km-note">Pass rule for any mounting spot: one lever sweep plus one slow crank turn.</p>
+        <div class="km-score" id="km-score">
+          <span class="km-h">Check</span><span class="km-h">This spot</span><span class="km-h">Result</span>
+          <span>Lever span, at least <span class="km-v" data-source="findings" data-field="value" data-where="metric=crit_span" data-fmt="0">—</span> µT</span>
+          <span><span class="km-v" data-source="headline" data-field="value" data-where="metric=lever_span">—</span> µT</span>
+          <span class="km-chip km-ok">Pass</span>
+          <span>Crank effect, at most <span class="km-v" data-source="findings" data-field="value" data-where="metric=crit_crank">—</span> µT</span>
+          <span><span class="km-v" data-source="headline" data-field="value" data-where="metric=crank_swing">—</span> µT</span>
+          <span class="km-chip km-bad">Fail</span>
+        </div>
+        <ul class="km-list">
+          <li>The Keiser's crank magnet sits on the drive pulley and triggers Keiser's own RPM reed switch next to the resistance magnets. At this spot it adds a field that depends on where the crank stops, up to <span class="km-v" data-source="findings" data-field="value" data-where="metric=crank_peak">—</span> µT, and <span class="km-v" data-source="findings" data-field="value" data-where="metric=crank_along">—</span> µT of that lies along the lever line, so no projection can remove it.</li>
+          <li>Find a spot on the flywheel side, away from the drive pulley's magnet path.</li>
+          <li>Test each candidate spot with one lever sweep and one slow crank turn. It passes with a lever span of at least <span class="km-v" data-source="findings" data-field="value" data-where="metric=crit_span" data-fmt="0">—</span> µT and a crank effect of at most <span class="km-v" data-source="findings" data-field="value" data-where="metric=crit_crank">—</span> µT.</li>
+          <li>Next sketch version: locate the lever by following the calibrated path, raise a health flag when a reading is off that path, and capture calibration points automatically with beeps.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ CASES -->
+  <section class="km-panel" id="km-p-cases" role="tabpanel" aria-labelledby="cases" hidden>
+    <div class="km-grid">
+      <article class="km-card" id="km-c-bench">
+        <h3 id="km-h-bench">Bench test with a fridge magnet</h3>
+        <p class="km-note">Board on the bench, a fridge magnet waved near it.</p>
+        <div class="km-chart" id="km-ch-bench" data-source="bench_readings" aria-label="Change from resting field during the bench test"></div>
+        <p class="km-text">Change from the resting field of (<span class="km-v" data-source="findings" data-field="vx" data-where="metric=bench_rest">—</span>, <span class="km-v" data-source="findings" data-field="vy" data-where="metric=bench_rest">—</span>, <span class="km-v" data-source="findings" data-field="vz" data-where="metric=bench_rest">—</span>) µT. It peaked at <span class="km-v" data-source="findings" data-field="value" data-where="metric=bench_max">—</span> µT with <span class="km-v" data-source="findings" data-field="value" data-where="metric=sat_count" data-fmt="0">—</span> saturated readings: the sensor reacts quickly and has range to spare.</p>
+      </article>
+
+      <article class="km-card" id="km-c-sweep">
+        <h3 id="km-h-sweep">The clean sweep</h3>
+        <p class="km-note">Lever down, slowly up, hold, slowly down, hold (<span class="km-v" data-source="events" data-field="t_start" data-where="id=clean" data-fmt="0">—</span>–<span class="km-v" data-source="events" data-field="t_end" data-where="id=clean" data-fmt="0">—</span> s).</p>
+        <div class="km-chart" id="km-ch-sweep" data-source="session_readings events" aria-label="Position during the clean sweep"></div>
+        <h4 id="km-h-passes">Up pass and down pass, overlaid</h4>
+        <ul class="km-legend" id="km-leg-passes"></ul>
+        <div class="km-chart" id="km-ch-passes" data-source="sweep_passes" aria-label="Position against progress through each pass"></div>
+        <p class="km-text">Both passes move one way only, with <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_up_reversals" data-fmt="0">—</span> reversals bigger than half a µT, over a span of <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_span">—</span> µT. The field changes fastest near the bottom: about <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_q1" data-fmt="0">—</span>% of the change comes in the first quarter of the up pass and <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_q4" data-fmt="0">—</span>% in the last quarter (time stands in for lever travel).</p>
+      </article>
+
+      <article class="km-card" id="km-c-pedal">
+        <h3 id="km-h-pedal">Pedalling vs stopped</h3>
+        <p class="km-note">Same middle gear, lever untouched. Bars mark each stretch's mean.</p>
+        <ul class="km-legend" id="km-leg-pedal"></ul>
+        <div class="km-chart" id="km-ch-pedal" data-source="session_readings events pedalling_segments" aria-label="Position while pedalling and stopped"></div>
+        <p class="km-text">Pedalling raised s by <span class="km-v" data-source="findings" data-field="value" data-where="metric=pedal_rise1">—</span> µT on average at the middle gear and <span class="km-v" data-source="findings" data-field="value" data-where="metric=pedal_rise2">—</span> µT in the easy-then-fast stretch, with single readings up to <span class="km-v" data-source="findings" data-field="value" data-where="metric=pedal_peak1">—</span> µT higher and a wobble of <span class="km-v" data-source="findings" data-field="value" data-where="metric=pedal_sd1">—</span>–<span class="km-v" data-source="findings" data-field="value" data-where="metric=pedal_sd2">—</span> µT (standard deviation). It looked like drift at the time; the crank turn explains it.</p>
+      </article>
+
+      <article class="km-card" id="km-c-handsoff">
+        <h3 id="km-h-handsoff">Hands-off check</h3>
+        <p class="km-note">Phone and keys away; lever down, up, down.</p>
+        <div class="km-chart" id="km-ch-handsoff" data-source="session_readings events findings" aria-label="Position during the hands-off check"></div>
+        <p class="km-text">The lever change matched the clean sweep, <span class="km-v" data-source="findings" data-field="value" data-where="metric=ho_lever_len">—</span> µT against <span class="km-v" data-source="findings" data-field="value" data-where="metric=ho_sweep_len">—</span> µT and <span class="km-v" data-source="findings" data-field="value" data-where="metric=ho_angle">—</span>° apart, so the board did not move. Every reading carried the same extra <span class="km-v" data-source="findings" data-field="value" data-where="metric=ho_offset">—</span> µT, (<span class="km-v" data-source="findings" data-field="vx" data-where="metric=ho_offset">—</span>, <span class="km-v" data-source="findings" data-field="vy" data-where="metric=ho_offset">—</span>, <span class="km-v" data-source="findings" data-field="vz" data-where="metric=ho_offset">—</span>) µT, which shifts both ends by <span class="km-v" data-source="findings" data-field="value" data-where="metric=ho_offset_along">—</span> µT along the line.</p>
+      </article>
+
+      <article class="km-card" id="km-c-crank">
+        <h3 id="km-h-crank">One slow crank revolution</h3>
+        <p class="km-note">Lever fixed fully down; crank turned once by hand.</p>
+        <div class="km-chart" id="km-ch-crank" data-source="crank_revolution findings" aria-label="Change from the starting reading during the crank turn"></div>
+        <p class="km-text">The field moved up to <span class="km-v" data-source="findings" data-field="value" data-where="metric=crank_peak">—</span> µT as the crank turned and came back within <span class="km-v" data-source="findings" data-field="value" data-where="metric=crank_return">—</span> µT. Halfway round, the reading came within <span class="km-v" data-source="findings" data-field="value" data-where="metric=crank_nearest_bottom">—</span> µT of the clean sweep's lever-down reading. The crank's own magnet adds a field that depends on where the crank stops, which explains the pedalling shift, the jumps in the repeat test and the hands-off offset.</p>
+      </article>
+
+      <article class="km-card" id="km-c-repeat">
+        <h3 id="km-h-repeat">Repeat test</h3>
+        <p class="km-note">Lever set, pedalled to the gear, stood still, cranked by hand, sat, leaned (<span class="km-v" data-source="events" data-field="t_start" data-where="id=repeat" data-fmt="0">—</span>–<span class="km-v" data-source="events" data-field="t_end" data-where="id=repeat" data-fmt="0">—</span> s).</p>
+        <div class="km-chart" id="km-ch-repeat" data-source="session_readings events findings" aria-label="Off-line distance during the repeat test"></div>
+        <p class="km-text">Readings sat <span class="km-v" data-source="findings" data-field="value" data-where="metric=repeat_off_min">—</span>–<span class="km-v" data-source="findings" data-field="value" data-where="metric=repeat_off_max">—</span> µT off the line, while the clean sweep never went past <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_max_off">—</span> µT. Each jump follows a crank movement or a change in how the rider sat.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ METHODS -->
+  <section class="km-panel" id="km-p-methods" role="tabpanel" aria-labelledby="methods" hidden>
+    <div class="km-grid km-g2">
+      <article class="km-card km-wide" id="km-c-defs">
+        <h3 id="km-h-defs">Two ways to turn a reading into a lever position</h3>
+        <p class="km-note">Both use the same calibration readings; they differ in what they do with them.</p>
+        <div class="km-two">
+          <div>
+            <h4>Straight line (current sketch)</h4>
+            <div class="km-diagram" id="km-dg-line" aria-label="Straight-line method diagram"></div>
+            <p class="km-text">Draw a straight line from the lever-down reading D to the lever-up reading F. Position is how far along that line the reading falls. Health is the reading's distance from the line (off-line).</p>
+          </div>
+          <div>
+            <h4>Follow the path (proposed)</h4>
+            <div class="km-diagram" id="km-dg-path" aria-label="Follow-the-path method diagram"></div>
+            <p class="km-text">Keep the calibrated path as a chain of points in space: here the clean up pass resampled every <span class="km-v" data-source="findings" data-field="value" data-where="metric=chain_step" data-fmt="0">—</span> µT into <span class="km-v" data-source="findings" data-field="value" data-where="metric=chain_n" data-fmt="0">—</span> points, standing in for the sketch's <span class="km-v" data-source="findings" data-field="value" data-where="metric=sketch_cal_points" data-fmt="0">—</span> calibration points. Position is the distance along the chain to the nearest point; health is the distance from the chain (off-chain). Past either end the chain carries on straight.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="km-card" id="km-c-sens">
+        <h3 id="km-h-sens">Sensitivity along the lever</h3>
+        <p class="km-note">Share of the real field change each method turns into position change, step by step along the chain.</p>
+        <ul class="km-legend" id="km-leg-sens"></ul>
+        <div class="km-chart" id="km-ch-sens" data-source="method_sensitivity" aria-label="Sensitivity of each method along the lever"></div>
+        <p class="km-text">At this spot the path is nearly straight: it is <span class="km-v" data-source="findings" data-field="value" data-where="metric=path_ratio">—</span>% as long as the line. The straight line keeps <span class="km-v" data-source="findings" data-field="value" data-where="metric=sens_mean">—</span>% of the change on average and <span class="km-v" data-source="findings" data-field="value" data-where="metric=sens_min12">—</span>–<span class="km-v" data-source="findings" data-field="value" data-where="metric=sens_max12">—</span>% over smoothed steps (<span class="km-v" data-source="findings" data-field="value" data-where="metric=sens_min4">—</span>% at worst over single noisy steps). Following the path keeps all of it by design.</p>
+      </article>
+
+      <article class="km-card" id="km-c-down">
+        <h3 id="km-h-down">Consistency on the down pass</h3>
+        <p class="km-note">An independent pass (<span class="km-v" data-source="events" data-field="t_start" data-where="id=clean_down" data-fmt="0">—</span>–<span class="km-v" data-source="events" data-field="t_end" data-where="id=clean_down" data-fmt="0">—</span> s) checked against references built from the up pass.</p>
+        <h4 id="km-h-side">The path seen from the side</h4>
+        <ul class="km-legend" id="km-leg-side"></ul>
+        <div class="km-chart" id="km-ch-side" data-source="reference_chain method_downsweep" aria-label="Down-pass readings against the reference chain"></div>
+        <h4 id="km-h-health">Health signal along the down pass</h4>
+        <ul class="km-legend" id="km-leg-health"></ul>
+        <div class="km-chart" id="km-ch-health" data-source="method_downsweep findings" aria-label="Off-line and off-chain distance along the down pass"></div>
+        <div class="km-stats" id="km-stats-down">
+          <span class="km-h">µT</span><span class="km-h km-r">median</span><span class="km-h km-r">largest</span>
+          <span>Off-line</span>
+          <span class="km-r km-v" data-source="findings" data-field="value" data-where="metric=dn_offline_med">—</span>
+          <span class="km-r km-v" data-source="findings" data-field="value" data-where="metric=dn_offline_max">—</span>
+          <span>Off-chain</span>
+          <span class="km-r km-v" data-source="findings" data-field="value" data-where="metric=dn_offchain_med">—</span>
+          <span class="km-r km-v" data-source="findings" data-field="value" data-where="metric=dn_offchain_max">—</span>
+        </div>
+        <p class="km-text">Both methods place the down-pass readings within <span class="km-v" data-source="findings" data-field="value" data-where="metric=dn_pos_diff_max">—</span>% of each other. The difference is the health signal: undisturbed readings sit up to <span class="km-v" data-source="findings" data-field="value" data-where="metric=dn_offline_max">—</span> µT off the straight line only because the path bends, but at most <span class="km-v" data-source="findings" data-field="value" data-where="metric=dn_offchain_max">—</span> µT off the chain. So a straight-line alarm cannot go below about <span class="km-v" data-source="findings" data-field="value" data-where="metric=line_flag" data-fmt="0">—</span> µT without false alarms, while a path alarm can sit at <span class="km-v" data-source="findings" data-field="value" data-where="metric=path_flag" data-fmt="0">—</span> µT. The few µT of off-chain distance near the bottom match a <span class="km-v" data-source="findings" data-field="value" data-where="metric=sweep_bottom_shift">—</span> µT shift in the lever-down reading between before and after the sweep: something besides the lever moved slightly during this pass.</p>
+      </article>
+
+      <article class="km-card km-wide" id="km-c-truth">
+        <h3 id="km-h-truth">Known lever positions, disturbed</h3>
+        <p class="km-note">Readings where the lever was mechanically fully down (truth: the bottom of the range) or fully up (truth: the top). Error is reported position minus truth, in % of the lever range.</p>
+        <div class="km-tablewrap">
+          <table class="km-table" id="km-tb-truth" data-source="method_known_truth" data-row-key="case">
+            <thead><tr>
+              <th data-field="case">Case</th>
+              <th class="km-n" data-field="truth_pct">Truth %</th>
+              <th class="km-n" data-field="line_err_pct_mean">Straight line error %</th>
+              <th class="km-n" data-field="path_err_pct_mean">Path error %</th>
+              <th class="km-n" data-field="off_line_med">Off-line µT</th>
+              <th class="km-n" data-field="off_chain_med">Off-chain µT</th>
+              <th class="km-n" data-field="line_flag_share">Straight-line alarm</th>
+              <th class="km-n" data-field="path_flag_share">Path alarm</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="km-note">Errors are the mean over each window; off-line and off-chain are medians; alarms show the share of readings flagged (straight line above <span class="km-v" data-source="findings" data-field="value" data-where="metric=line_flag" data-fmt="0">—</span> µT, path above <span class="km-v" data-source="findings" data-field="value" data-where="metric=path_flag" data-fmt="0">—</span> µT).</p>
+        <div class="km-two">
+          <div>
+            <h4 id="km-h-crankpos">Crank turn: reported position</h4>
+            <ul class="km-legend" id="km-leg-crankpos"></ul>
+            <div class="km-chart" id="km-ch-crankpos" data-source="crank_revolution" aria-label="Position reported by each method during the crank turn"></div>
+          </div>
+          <div>
+            <h4 id="km-h-crankhealth">Crank turn: health signal</h4>
+            <ul class="km-legend" id="km-leg-crankhealth"></ul>
+            <div class="km-chart" id="km-ch-crankhealth" data-source="crank_revolution findings" aria-label="Health signal of each method during the crank turn"></div>
+          </div>
+        </div>
+        <p class="km-text">Neither method removes the crank error: at this spot the crank's field lies along the path, so in the hands-off test both report the lever about <span class="km-v" data-source="method_known_truth" data-field="line_err_pct_mean" data-where="case=Hands-off: lever up" data-fmt="0" data-abs="1">—</span>% of the range too low. Path-following does give the sharper alarm. With the lever down and still after the sweep, the reading sat <span class="km-v" data-source="method_known_truth" data-field="off_line_med" data-where="case=Lever down, still, after the sweep">—</span> µT off the line, under the straight-line alarm, but <span class="km-v" data-source="method_known_truth" data-field="off_chain_med" data-where="case=Lever down, still, after the sweep">—</span> µT off the chain, over the path alarm. During the crank turn the path alarm caught <span class="km-v" data-source="method_known_truth" data-field="path_flag_share" data-where="case=Slow crank revolution (lever down)" data-fmt="pct">—</span> of readings against <span class="km-v" data-source="method_known_truth" data-field="line_flag_share" data-where="case=Slow crank revolution (lever down)" data-fmt="pct">—</span>.</p>
+      </article>
+
+      <article class="km-card km-wide" id="km-c-sim">
+        <h3 id="km-h-sim">A strongly curved path</h3>
+        <span class="km-badge">Simulated — not measured</span>
+        <p class="km-note">What happens if the field path bends sharply, as it can when a magnet swings past the board.</p>
+        <div class="km-two">
+          <div>
+            <h4 id="km-h-simshape">Simulated field path, seen from above</h4>
+            <ul class="km-legend" id="km-leg-simshape"></ul>
+            <div class="km-chart" id="km-ch-simshape" data-source="simulated_path" aria-label="Simulated field path and calibration points"></div>
+          </div>
+          <div>
+            <h4 id="km-h-simest">Estimated vs true lever position</h4>
+            <ul class="km-legend" id="km-leg-simest"></ul>
+            <div class="km-chart" id="km-ch-simest" data-source="method_simulated findings" aria-label="Estimated against true lever position for the simulated path"></div>
+          </div>
+        </div>
+        <p class="km-text">This simulated path turns through <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_turn" data-fmt="0">—</span>° with <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_noise">—</span> µT of noise. The straight-line reading falls, rises and falls back: lever positions <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_twin_a" data-fmt="0">—</span>% and <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_twin_b" data-fmt="0">—</span>% both read about <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_twin_val" data-fmt="0">—</span>%, and <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_cal_reversals" data-fmt="0">—</span> of the calibration steps go backwards along the line, so calibration would fail. Following the path stays in order, with <span class="km-v" data-source="findings" data-field="value" data-where="metric=sim_path_reversals" data-fmt="0">—</span> reversals.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ PHONE -->
+  <section class="km-panel" id="km-p-phone" role="tabpanel" aria-labelledby="phone" hidden>
+    <div class="km-grid">
+      <article class="km-card km-wide" id="km-c-phone">
+        <h3 id="km-h-phone">Readings dictated from the phone</h3>
+        <p class="km-note">Taken before tonight's log. The board was re-taped in between, so these use their own line, from the mean re-taped lever-down reading to the mean re-taped lever-up reading (<span class="km-v" data-source="findings" data-field="value" data-where="metric=phone_span">—</span> µT).</p>
+        <div class="km-chart" id="km-ch-phone" data-source="phone_readings" aria-label="Position of each re-taped phone reading"></div>
+        <p class="km-text"><span class="km-v" data-source="phone_readings" data-field="label" data-where="label=Gear 5">—</span>, <span class="km-v" data-source="phone_readings" data-field="label" data-where="label=Gear 6">—</span> and <span class="km-v" data-source="phone_readings" data-field="label" data-where="label=Gear 7">—</span> step evenly, about <span class="km-v" data-source="findings" data-field="value" data-where="metric=phone_step67">—</span>% of the range each. <span class="km-v" data-source="phone_readings" data-field="label" data-where="label=Gear 8">—</span> then jumps <span class="km-v" data-source="findings" data-field="value" data-where="metric=phone_step78">—</span>% (<span class="km-v" data-source="findings" data-field="value" data-where="metric=phone_jump78_ut">—</span> µT), and the third reading at that gear lands <span class="km-v" data-source="findings" data-field="value" data-where="metric=phone_g8_spread">—</span>% below the second. Knowing what the crank magnet does, the likely cause is the crank stopping at a new angle after pedalling to read the console.</p>
+        <div class="km-tablewrap">
+          <table class="km-table" id="km-tb-phone" data-source="phone_readings" data-row-key="label">
+            <thead><tr>
+              <th data-field="label">Reading</th>
+              <th data-field="set">Taping</th>
+              <th class="km-n" data-field="x">x µT</th>
+              <th class="km-n" data-field="y">y µT</th>
+              <th class="km-n" data-field="z">z µT</th>
+              <th class="km-n" data-field="pos_pct">Position %</th>
+              <th class="km-n" data-field="off">Off-line µT</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="km-note">First-taping readings are listed for completeness; their positions use the re-taped line, so they are not comparable.</p>
+      </article>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const page = document.querySelector('.km-page');
+  const C = (i) => dash.colors[i % dash.colors.length];
+  const COL = { sweep: C(0), crank: C(1), line: C(6), path: C(2), up: C(0), down: C(2) };
+  const MUTED = 'var(--cds-chart-muted)', FG = 'var(--color-fg)', REF = 'var(--cds-chart-reference)', CRIT = 'var(--cds-chart-status-critical)';
+  let uid = 0;
+
+  // ------------------------------------------------------------ data helpers
+  const status = (id) => { const r = dash.data(id); return r ? r.status : 'loading'; };
+  const rows = (id) => { const r = dash.data(id); return r && r.status === 'ok' ? r.data : null; };
+  const find = (id, col, val) => { const d = rows(id); return d ? d.find((r) => String(r[col]) === String(val)) : null; };
+  const fv = (metric, field) => { const r = find('findings', 'metric', metric); return r ? r[field || 'value'] : null; };
+  const ev = (id) => find('events', 'id', id);
+  const minus = (s) => s.replace(/-/g, '−');
+  const fmt = (v, d, sign) => (v == null || Number.isNaN(+v)) ? '—' : minus(d3.format((sign ? '+' : '') + ',.' + (d == null ? 1 : d) + 'f')(v));
+  const pct = (v) => (v == null ? '—' : d3.format('.0%')(v));
+
+  function fillValues() {
+    page.querySelectorAll('.km-v').forEach((el) => {
+      const id = el.dataset.source, s = status(id);
+      if (s === 'ok') {
+        const d = rows(id);
+        let row = null;
+        if (el.dataset.where) { const k = el.dataset.where.indexOf('='); const c = el.dataset.where.slice(0, k), v = el.dataset.where.slice(k + 1); row = d.find((r) => String(r[c]) === v); }
+        else if (el.dataset.row != null) row = d[+el.dataset.row];
+        let v = row ? row[el.dataset.field] : null;
+        if (typeof v === 'number' && el.dataset.abs) v = Math.abs(v);
+        if (typeof v === 'number') v = el.dataset.fmt === 'pct' ? pct(v) : fmt(v, el.dataset.fmt == null ? 1 : +el.dataset.fmt, el.dataset.sign === '+');
+        else if (typeof v === 'string' && el.dataset.case === 'title') v = v.charAt(0).toUpperCase() + v.slice(1);
+        el.textContent = v == null ? '—' : v;
+        el.classList.remove('dash-skeleton');
+      } else {
+        el.textContent = '—';
+        el.classList.toggle('dash-skeleton', s !== 'error');
+      }
+    });
+  }
+
+  // ------------------------------------------------------------ legends
+  function legend(id, items) {
+    const ul = document.getElementById(id); if (!ul) return;
+    ul.innerHTML = '';
+    items.forEach((it) => {
+      const li = document.createElement('li');
+      const sw = document.createElement('span');
+      sw.className = 'km-sw' + (it.kind === 'line' ? ' km-sw-line' : it.kind === 'dot' ? ' km-sw-dot' : '');
+      sw.style.background = it.color; if (it.opacity != null) sw.style.opacity = it.opacity;
+      li.appendChild(sw); li.appendChild(document.createTextNode(it.name)); ul.appendChild(li);
+    });
+  }
+
+  // ------------------------------------------------------------ chart box state
+  function prep(box, h) {
+    box.style.minHeight = h + 'px';
+    box.innerHTML = '';
+    const ids = (box.dataset.source || '').split(' ').filter(Boolean);
+    const err = ids.some((i) => status(i) === 'error');
+    const ok = ids.every((i) => status(i) === 'ok');
+    box.classList.toggle('dash-skeleton', !ok && !err);
+    if (err) { box.innerHTML = '<div class="km-fail"><span class="km-fail-dot"></span>Failed to load</div>'; }
+    return ok && !err;
+  }
+
+  // ------------------------------------------------------------ generic x/y chart
+  function textWidth(svg, strs) {
+    const g = svg.append('g').attr('class', 'km-meas');
+    let w = 0;
+    strs.forEach((s) => { const n = g.append('text').text(s).node(); w = Math.max(w, n.getComputedTextLength()); });
+    g.remove(); return w;
+  }
+  function withGaps(data, gap) {
+    if (!gap) return data;
+    const out = [];
+    data.forEach((d, i) => { if (i && d.x - data[i - 1].x > gap) out.push({ x: (d.x + data[i - 1].x) / 2, y: null }); out.push(d); });
+    return out;
+  }
+
+  function chart(box, o) {
+    const W = Math.max(box.clientWidth, 240), H = o.height;
+    const svg = d3.select(box).append('svg').attr('class', 'km-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', box.getAttribute('aria-label') || '');
+    const yfmt = o.y.fmt || ((v) => fmt(v, o.y.dec == null ? 0 : o.y.dec));
+    const xfmt = o.x.fmt || ((v) => fmt(v, o.x.dec == null ? 0 : o.x.dec));
+    let ydom = o.y.domain.slice(), xdom = o.x.domain.slice();
+    const yTicksN = o.y.ticks || Math.max(3, Math.min(6, Math.floor(H / 45)));
+    const tmpY = d3.scaleLinear(ydom, [1, 0]).nice(yTicksN);
+    if (o.y.nice !== false) ydom = tmpY.domain();
+    const ytw = textWidth(svg, tmpY.ticks(yTicksN).map(yfmt));
+    const hasBandLabels = (o.bands || []).some((b) => b.label);
+    const m = { l: Math.ceil(ytw) + 10, r: o.mr == null ? 14 : o.mr, t: o.mt == null ? (hasBandLabels ? 36 : 22) : o.mt, b: 36 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    if (o.equal) { // equal units on both axes
+      const ux = (xdom[1] - xdom[0]) / iw, uy = (ydom[1] - ydom[0]) / ih;
+      if (ux > uy) { const c = (ydom[0] + ydom[1]) / 2, half = ux * ih / 2; ydom = [c - half, c + half]; }
+      else { const c = (xdom[0] + xdom[1]) / 2, half = uy * iw / 2; xdom = [c - half, c + half]; }
+    }
+    const xs = d3.scaleLinear(xdom, [m.l, m.l + iw]);
+    const ys = d3.scaleLinear(ydom, [m.t + ih, m.t]);
+    const cid = 'km-clip-' + (++uid);
+    svg.append('clipPath').attr('id', cid).append('rect').attr('x', m.l).attr('y', m.t).attr('width', iw).attr('height', ih);
+
+    // bands
+    const gb = svg.append('g').attr('clip-path', `url(#${cid})`);
+    (o.bands || []).forEach((b) => {
+      const x0 = Math.max(xs(b.x0), m.l), x1 = Math.min(xs(b.x1), m.l + iw);
+      if (x1 <= x0) return;
+      gb.append('rect').attr('x', x0).attr('y', m.t).attr('width', x1 - x0).attr('height', ih).style('fill', b.color).style('fill-opacity', b.opacity == null ? 0.12 : b.opacity);
+    });
+    // grid
+    const yticks = ys.ticks(yTicksN);
+    svg.append('g').attr('class', 'km-grid-l').selectAll('line').data(yticks).join('line')
+      .attr('x1', m.l).attr('x2', m.l + iw).attr('y1', (d) => ys(d)).attr('y2', (d) => ys(d));
+    // axes
+    const xTicksN = o.x.ticks || Math.max(2, Math.floor(iw / 70));
+    const ax = svg.append('g').attr('class', 'km-axis').attr('transform', `translate(0,${m.t + ih})`)
+      .call(d3.axisBottom(xs).ticks(xTicksN).tickFormat(xfmt).tickSize(4).tickSizeOuter(0));
+    ax.attr('font-size', null).attr('font-family', null);
+    const ay = svg.append('g').attr('class', 'km-axis').attr('transform', `translate(${m.l},0)`)
+      .call(d3.axisLeft(ys).tickValues(yticks).tickFormat(yfmt).tickSize(0).tickPadding(6));
+    ay.attr('font-size', null).attr('font-family', null); ay.select('.domain').remove();
+    if (o.y.label) svg.append('text').attr('x', 0).attr('y', 11).text(o.y.label);
+    if (o.x.label) svg.append('text').attr('x', m.l + iw).attr('y', H - 2).attr('text-anchor', 'end').text(o.x.label);
+    // band labels (top margin)
+    let lastRight = -Infinity;
+    (o.bands || []).filter((b) => b.label).forEach((b) => {
+      const x0 = Math.max(xs(b.x0), m.l), x1 = Math.min(xs(b.x1), m.l + iw);
+      if (x1 <= x0) return;
+      const t = svg.append('text').attr('class', b.num ? 'km-num' : '').attr('x', (x0 + x1) / 2).attr('y', m.t - 7).attr('text-anchor', 'middle').text(b.label);
+      const w = t.node().getComputedTextLength();
+      const cx = (x0 + x1) / 2;
+      if ((!b.num && w > x1 - x0 + 6) || cx - w / 2 < lastRight + 4) t.remove(); else lastRight = cx + w / 2;
+    });
+    // data
+    const gd = svg.append('g').attr('clip-path', o.noclip ? null : `url(#${cid})`);
+    (o.hlines || []).forEach((h) => {
+      gd.append('line').attr('x1', m.l).attr('x2', m.l + iw).attr('y1', ys(h.y)).attr('y2', ys(h.y))
+        .style('stroke', h.color || REF).style('stroke-width', 1).style('stroke-dasharray', h.dash === false ? null : '4 3');
+    });
+    (o.diag ? [o.diag] : []).forEach((dg) => {
+      gd.append('line').attr('x1', xs(dg[0])).attr('y1', ys(dg[0])).attr('x2', xs(dg[1])).attr('y2', ys(dg[1])).style('stroke', REF).style('stroke-width', 1).style('stroke-dasharray', '4 3');
+    });
+    o.series.forEach((s) => {
+      if (s.kind === 'dots') {
+        gd.append('g').selectAll('circle').data(s.data).join('circle')
+          .attr('cx', (d) => xs(d.x)).attr('cy', (d) => ys(d.y)).attr('r', s.r || 2)
+          .style('fill', s.color).style('fill-opacity', s.opacity == null ? 1 : s.opacity)
+          .style('stroke', s.ring ? 'var(--color-panel)' : null).style('stroke-width', s.ring ? 1.5 : null);
+      } else {
+        const ln = d3.line().defined((d) => d.y != null).x((d) => xs(d.x)).y((d) => ys(d.y));
+        gd.append('path').datum(withGaps(s.data, s.gap)).attr('d', ln)
+          .style('fill', 'none').style('stroke', s.color).style('stroke-width', s.width || 2)
+          .style('stroke-opacity', s.opacity == null ? 1 : s.opacity)
+          .style('stroke-linecap', 'round').style('stroke-linejoin', 'round');
+        if (s.dots) gd.append('g').selectAll('circle').data(s.data).join('circle').attr('cx', (d) => xs(d.x)).attr('cy', (d) => ys(d.y)).attr('r', s.dots).style('fill', s.color).style('stroke', 'var(--color-panel)').style('stroke-width', 1);
+      }
+    });
+    (o.segs || []).forEach((g) => {
+      gd.append('line').attr('x1', xs(g.x0)).attr('x2', xs(g.x1)).attr('y1', ys(g.y)).attr('y2', ys(g.y)).style('stroke', g.color || FG).style('stroke-width', 3).style('stroke-linecap', 'round');
+    });
+    // hline labels and markers (unclipped)
+    (o.hlines || []).filter((h) => h.label).forEach((h) => {
+      svg.append('text').attr('class', 'km-halo').attr('x', h.align === 'left' ? m.l + 4 : m.l + iw - 4).attr('y', ys(h.y) + (h.below ? 13 : -5)).attr('text-anchor', h.align === 'left' ? 'start' : 'end').text(h.label);
+    });
+    (o.marks || []).forEach((k) => {
+      svg.append('circle').attr('cx', xs(k.x)).attr('cy', ys(k.y)).attr('r', 4.5).style('fill', k.color || FG).style('stroke', 'var(--color-panel)').style('stroke-width', 2);
+      if (k.label) {
+        const right = k.side ? k.side === 'left' : xs(k.x) > m.l + iw * 0.6;
+        svg.append('text').attr('class', 'km-lab km-halo').attr('x', xs(k.x) + (right ? -8 : 8)).attr('y', ys(k.y) + (k.dy || 4)).attr('text-anchor', right ? 'end' : 'start').text(k.label);
+      }
+    });
+    if (o.tip) addTip(box, svg, o, xs, ys, m, iw, ih, W, H);
+    return { svg, xs, ys, m, iw, ih };
+  }
+
+  function addTip(box, svg, o, xs, ys, m, iw, ih, W, H) {
+    const tip = d3.select(box).append('div').attr('class', 'km-tip');
+    const hov = svg.append('g').style('display', 'none').style('pointer-events', 'none');
+    const rule = hov.append('line').attr('y1', m.t).attr('y2', m.t + ih).style('stroke', REF).style('stroke-width', 1);
+    const lines = o.series.filter((s) => s.kind !== 'dots' && s.tip !== false);
+    const dotSeries = o.series.filter((s) => s.kind === 'dots' && s.tip !== false);
+    const sorted = lines.map((s) => s.data.filter((d) => d.y != null).slice().sort((a, b) => a.x - b.x));
+    const hdots = (o.tip === 'nearest' ? [null] : lines).map((s) => hov.append('circle').attr('r', 4.5).style('stroke', 'var(--color-panel)').style('stroke-width', 2));
+    let delaunay = null, flat = null;
+    if (o.tip === 'nearest') {
+      flat = []; dotSeries.forEach((s) => s.data.forEach((d) => flat.push({ d, s })));
+      delaunay = d3.Delaunay.from(flat, (p) => xs(p.d.x), (p) => ys(p.d.y));
+    }
+    const bisect = d3.bisector((d) => d.x).center;
+    function render(px, py) {
+      let html = '';
+      if (o.tip === 'nearest') {
+        const i = delaunay.find(px, py); if (i == null || i < 0) return hide();
+        const p = flat[i];
+        hdots[0].attr('cx', xs(p.d.x)).attr('cy', ys(p.d.y)).style('fill', p.s.color);
+        rule.style('display', 'none');
+        html = o.tipNearest(p.d, p.s);
+      } else {
+        const xv = xs.invert(px);
+        let ref = null;
+        rule.style('display', null);
+        html = '';
+        const rowsHtml = lines.map((s, k) => {
+          const arr = sorted[k]; if (!arr.length) return '';
+          const j = bisect(arr, xv); const d = arr[j];
+          if (o.tipMaxDx != null && Math.abs(d.x - xv) > o.tipMaxDx) { hdots[k].style('display', 'none'); return ''; }
+          ref = ref || d;
+          hdots[k].style('display', null).attr('cx', xs(d.x)).attr('cy', ys(d.y)).style('fill', s.color);
+          const sw = lines.length > 1 ? `<span class="km-sw km-sw-dot" style="background:${s.color}"></span>` : '';
+          return `<div class="km-tip-r">${sw}<span>${s.name}</span>&nbsp;<b>${(s.tipFmt || ((v) => fmt(v, 1)))(d.y)}</b>${s.unit ? ' ' + s.unit : ''}</div>`;
+        }).join('');
+        if (!ref) return hide();
+        rule.attr('x1', xs(ref.x)).attr('x2', xs(ref.x));
+        html = `<div class="km-tip-t">${o.tipTitle(ref)}</div>${rowsHtml}${o.tipExtra ? o.tipExtra(ref) : ''}`;
+      }
+      tip.html(html).style('opacity', 1);
+      hov.style('display', null);
+      const tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      const bw = box.clientWidth;
+      let left = px + 14; if (left + tw > bw) left = px - 14 - tw; if (left < 0) left = Math.max(0, bw - tw);
+      let top = py - th - 10; if (top < 0) top = py + 14;
+      tip.style('left', left + 'px').style('top', top + 'px');
+    }
+    function hide() { tip.style('opacity', 0); hov.style('display', 'none'); }
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', iw).attr('height', ih).style('fill', 'transparent').style('cursor', 'crosshair')
+      .on('pointermove', (e) => { const [px, py] = d3.pointer(e); render(px, py); })
+      .on('pointerleave', hide);
+  }
+
+  // ------------------------------------------------------------ conceptual diagrams (illustration only)
+  function diagram(id, mode) {
+    const box = document.getElementById(id); if (!box) return;
+    box.innerHTML = '';
+    const W = 360, H = 190;
+    const svg = d3.select(box).append('svg').attr('class', 'km-svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', box.getAttribute('aria-label'));
+    const P0 = [26, 160], P1 = [96, 26], P2 = [334, 52];
+    const bez = (t) => [(1 - t) * (1 - t) * P0[0] + 2 * (1 - t) * t * P1[0] + t * t * P2[0], (1 - t) * (1 - t) * P0[1] + 2 * (1 - t) * t * P1[1] + t * t * P2[1]];
+    const n = 24, pts = d3.range(n + 1).map((k) => bez(k / n));
+    const tB = 0.42, onB = bez(tB), dB = [bez(tB + 0.01)[0] - bez(tB - 0.01)[0], bez(tB + 0.01)[1] - bez(tB - 0.01)[1]];
+    const L = Math.hypot(dB[0], dB[1]); const nrm = [dB[1] / L, -dB[0] / L];
+    const B = [onB[0] + nrm[0] * 9, onB[1] + nrm[1] * 9];
+    const u = [P2[0] - P0[0], P2[1] - P0[1]], uL = Math.hypot(u[0], u[1]), uu = [u[0] / uL, u[1] / uL];
+    const sB = (B[0] - P0[0]) * uu[0] + (B[1] - P0[1]) * uu[1];
+    const foot = [P0[0] + uu[0] * sB, P0[1] + uu[1] * sB];
+    const line = d3.line();
+    const lineCol = mode === 'path' ? MUTED : COL.line;
+    // calibrated path (faint) and chord
+    svg.append('path').attr('d', line(pts)).style('fill', 'none').style('stroke', mode === 'path' ? COL.path : MUTED).style('stroke-width', mode === 'path' ? 1.5 : 1.5).style('stroke-opacity', mode === 'path' ? 0.9 : 0.6);
+    svg.append('line').attr('x1', P0[0]).attr('y1', P0[1]).attr('x2', P2[0]).attr('y2', P2[1]).style('stroke', lineCol).style('stroke-width', mode === 'path' ? 1 : 1.5).style('stroke-dasharray', mode === 'path' ? '4 3' : null);
+    if (mode === 'path') {
+      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', (d) => d[0]).attr('cy', (d) => d[1]).attr('r', 2.6).style('fill', COL.path);
+      const along = pts.filter((p, k) => k / n <= tB).concat([onB]);
+      svg.append('path').attr('d', line(along)).style('fill', 'none').style('stroke', COL.path).style('stroke-width', 4).style('stroke-linecap', 'round').style('stroke-opacity', 0.55);
+      svg.append('line').attr('x1', B[0]).attr('y1', B[1]).attr('x2', onB[0]).attr('y2', onB[1]).style('stroke', FG).style('stroke-width', 1.5);
+      svg.append('text').attr('class', 'km-lab').attr('x', 70).attr('y', 120).text('position: distance along the path');
+      svg.append('text').attr('class', 'km-halo').attr('x', B[0] - 6).attr('y', B[1] + 20).attr('text-anchor', 'end').text('off-chain (tiny)');
+    } else {
+      svg.append('line').attr('x1', P0[0]).attr('y1', P0[1]).attr('x2', foot[0]).attr('y2', foot[1]).style('stroke', COL.line).style('stroke-width', 4).style('stroke-linecap', 'round').style('stroke-opacity', 0.55);
+      svg.append('line').attr('x1', B[0]).attr('y1', B[1]).attr('x2', foot[0]).attr('y2', foot[1]).style('stroke', FG).style('stroke-width', 1.5);
+      svg.append('text').attr('class', 'km-lab').attr('x', foot[0] + 6).attr('y', foot[1] + 16).text('position s');
+      svg.append('text').attr('x', (B[0] + foot[0]) / 2 + 6).attr('y', (B[1] + foot[1]) / 2).text('off-line');
+    }
+    [[P0, 'D  lever down', 6, 18], [P2, 'F  lever up', -4, -10], [B, 'reading', -6, -8]].forEach(([p, t, dx, dy], k) => {
+      svg.append('circle').attr('cx', p[0]).attr('cy', p[1]).attr('r', 4.5).style('fill', FG).style('stroke', 'var(--color-panel)').style('stroke-width', 2);
+      svg.append('text').attr('class', 'km-lab').attr('x', p[0] + dx).attr('y', p[1] + dy).attr('text-anchor', k === 1 || k === 2 ? 'end' : 'start').text(t);
+    });
+  }
+
+  // ------------------------------------------------------------ individual charts
+  const H = (base) => (page.clientWidth < 520 ? Math.round(base * 0.85) : base);
+  const bandColor = (b) => (b === 'sweep' ? COL.sweep : b === 'crank' ? COL.crank : MUTED);
+  const evAt = (t) => { const e = rows('events'); if (!e) return null; return e.find((r) => r.level === 'phase' && t >= r.t_start && t < r.t_end) || e.find((r) => r.level === 'session' && t >= r.t_start && t < r.t_end); };
+  const sessionIn = (t0, t1) => rows('session_readings').filter((r) => r.t >= t0 && r.t <= t1);
+  const tTitle = (d) => fmt(d.x, 1) + ' s';
+  const evExtra = (d) => { const e = evAt(d.x); return e ? `<div class="km-tip-t">${e.label}</div>` : ''; };
+
+  function timelineBands(withLabels) {
+    const e = rows('events');
+    const out = [];
+    e.filter((r) => r.level === 'session' && r.band).forEach((r) => out.push({ x0: r.t_start, x1: r.t_end, color: r.band === 'gap' ? MUTED : bandColor(r.band), opacity: r.band === 'gap' ? 0.3 : r.band === 'other' ? 0.1 : 0.13, label: withLabels && r.number != null ? String(r.number) : null, num: true }));
+    e.filter((r) => r.level === 'phase' && r.band).forEach((r) => out.push({ x0: r.t_start, x1: r.t_end, color: bandColor(r.band), opacity: 0.16 }));
+    return out;
+  }
+
+  function drawTimeline() {
+    const box = document.getElementById('km-ch-timeline');
+    legend('km-leg-timeline', [
+      { name: 'Clean sweep', color: COL.sweep, opacity: 0.35 },
+      { name: 'Crank or rider moving', color: COL.crank, opacity: 0.35 },
+      { name: 'Other', color: MUTED, opacity: 0.3 },
+      { name: 'Stream off, no data', color: MUTED, opacity: 0.6 },
+      { name: 'Position s', color: FG, kind: 'line' },
+    ]);
+    const h1 = H(270);
+    if (prep(box, h1)) {
+      const d = rows('session_readings');
+      const data = d.map((r) => ({ x: r.t, y: r.s, off: r.off }));
+      const sd = fv('s_down'), st = fv('s_top');
+      chart(box, {
+        height: h1, x: { domain: d3.extent(d, (r) => r.t), label: 'log time (s)' },
+        y: { domain: d3.extent(d, (r) => r.s), label: 'position s (µT)' },
+        bands: timelineBands(true),
+        hlines: [{ y: sd, label: 'clean sweep: lever down', below: true }, { y: st, label: 'clean sweep: lever up', below: true }],
+        series: [{ name: 'Position s', color: FG, width: 1.25, data, gap: 30, unit: 'µT' }],
+        tip: 'x', tipTitle: tTitle, tipMaxDx: 20,
+        tipExtra: (p) => { const r = data[d3.bisector((q) => q.x).center(data, p.x)]; return `<div class="km-tip-r">Off-line&nbsp;<b>${fmt(r.off, 1)}</b> µT</div>` + evExtra(p); },
+      });
+    }
+    const box2 = document.getElementById('km-ch-timeline-off');
+    const h2 = H(150);
+    if (prep(box2, h2)) {
+      const d = rows('session_readings');
+      chart(box2, {
+        height: h2, mt: 10, x: { domain: d3.extent(d, (r) => r.t), label: 'log time (s)' },
+        y: { domain: [0, d3.max(d, (r) => r.off)], label: '', ticks: 3 },
+        bands: timelineBands(false),
+        hlines: [{ y: fv('sweep_max_off'), label: 'clean-sweep maximum' }],
+        series: [{ name: 'Off-line', color: FG, width: 1.25, data: d.map((r) => ({ x: r.t, y: r.off })), gap: 30, unit: 'µT' }],
+        tip: 'x', tipTitle: tTitle, tipMaxDx: 20, tipExtra: evExtra,
+      });
+    }
+    // event list
+    const ol = document.getElementById('km-events');
+    ol.innerHTML = '';
+    if (status('events') === 'ok') {
+      rows('events').filter((r) => r.level === 'session').forEach((r) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="km-evnum" data-source="events" data-field="number" data-where="id=${r.id}">${r.number == null ? '·' : r.number}</span>` +
+          `<span><span class="km-evname" data-source="events" data-field="label" data-where="id=${r.id}"></span> <span class="km-evt"><span data-source="events" data-field="t_start" data-where="id=${r.id}">${fmt(r.t_start, 0)}</span>–<span data-source="events" data-field="t_end" data-where="id=${r.id}">${fmt(r.t_end, 0)}</span> s</span><br><span class="km-evt" data-source="events" data-field="note" data-where="id=${r.id}"></span></span>`;
+        li.querySelector('.km-evname').textContent = r.label;
+        li.querySelector('.km-evt[data-field="note"]').textContent = r.note;
+        ol.appendChild(li);
+      });
+    }
+  }
+
+  function drawField() {
+    const box = document.getElementById('km-ch-field');
+    legend('km-leg-field', [{ name: 'Clean sweep', color: COL.sweep, kind: 'dot' }, { name: 'Crank or rider moving', color: COL.crank, kind: 'dot' }, { name: 'Other', color: MUTED, kind: 'dot' }]);
+    const h = H(300);
+    if (!prep(box, h)) return;
+    const d = rows('session_readings');
+    const grp = (g) => d.filter((r) => r.group === g).map((r) => ({ x: r.s, y: r.off, t: r.t }));
+    chart(box, {
+      height: h, x: { domain: d3.extent(d, (r) => r.s), label: 'position s (µT)' }, y: { domain: [0, d3.max(d, (r) => r.off)], label: 'off-line (µT)' },
+      series: [
+        { name: 'Other', kind: 'dots', color: MUTED, r: 1.6, opacity: 0.5, data: grp('other') },
+        { name: 'Crank or rider moving', kind: 'dots', color: COL.crank, r: 1.8, opacity: 0.75, data: grp('crank') },
+        { name: 'Clean sweep', kind: 'dots', color: COL.sweep, r: 2.2, data: grp('sweep') },
+      ],
+      tip: 'nearest',
+      tipNearest: (p, s) => { const e = evAt(p.t); return `<div class="km-tip-t">${fmt(p.t, 1)} s${e ? ' · ' + e.label : ''}</div><div class="km-tip-r"><span class="km-sw km-sw-dot" style="background:${s.color}"></span>${s.name}</div><div>s <b>${fmt(p.x, 1)}</b> µT · off-line <b>${fmt(p.y, 1)}</b> µT</div>`; },
+    });
+  }
+
+  function drawBench() {
+    const box = document.getElementById('km-ch-bench'); const h = H(220);
+    if (!prep(box, h)) return;
+    const d = rows('bench_readings');
+    chart(box, { height: h, x: { domain: d3.extent(d, (r) => r.t), label: 'time (s)' }, y: { domain: [0, d3.max(d, (r) => r.change)], label: 'change from rest (µT)' },
+      series: [{ name: 'Change', color: COL.sweep, data: d.map((r) => ({ x: r.t, y: r.change })), unit: 'µT' }], tip: 'x', tipTitle: tTitle });
+  }
+
+  function phaseBands(parent, col) {
+    return rows('events').filter((r) => r.parent === parent).map((r, i) => ({ x0: r.t_start, x1: r.t_end, color: col, opacity: i % 2 ? 0.06 : 0.14, label: r.label }));
+  }
+
+  function drawSweep() {
+    const box = document.getElementById('km-ch-sweep'); const h = H(230);
+    if (prep(box, h)) {
+      const e = ev('clean');
+      const d = sessionIn(e.t_start - 4, e.t_end + 3);
+      chart(box, { height: h, x: { domain: [e.t_start - 4, e.t_end + 3], label: 'log time (s)' }, y: { domain: d3.extent(d, (r) => r.s), label: 'position s (µT)' },
+        bands: phaseBands('clean', COL.sweep), series: [{ name: 'Position s', color: COL.sweep, data: d.map((r) => ({ x: r.t, y: r.s })), unit: 'µT' }],
+        tip: 'x', tipTitle: tTitle, tipExtra: evExtra });
+    }
+    const box2 = document.getElementById('km-ch-passes'); const h2 = H(210);
+    legend('km-leg-passes', [{ name: 'Up pass', color: COL.up, kind: 'line' }, { name: 'Down pass (reversed)', color: COL.down, kind: 'line' }]);
+    if (prep(box2, h2)) {
+      const p = rows('sweep_passes');
+      const ser = (n) => p.filter((r) => r.pass === n).map((r) => ({ x: r.progress_pct, y: r.s })).sort((a, b) => a.x - b.x);
+      chart(box2, { height: h2, x: { domain: [0, 100], label: 'progress through the pass, from lever down (%)' }, y: { domain: d3.extent(p, (r) => r.s), label: 'position s (µT)' },
+        series: [{ name: 'Up pass', color: COL.up, data: ser('up'), unit: 'µT' }, { name: 'Down pass', color: COL.down, data: ser('down'), unit: 'µT' }],
+        tip: 'x', tipTitle: (d) => fmt(d.x, 0) + '% through' });
+    }
+  }
+
+  function drawPedal() {
+    const box = document.getElementById('km-ch-pedal'); const h = H(240);
+    legend('km-leg-pedal', [{ name: 'Pedalling', color: COL.crank, opacity: 0.35 }, { name: 'Stopped', color: MUTED, opacity: 0.3 }, { name: 'Position s', color: FG, kind: 'line', opacity: 0.55 }, { name: 'Stretch mean', color: FG, kind: 'line' }]);
+    if (!prep(box, h)) return;
+    const segs = rows('pedalling_segments');
+    const t0 = d3.min(segs, (r) => r.t_start) - 1, t1 = d3.max(segs, (r) => r.t_end) + 3;
+    const d = sessionIn(t0, t1);
+    chart(box, { height: h, x: { domain: [t0, t1], label: 'log time (s)' }, y: { domain: d3.extent(d, (r) => r.s), label: 'position s (µT)' },
+      bands: segs.map((r) => ({ x0: r.t_start, x1: r.t_end, color: r.kind === 'pedal' ? COL.crank : MUTED, opacity: r.kind === 'pedal' ? 0.15 : 0.1 })),
+      segs: segs.map((r) => ({ x0: r.t_start + 2, x1: r.t_end - 2, y: r.mean_s })),
+      series: [{ name: 'Position s', color: FG, width: 1, opacity: 0.55, data: d.map((r) => ({ x: r.t, y: r.s })), unit: 'µT' }],
+      tip: 'x', tipTitle: tTitle,
+      tipExtra: (p) => { const sg = segs.find((r) => p.x >= r.t_start && p.x < r.t_end); return sg ? `<div class="km-tip-t">${sg.name} · mean ${fmt(sg.mean_s, 1)} µT</div>` : evExtra(p); } });
+  }
+
+  function drawHandsOff() {
+    const box = document.getElementById('km-ch-handsoff'); const h = H(230);
+    if (!prep(box, h)) return;
+    const e = ev('handsoff');
+    const d = sessionIn(e.t_start - 2, e.t_end + 5);
+    const sd = fv('s_down'), st = fv('s_top');
+    chart(box, { height: h, x: { domain: [e.t_start - 2, e.t_end + 5], label: 'log time (s)' },
+      y: { domain: [Math.min(d3.min(d, (r) => r.s), sd), Math.max(d3.max(d, (r) => r.s), st)], label: 'position s (µT)' },
+      bands: phaseBands('handsoff', COL.crank),
+      hlines: [{ y: sd, label: 'clean sweep: lever down', below: true }, { y: st, label: 'clean sweep: lever up', below: true }],
+      series: [{ name: 'Position s', color: FG, data: d.map((r) => ({ x: r.t, y: r.s })), unit: 'µT' }],
+      tip: 'x', tipTitle: tTitle, tipExtra: evExtra });
+  }
+
+  function drawCrank() {
+    const box = document.getElementById('km-ch-crank'); const h = H(230);
+    if (!prep(box, h)) return;
+    const d = rows('crank_revolution');
+    const data = d.map((r) => ({ x: r.t, y: r.change }));
+    const at = (t) => data[d3.bisector((q) => q.x).center(data, t)];
+    const pk = at(fv('crank_peak_t')), nb = at(fv('crank_nearest_t'));
+    chart(box, { height: h, x: { domain: d3.extent(d, (r) => r.t), label: 'log time (s)' }, y: { domain: [0, d3.max(d, (r) => r.change)], label: 'change from start (µT)' },
+      series: [{ name: 'Change from start', color: COL.crank, data, unit: 'µT' }],
+      marks: [{ x: pk.x, y: pk.y, label: 'largest change', color: COL.crank, dy: -6, side: 'right' }, { x: nb.x, y: nb.y, label: 'matches sweep lever-down', color: FG, dy: 4, side: 'left' }],
+      tip: 'x', tipTitle: tTitle });
+  }
+
+  function drawRepeat() {
+    const box = document.getElementById('km-ch-repeat'); const h = H(230);
+    if (!prep(box, h)) return;
+    const e = ev('repeat');
+    const d = sessionIn(e.t_start - 6, e.t_end + 6);
+    chart(box, { height: h, x: { domain: [e.t_start - 6, e.t_end + 6], label: 'log time (s)' }, y: { domain: [0, d3.max(d, (r) => r.off)], label: 'off-line (µT)' },
+      bands: phaseBands('repeat', COL.crank),
+      hlines: [{ y: fv('sweep_max_off'), label: 'clean-sweep maximum', below: true }],
+      series: [{ name: 'Off-line', color: FG, data: d.map((r) => ({ x: r.t, y: r.off })), unit: 'µT' }],
+      tip: 'x', tipTitle: tTitle, tipExtra: evExtra });
+  }
+
+  function drawSens() {
+    const box = document.getElementById('km-ch-sens'); const h = H(230);
+    legend('km-leg-sens', [{ name: 'Follow the path', color: COL.path, kind: 'line' }, { name: 'Straight line, smoothed steps', color: COL.line, kind: 'line' }, { name: 'Straight line, single steps', color: COL.line, kind: 'dot', opacity: 0.5 }]);
+    if (!prep(box, h)) return;
+    const d = rows('method_sensitivity');
+    const big = d3.max(d, (r) => r.window_ut), small = d3.min(d, (r) => r.window_ut);
+    const s12 = d.filter((r) => r.window_ut === big).map((r) => ({ x: r.pos_pct, y: r.straight_pct }));
+    const s4 = d.filter((r) => r.window_ut === small).map((r) => ({ x: r.pos_pct, y: r.straight_pct }));
+    const pth = d.filter((r) => r.window_ut === small).map((r) => ({ x: r.pos_pct, y: r.path_pct }));
+    chart(box, { height: h, x: { domain: [0, 100], label: 'position along the path (%)' }, y: { domain: [d3.min(d, (r) => r.straight_pct) - 1, 101], label: 'change kept (%)' },
+      series: [
+        { name: 'Single steps', kind: 'dots', color: COL.line, r: 2.5, opacity: 0.45, data: s4, tip: false },
+        { name: 'Straight line', color: COL.line, data: s12, unit: '%' },
+        { name: 'Follow the path', color: COL.path, data: pth, unit: '%' },
+      ], tip: 'x', tipTitle: (p) => fmt(p.x, 0) + '% along the path' });
+  }
+
+  function drawDown() {
+    const box = document.getElementById('km-ch-side'); const h = H(220);
+    legend('km-leg-side', [{ name: 'Reference chain (up pass)', color: COL.path, kind: 'line' }, { name: 'Down-pass readings', color: FG, kind: 'dot' }, { name: 'Straight line', color: COL.line, kind: 'line' }]);
+    if (prep(box, h)) {
+      const c = rows('reference_chain'), dn = rows('method_downsweep');
+      chart(box, { height: h, x: { domain: d3.extent(c.concat(dn), (r) => r.s), label: 'position s along the straight line (µT)' },
+        y: { domain: [0, d3.max(c.concat(dn), (r) => r.off_line)], label: 'off-line (µT)' },
+        hlines: [{ y: 0, color: COL.line, dash: false, label: 'straight line', align: 'left' }],
+        series: [
+          { name: 'Down pass', kind: 'dots', color: FG, r: 2.2, opacity: 0.8, data: dn.map((r) => ({ x: r.s, y: r.off_line, t: r.t })), tip: false },
+          { name: 'Reference chain', color: COL.path, dots: 3, data: c.map((r) => ({ x: r.s, y: r.off_line })), unit: 'µT off-line' },
+        ], tip: 'x', tipTitle: (p) => 's ' + fmt(p.x, 1) + ' µT' });
+    }
+    const box2 = document.getElementById('km-ch-health'); const h2 = H(220);
+    legend('km-leg-health', [{ name: 'Off-line (straight line)', color: COL.line, kind: 'line' }, { name: 'Off-chain (path)', color: COL.path, kind: 'line' }, { name: 'Alarm levels', color: REF, kind: 'line' }]);
+    if (prep(box2, h2)) {
+      const dn = rows('method_downsweep');
+      const lf = fv('line_flag'), pf = fv('path_flag');
+      const ser = (k) => dn.map((r) => ({ x: r.path_pct, y: r[k] })).sort((a, b) => a.x - b.x);
+      chart(box2, { height: h2, x: { domain: [0, 100], label: 'position along the path (%)' }, y: { domain: [0, Math.max(lf, d3.max(dn, (r) => r.off_line)) + 1], label: 'distance from reference (µT)' },
+        hlines: [{ y: lf, label: 'straight-line alarm' }, { y: pf, label: 'path alarm' }],
+        series: [{ name: 'Off-line', color: COL.line, data: ser('off_line'), unit: 'µT' }, { name: 'Off-chain', color: COL.path, data: ser('off_chain'), unit: 'µT' }],
+        tip: 'x', tipTitle: (p) => fmt(p.x, 0) + '% along the path' });
+    }
+  }
+
+  function drawTruth() {
+    const tb = document.querySelector('#km-tb-truth tbody');
+    tb.innerHTML = '';
+    if (status('method_known_truth') === 'ok') {
+      rows('method_known_truth').forEach((r) => {
+        const tr = document.createElement('tr'); tr.dataset.key = r.case;
+        const cells = [[r.case, ''], [fmt(r.truth_pct, 0), 'km-n'], [fmt(r.line_err_pct_mean, 1, true), 'km-n'], [fmt(r.path_err_pct_mean, 1, true), 'km-n'], [fmt(r.off_line_med, 1), 'km-n'], [fmt(r.off_chain_med, 1), 'km-n'], [pct(r.line_flag_share), 'km-n'], [pct(r.path_flag_share), 'km-n']];
+        cells.forEach(([t, c]) => { const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.appendChild(td); });
+        tb.appendChild(tr);
+      });
+    }
+    const leg = [{ name: 'Straight line', color: COL.line, kind: 'line' }, { name: 'Follow the path', color: COL.path, kind: 'line' }];
+    legend('km-leg-crankpos', leg.concat([{ name: 'Truth', color: REF, kind: 'line' }]));
+    legend('km-leg-crankhealth', leg.concat([{ name: 'Alarm levels', color: REF, kind: 'line' }]));
+    const box = document.getElementById('km-ch-crankpos'); const h = H(220);
+    if (prep(box, h)) {
+      const d = rows('crank_revolution');
+      chart(box, { height: h, x: { domain: d3.extent(d, (r) => r.t), label: 'log time (s)' }, y: { domain: [Math.min(-5, d3.min(d, (r) => Math.min(r.line_pct, r.path_pct))), Math.max(5, d3.max(d, (r) => Math.max(r.line_pct, r.path_pct)))], label: 'reported position (%)' },
+        hlines: [{ y: 0, label: 'truth: lever down', below: true }],
+        series: [{ name: 'Straight line', color: COL.line, data: d.map((r) => ({ x: r.t, y: r.line_pct })), unit: '%' }, { name: 'Follow the path', color: COL.path, data: d.map((r) => ({ x: r.t, y: r.path_pct })), unit: '%' }],
+        tip: 'x', tipTitle: tTitle });
+    }
+    const box2 = document.getElementById('km-ch-crankhealth');
+    if (prep(box2, h)) {
+      const d = rows('crank_revolution');
+      chart(box2, { height: h, x: { domain: d3.extent(d, (r) => r.t), label: 'log time (s)' }, y: { domain: [0, d3.max(d, (r) => Math.max(r.off_line, r.off_chain))], label: 'distance from reference (µT)' },
+        hlines: [{ y: fv('line_flag'), label: 'straight-line alarm' }, { y: fv('path_flag'), label: 'path alarm', below: true }],
+        series: [{ name: 'Off-line', color: COL.line, data: d.map((r) => ({ x: r.t, y: r.off_line })), unit: 'µT' }, { name: 'Off-chain', color: COL.path, data: d.map((r) => ({ x: r.t, y: r.off_chain })), unit: 'µT' }],
+        tip: 'x', tipTitle: tTitle });
+    }
+  }
+
+  function drawSim() {
+    const box = document.getElementById('km-ch-simshape'); const h = H(260);
+    legend('km-leg-simshape', [{ name: 'Simulated field path', color: MUTED, kind: 'line' }, { name: 'Calibration points', color: COL.path, kind: 'dot' }, { name: 'Straight line', color: COL.line, kind: 'line' }]);
+    if (prep(box, h)) {
+      const g = rows('simulated_path');
+      const path = g.filter((r) => r.kind === 'path').map((r) => ({ x: r.px, y: r.py }));
+      const cal = g.filter((r) => r.kind === 'calibration');
+      const pad = 8;
+      chart(box, { height: h, equal: true, x: { domain: [d3.min(g, (r) => r.px) - pad, d3.max(g, (r) => r.px) + pad], label: 'field x (µT)' }, y: { domain: [d3.min(g, (r) => r.py) - pad, d3.max(g, (r) => r.py) + pad], label: 'field y (µT)', nice: false },
+        series: [
+          { name: 'Path', color: MUTED, data: path, tip: false },
+          { name: 'Straight line', color: COL.line, data: [cal[0], cal[cal.length - 1]].map((r) => ({ x: r.px, y: r.py })), tip: false },
+          { name: 'Calibration point', kind: 'dots', color: COL.path, r: 3.5, ring: true, data: cal.map((r) => ({ x: r.px, y: r.py, lever: r.lever_pct, line: r.line_pct })) },
+        ],
+        marks: [{ x: cal[0].px, y: cal[0].py, label: 'lever down', color: FG, dy: 18, side: 'left' }, { x: cal[cal.length - 1].px, y: cal[cal.length - 1].py, label: 'lever up', color: FG, dy: 18, side: 'right' }],
+        tip: 'nearest', tipNearest: (p) => `<div class="km-tip-t">Calibration point</div><div>lever <b>${fmt(p.lever, 0)}%</b> · straight line reads <b>${fmt(p.line, 1)}%</b></div>` });
+    }
+    const box2 = document.getElementById('km-ch-simest'); const h2 = H(260);
+    legend('km-leg-simest', [{ name: 'Straight line', color: COL.line, kind: 'line' }, { name: 'Follow the path', color: COL.path, kind: 'line' }, { name: 'Perfect', color: REF, kind: 'line' }]);
+    if (prep(box2, h2)) {
+      const d = rows('method_simulated');
+      const a = d.find((r) => r.lever_pct === fv('sim_twin_a')), b = d.find((r) => r.lever_pct === fv('sim_twin_b'));
+      const lo = Math.min(0, d3.min(d, (r) => Math.min(r.line_pct, r.path_pct))), hi = Math.max(100, d3.max(d, (r) => Math.max(r.line_pct, r.path_pct)));
+      const marks = (a && b) ? [{ x: a.lever_pct, y: a.line_pct, color: COL.line }, { x: b.lever_pct, y: b.line_pct, color: COL.line, label: 'same reading, different lever', dy: 16 }] : [];
+      chart(box2, { height: h2, x: { domain: [0, 100], label: 'true lever position (%)' }, y: { domain: [lo, hi], label: 'estimated position (%)' }, diag: [0, 100],
+        series: [{ name: 'Straight line', color: COL.line, data: d.map((r) => ({ x: r.lever_pct, y: r.line_pct })), unit: '%' }, { name: 'Follow the path', color: COL.path, data: d.map((r) => ({ x: r.lever_pct, y: r.path_pct })), unit: '%' }],
+        marks, tip: 'x', tipTitle: (p) => 'lever at ' + fmt(p.x, 0) + '%' });
+    }
+  }
+
+  function drawPhone() {
+    const box = document.getElementById('km-ch-phone');
+    const ok = status('phone_readings') === 'ok';
+    const d = ok ? rows('phone_readings').filter((r) => r.set === 're-taped').sort((a, b) => a.order - b.order) : [];
+    const h = Math.max(220, d.length * 24 + 60);
+    if (prep(box, h)) {
+      const W = Math.max(box.clientWidth, 240);
+      const svg = d3.select(box).append('svg').attr('class', 'km-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${h}`).attr('role', 'img').attr('aria-label', box.getAttribute('aria-label'));
+      const lw = textWidth(svg, d.map((r) => r.label));
+      const m = { l: Math.ceil(lw) + 12, r: 16, t: 20, b: 36 };
+      const xs = d3.scaleLinear([Math.min(0, d3.min(d, (r) => r.pos_pct)) - 2, Math.max(100, d3.max(d, (r) => r.pos_pct)) + 2], [m.l, W - m.r]).nice();
+      const ys = d3.scaleBand(d.map((r) => r.label), [m.t, h - m.b]).padding(0.3);
+      svg.append('g').attr('class', 'km-grid-l').selectAll('line').data(xs.ticks(5)).join('line').attr('x1', (v) => xs(v)).attr('x2', (v) => xs(v)).attr('y1', m.t).attr('y2', h - m.b);
+      const ax = svg.append('g').attr('class', 'km-axis').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(xs).ticks(Math.max(2, Math.floor((W - m.l - m.r) / 70))).tickFormat((v) => fmt(v, 0)).tickSize(4).tickSizeOuter(0));
+      ax.attr('font-size', null).attr('font-family', null);
+      svg.append('text').attr('x', W - m.r).attr('y', h - 2).attr('text-anchor', 'end').text('position along the re-taped line (%)');
+      svg.append('g').selectAll('text').data(d).join('text').attr('x', m.l - 8).attr('y', (r) => ys(r.label) + ys.bandwidth() / 2 + 4).attr('text-anchor', 'end').text((r) => r.label);
+      const isGear = (r) => r.label.startsWith('Gear');
+      svg.append('g').selectAll('line').data(d).join('line').attr('x1', xs(0)).attr('x2', (r) => xs(r.pos_pct)).attr('y1', (r) => ys(r.label) + ys.bandwidth() / 2).attr('y2', (r) => ys(r.label) + ys.bandwidth() / 2).style('stroke', 'var(--cds-chart-grid)').style('stroke-width', 2);
+      svg.append('g').selectAll('circle').data(d).join('circle').attr('cx', (r) => xs(r.pos_pct)).attr('cy', (r) => ys(r.label) + ys.bandwidth() / 2).attr('r', 5)
+        .style('fill', (r) => (isGear(r) ? COL.sweep : MUTED)).style('stroke', 'var(--color-panel)').style('stroke-width', 2);
+      svg.append('g').selectAll('text').data(d.filter(isGear)).join('text').attr('class', 'km-lab').attr('x', (r) => xs(r.pos_pct) + (xs(r.pos_pct) > W * 0.75 ? -10 : 10)).attr('text-anchor', (r) => (xs(r.pos_pct) > W * 0.75 ? 'end' : 'start'))
+        .attr('y', (r) => ys(r.label) + ys.bandwidth() / 2 + 4).text((r) => fmt(r.pos_pct, 1) + '%');
+      // tooltip
+      const tip = d3.select(box).append('div').attr('class', 'km-tip');
+      svg.append('g').selectAll('rect').data(d).join('rect').attr('x', m.l).attr('width', W - m.l - m.r).attr('y', (r) => ys(r.label) - ys.step() * ys.paddingInner() / 2).attr('height', ys.step()).style('fill', 'transparent')
+        .on('pointermove', (e, r) => {
+          const [px, py] = d3.pointer(e, box);
+          tip.html(`<div class="km-tip-t">${r.label}</div><div>(${fmt(r.x, 1)}, ${fmt(r.y, 1)}, ${fmt(r.z, 1)}) µT</div><div>position <b>${fmt(r.pos_pct, 1)}%</b> · off-line <b>${fmt(r.off, 1)}</b> µT</div>`).style('opacity', 1);
+          const tw = tip.node().offsetWidth; let left = px + 14; if (left + tw > box.clientWidth) left = px - 14 - tw; if (left < 0) left = 0;
+          tip.style('left', left + 'px').style('top', Math.max(0, py - tip.node().offsetHeight - 8) + 'px');
+        }).on('pointerleave', () => tip.style('opacity', 0));
+    }
+    const tb = document.querySelector('#km-tb-phone tbody');
+    tb.innerHTML = '';
+    if (ok) {
+      rows('phone_readings').slice().sort((a, b) => a.order - b.order).forEach((r) => {
+        const tr = document.createElement('tr'); tr.dataset.key = r.label;
+        [[r.label, ''], [r.set, ''], [fmt(r.x, 1), 'km-n'], [fmt(r.y, 1), 'km-n'], [fmt(r.z, 1), 'km-n'], [fmt(r.pos_pct, 1), 'km-n'], [fmt(r.off, 1), 'km-n']].forEach(([t, c]) => { const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.appendChild(td); });
+        tb.appendChild(tr);
+      });
+    }
+  }
+
+  // ------------------------------------------------------------ tabs
+  const PANELS = { overview: [drawTimeline, drawField, () => diagram('km-dg-frame', 'line')], cases: [drawBench, drawSweep, drawPedal, drawHandsOff, drawCrank, drawRepeat], methods: [() => diagram('km-dg-line', 'line'), () => diagram('km-dg-path', 'path'), drawSens, drawDown, drawTruth, drawSim], phone: [drawPhone] };
+  let active = 'overview';
+  const tabs = Array.from(page.querySelectorAll('.km-tab'));
+  function show(id, link) {
+    if (!PANELS[id]) return;
+    active = id;
+    tabs.forEach((t) => t.setAttribute('aria-selected', String(t.id === id)));
+    Object.keys(PANELS).forEach((k) => { const p = document.getElementById('km-p-' + k); p.hidden = k !== id; p.classList.toggle('km-in', k === id); });
+    drawActive();
+    if (link && dash.setLink) dash.setLink(id);
+  }
+  tabs.forEach((t) => t.addEventListener('click', () => show(t.id, true)));
+  function drawActive() { PANELS[active].forEach((f) => { try { f(); } catch (err) { console.error(err); } }); }
+
+  let first = true;
+  dash.onData(() => {
+    fillValues();
+    drawActive();
+    if (first && status('events') === 'ok' && status('session_readings') === 'ok') {
+      first = false;
+      const name = location.hash.slice(1);
+      if (name) {
+        if (PANELS[name]) show(name, false);
+        else { const el = document.getElementById(name); const panel = el && el.closest('.km-panel'); if (panel) { show(panel.id.replace('km-p-', ''), false); el.scrollIntoView(); } }
+      }
+    }
+  });
+})();
+</script>

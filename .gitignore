@@ -1,0 +1,8 @@
+# Arduino build output
+build/
+
+# Backups and caches
+*.orig
+.impeccable/
+__pycache__/
+*.pyc
