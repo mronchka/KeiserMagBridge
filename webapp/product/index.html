@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Upgrade your Keiser M3 with power and cadence detected wirelessly and broadcast over Bluetooth to Zwift.">
+<meta name="theme-color" content="#0e0f16">
+<title>Keiser M3 Bridge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: product intro, then the ride view (bike with its magnet fields, the live app floating over it), with its controls docked in the view. */
+:root {
+  /* brand: ink-violet night, electric violet accent, magenta for the crank magnet */
+  --bg: #0e0f16;
+  --stage: #151723;
+  --line: #262a3a;
+  --ink: #ecedf5;
+  --muted: #9a9fb5;
+  --brand: #8b7cff;       /* electric violet: accents, numbers, steps */
+  --lo: #5d7bff;          /* gear magnets, lever down / gear 1 (indigo) */
+  --hi: #b47cff;          /* gear magnets, lever up / top gear (orchid) */
+  --hot: #ff4f9a;         /* the crank magnet (magenta) */
+  --sense: #b9c6ff;       /* the sensor (ice periwinkle) */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; font-feature-settings: "tnum" 1, "cv11" 1; }
+button, input { font: inherit; }
+.wrap { max-width: 88rem; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: clamp(2.4rem, 7vw, 4.6rem); font-weight: 700; line-height: 1.04; margin: 0; letter-spacing: -0.04em; text-wrap: balance; }
+h2 { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 700; line-height: 1.1; margin: 0; letter-spacing: -0.03em; }
+.lede { margin: 0; color: var(--muted); }
+.pitch { margin: 0; font-size: clamp(1.1rem, 2.4vw, 1.4rem); color: var(--muted); text-wrap: balance; }
+.hero .pitch { max-width: 40ch; }
+
+.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; padding-block: 56px 8px; }
+.eyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--brand); display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.status { color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; letter-spacing: .04em; }
+.facts { list-style: none; margin: 18px 0 0; padding: 0; width: min(100%, 44rem); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.facts li { display: flex; flex-direction: column; gap: 2px; }
+.fact-n { font-size: clamp(1.7rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -0.03em; color: var(--brand); line-height: 1.1; }
+.fact-l { font-size: .9rem; color: var(--muted); }
+.how { list-style: none; margin: 0; padding: 24px 0 8px; display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 52rem) { .how { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.how li { padding: 22px; background: var(--stage); border: 1px solid var(--line); border-radius: 16px; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; }
+.sec-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding-top: 40px; }
+
+/* The ride view: one stage with the bike and its magnet fields drawn in place, and the bridge app floating over it */
+.ride { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .07);
+  background: radial-gradient(110% 95% at 32% 38%, #23243a 0%, #161827 55%, #0d0e15 100%); box-shadow: 0 30px 60px -32px rgba(0, 0, 0, .7); }
+.view { position: relative; min-width: 0; perspective: 1600px; }
+.view canvas { display: block; width: 100%; height: clamp(460px, 74vh, 680px); }
+.view-tools { position: absolute; top: 16px; left: 18px; z-index: 2; display: flex; gap: 8px; }
+.tool { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .06); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); cursor: pointer; transition: background .15s; }
+.tool:hover { background: rgba(255, 255, 255, .13); }
+.tool:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.tool svg { width: 18px; height: 18px; }
+
+/* the bridge app: a phone floating over the scene, turned slightly towards the bike, showing the live Ride screen */
+.app-col { position: absolute; top: 4%; bottom: 4%; right: 5%; justify-content: center; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; perspective: 1600px; pointer-events: none; }
+.inset, .cal-phone { position: relative; height: 88%; aspect-ratio: 9 / 19; margin: 0; padding: 7px; border-radius: 40px;
+  background: linear-gradient(150deg, #3a404a 0%, #121418 22%, #0a0b0d 60%, #2a2f37 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 0 0 3px #050608, 0 50px 90px -30px rgba(0, 0, 0, .85), 0 20px 40px -20px rgba(0, 0, 0, .6), 0 0 80px -20px rgba(139, 124, 255, .3);
+  transform: rotateY(-14deg) rotateX(2deg); transform-origin: right center; }
+.inset::after, .cal-phone::after { content: ""; position: absolute; inset: 7px; border-radius: 33px; background: linear-gradient(118deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .03) 30%, rgba(255, 255, 255, 0) 31%); pointer-events: none; }
+.inset::before, .cal-phone::before { content: ""; position: absolute; right: -3px; top: 22%; width: 3px; height: 10%; border-radius: 0 3px 3px 0; background: #2a2f37; }
+/* the app's own dark theme, scaled to the phone with container units */
+.app { --a-bg: #000; --a-surface: #1c1c1e; --a-line: #38383a; --a-muted: #8e8e93; --a-accent: var(--brand); --a-ok: #30d158; --a-ok-bg: #0f2a17;
+  container-type: inline-size; height: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: 33px; background: var(--a-bg); color: #fff;
+  font-family: var(--font-ui); }
+.app-head { display: flex; align-items: center; gap: 3cqw; padding: 9cqw 5cqw 3.5cqw; background: var(--a-surface); border-bottom: 1px solid var(--a-line); }
+.app-head b { font-size: 5.6cqw; font-weight: 700; }
+.app-conn { display: inline-flex; align-items: center; gap: 2cqw; font-size: 4.4cqw; color: var(--a-muted); }
+.app-conn i { width: 3.4cqw; height: 3.4cqw; border-radius: 50%; background: var(--a-ok); }
+.app-body { flex: 1; display: flex; flex-direction: column; gap: 4cqw; padding: 4cqw; min-height: 0; }
+.app-chips { display: flex; gap: 2cqw; }
+.app-chip { display: inline-flex; align-items: center; gap: 1.5cqw; padding: 1.6cqw 3.4cqw; border-radius: 999px; border: 1px solid transparent; background: var(--a-surface); font-size: 4.1cqw; font-weight: 700; color: var(--a-muted); }
+.app-chip.on { color: var(--a-ok); background: var(--a-ok-bg); border-color: var(--a-ok); }
+.app-chip span { font-size: 3.4cqw; }
+.app-gear { flex: 1; display: grid; place-items: center; min-height: 0; }
+.app-ring { width: 68cqw; aspect-ratio: 1; border-radius: 50%; border: 2.2cqw solid var(--a-accent); background: var(--a-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.app-ring small { font-size: 3.8cqw; font-weight: 600; letter-spacing: .14em; color: var(--a-muted); }
+.app-ring b { font-size: 34cqw; line-height: 1; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.app-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.6cqw; }
+.app-tile { background: var(--a-surface); border-radius: 4cqw; padding: 3cqw 1cqw 3.4cqw; text-align: center; min-width: 0; }
+.app-tile b { display: block; font-size: 10.5cqw; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.app-tile span { display: block; font-size: 3.6cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--a-muted); }
+.app-tile em { display: block; font-style: normal; font-size: 3cqw; font-weight: 600; color: var(--a-muted); margin-top: .5cqw; }
+.app-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--a-surface); border-top: 1px solid var(--a-line); padding-bottom: 4cqw; }
+.app-nav span { padding: 3.6cqw 0 2.4cqw; text-align: center; font-size: 3.7cqw; font-weight: 700; color: var(--a-muted); border-top: 1cqw solid transparent; }
+.app-nav span:first-child { color: #fff; border-top-color: var(--a-accent); }
+
+.tag { position: absolute; transform: translate(-50%, -135%); font-size: .64rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); background: rgba(15, 18, 22, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, .09); padding: 3px 9px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+.tag.hot { color: var(--hot); }
+.tag.gear { color: var(--hi); }
+.tag.sense { color: var(--sense); }
+
+/* round play / pause */
+.play { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .06); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; transition: background .15s; }
+.play:hover { background: rgba(255, 255, 255, .13); }
+.play svg { width: 18px; height: 18px; fill: currentColor; }
+.play:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* narrow screens: still side by side. A taller stage, the bike drawn smaller on the left,
+   the phone on the right with the less important details dropped so the numbers stay big. */
+@media (max-width: 46rem) {
+  .ride { margin-inline: -16px; border-radius: 0; border-inline: 0; }
+  .view canvas { height: clamp(440px, 128vw, 580px); }
+  .view-tools { top: 12px; left: 12px; gap: 6px; }
+  .tool { width: 34px; height: 34px; }
+  .app-col { right: 3%; top: 3%; bottom: 62px; }
+  .inset { height: 100%; padding: 5px; border-radius: 26px; transform: rotateY(-8deg); }
+  .cal-phone { padding: 5px; border-radius: 26px; }
+  .cal-phone::after { inset: 5px; border-radius: 21px; }
+  .inset::after { inset: 5px; border-radius: 21px; }
+  .app { border-radius: 21px; }
+  .tag { font-size: .54rem; letter-spacing: .06em; padding: 2px 6px; }
+}
+@container (max-width: 240px) {
+  .app-head { padding: 8cqw 5cqw 4cqw; }
+  .app-head b { font-size: 7.4cqw; }
+  .app-conn { display: none; }
+  .app-chips { display: none; }
+  .app-ring { width: 80cqw; border-width: 3cqw; }
+  .app-ring small { font-size: 5.4cqw; }
+  .app-ring b { font-size: 40cqw; }
+  .app-tiles { grid-template-columns: 1fr; gap: 3cqw; }
+  .app-tile { display: flex; align-items: baseline; justify-content: space-between; padding: 2.4cqw 5cqw; border-radius: 5cqw; }
+  .app-tile b { font-size: 13cqw; }
+  .app-tile span { font-size: 5.6cqw; }
+  .app-tile em { display: none; }
+  .app-nav span { font-size: 0; padding: 3cqw 0 2cqw; }
+  .app-nav span::before { content: ""; display: block; width: 8cqw; height: 8cqw; margin: 0 auto; border-radius: 50%; background: currentColor; opacity: .5; }
+  .app-nav span:first-child::before { opacity: 1; }
+}
+
+/* the dock: play / pause, cadence and gear, side by side over the scene */
+.dock { position: absolute; left: 18px; bottom: 18px; z-index: 2; display: flex; align-items: center; gap: 26px; }
+.ctl { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ctl .ico { width: 18px; height: 18px; flex: none; filter: drop-shadow(0 1px 4px rgba(0, 0, 0, .6)); }
+.crank-row .ico { color: var(--hot); }
+.lever-row .ico { color: var(--hi); }
+.ctl input { width: 140px; height: 24px; margin: 0; }
+.ctl span { min-width: 4.4em; font-size: .74rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+#crank { accent-color: var(--hot); }
+#lever { accent-color: var(--hi); }
+@media (max-width: 68rem) { .ctl input { width: 96px; } }
+@media (max-width: 46rem) {
+  .dock { left: 12px; right: 12px; bottom: 10px; gap: 18px; }
+  .ctl { flex: 1; min-width: 0; gap: 6px; }
+  .ctl input { width: 100%; min-width: 0; height: 32px; }
+  .ctl span { min-width: 3.6em; font-size: .66rem; }
+}
+
+/* calibration: the app's Calibrate screen on the left, the pitch and steps on the right */
+.calib { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(20px, 6vw, 80px); width: min(100%, 60rem); margin: 0 auto; padding-block: 72px 32px; perspective: 1600px; }
+.cal-copy { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cal-copy h2 { text-wrap: balance; }
+.cal-copy .pitch { font-size: clamp(1rem, 2vw, 1.2rem); max-width: 36ch; }
+.cal-steps { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 16px; counter-reset: cs; }
+.cal-steps li { counter-increment: cs; display: grid; grid-template-columns: 2rem minmax(0, 1fr); column-gap: 12px; }
+.cal-steps li::before { content: counter(cs); grid-row: span 2; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--brand); color: #fff; font-size: .9rem; font-weight: 700; }
+.cal-steps b { font-weight: 600; font-size: 1.05rem; align-self: center; }
+.cal-steps span { color: var(--muted); font-size: .92rem; }
+.cal-phone { width: clamp(150px, 26vw, 290px); height: auto; transform: rotateY(12deg) rotateX(2deg); transform-origin: left center; }
+/* the Calibrate screen, drawn like the real app */
+.cal-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; gap: 3cqw; padding: 4cqw 5cqw; min-height: 0; }
+.cal-cad { width: 80%; }
+.cal-track { position: relative; height: 1.2cqw; border-radius: 1cqw; background: #2c2c2e; margin: 4cqw 0 1.5cqw; }
+.cal-win { position: absolute; left: 28.6%; width: 28.6%; top: 0; bottom: 0; border-radius: inherit; background: var(--a-ok); }
+.cal-track b { position: absolute; left: 47%; top: 50%; transform: translate(-50%, -50%); width: 9cqw; height: 9cqw; border-radius: 50%; background: var(--a-ok); color: #04210f; display: grid; place-items: center; font-size: 3.6cqw; font-weight: 800; }
+.cal-ticks { position: relative; height: 4cqw; font-size: 3cqw; font-weight: 600; color: var(--a-muted); }
+.cal-ticks span { position: absolute; transform: translateX(-50%); }
+.cal-disc { width: 92%; flex: none; margin-top: 2cqw; }
+.cal-say { text-align: center; }
+.cal-say b { display: block; font-size: 6.6cqw; font-weight: 700; }
+.cal-say span { display: block; font-size: 4cqw; color: var(--a-muted); }
+.cal-count { font-size: 3.8cqw; color: var(--a-muted); }
+.cal-app .app-nav span:first-child { color: var(--a-muted); border-top-color: transparent; }
+.cal-app .app-nav span.on { color: #fff; border-top-color: var(--a-accent); }
+@media (max-width: 46rem) {
+  .calib { padding-block: 48px 16px; gap: 18px; }
+  .cal-phone { width: 40vw; transform: rotateY(8deg); }
+  .cal-copy h2 { font-size: 1.35rem; }
+  .cal-copy .pitch { font-size: .9rem; }
+  .cal-steps { gap: 10px; }
+  .cal-steps li { grid-template-columns: 1.5rem minmax(0, 1fr); column-gap: 8px; }
+  .cal-steps li::before { width: 1.5rem; height: 1.5rem; font-size: .72rem; }
+  .cal-steps b { font-size: .85rem; }
+  .cal-steps span { font-size: .76rem; }
+}
+.err { color: var(--hot); }
+</style>
+
+<div class="wrap">
+  <section class="hero" aria-label="About the Keiser M3 Bridge">
+    <span class="eyebrow">Keiser M3 Bridge <span class="status">In development</span></span>
+    <h1>Your Keiser M3.<br>Now in Zwift.</h1>
+    <p class="pitch">Upgrade your Keiser M3 to a smart trainer in seconds, with power and cadence detected wirelessly and broadcast over Bluetooth.</p>
+    <ul class="facts" aria-label="Key facts">
+      <li><span class="fact-n">0</span><span class="fact-l">wires cut</span></li>
+      <li><span class="fact-n">±2 rpm</span><span class="fact-l">cadence accuracy</span></li>
+      <li><span class="fact-n">50</span><span class="fact-l">readings a second</span></li>
+    </ul>
+  </section>
+
+  <ol class="how" aria-label="How it works">
+    <li>Reads your gear from the magnets on the flywheel.</li>
+    <li>Counts every pedal turn from the crank magnet.</li>
+    <li>Sends watts to Zwift as a standard power meter.</li>
+  </ol>
+
+  <header class="sec-head">
+    <h2>How it works.</h2>
+  </header>
+
+  <section class="ride" aria-label="The bike with its magnet fields">
+    <div class="view" id="bikeStage">
+      <div class="view-tools" aria-label="View">
+        <button type="button" class="tool" id="rotL" aria-label="Rotate left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 9a6 6 0 1 1 1.8 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M2.5 5.5 5 9.4 8.8 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tool" id="rotR" aria-label="Rotate right"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15 9a6 6 0 1 0-1.8 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.5 5.5 15 9.4 11.2 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tool" id="zoomIn" aria-label="Zoom in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="tool" id="zoomOut" aria-label="Zoom out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+      <canvas id="bikeCanvas" aria-label="3D model of the Keiser M3 with the field lines of the crank magnet and the gear magnets drawn in place around the sensor board"></canvas>
+      <div class="dock" aria-label="Controls">
+        <button type="button" class="play" id="play" aria-label="Pause the animation" aria-pressed="true">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path id="playIcon" d="M5 3h3.5v14H5zM11.5 3H15v14h-3.5z"/></svg>
+        </button>
+        <label class="ctl crank-row" title="Cadence"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.8 9.8 L13.6 13.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="11" y="14.6" width="7.6" height="3" rx="1.3" fill="currentColor"/></svg><input type="range" id="crank" min="0" max="120" step="1" value="40" aria-label="Cadence"><span id="crankVal"></span></label>
+        <label class="ctl lever-row" title="Gear lever"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M16.09 8.02 L18.45 8.39 L18.45 11.61 L16.09 11.98 L15.70 12.91 L17.11 14.83 L14.83 17.11 L12.91 15.70 L11.98 16.09 L11.61 18.45 L8.39 18.45 L8.02 16.09 L7.09 15.70 L5.17 17.11 L2.89 14.83 L4.30 12.91 L3.91 11.98 L1.55 11.61 L1.55 8.39 L3.91 8.02 L4.30 7.09 L2.89 5.17 L5.17 2.89 L7.09 4.30 L8.02 3.91 L8.39 1.55 L11.61 1.55 L11.98 3.91 L12.91 4.30 L14.83 2.89 L17.11 5.17 L15.70 7.09 Z M12.7 10 A2.7 2.7 0 1 1 7.3 10 A2.7 2.7 0 1 1 12.7 10 Z"/></svg><input type="range" id="lever" min="0" max="1" step="0.001" value="0.3" aria-label="Gear lever"><span id="leverVal"></span></label>
+      </div>
+      <div class="app-col">
+      <figure class="inset" aria-label="The bridge app's Ride screen, following the animation">
+        <div class="app">
+          <div class="app-head"><b>M3 Bridge</b><span class="app-conn"><i></i>Connected</span></div>
+          <div class="app-body">
+            <div class="app-chips"><span class="app-chip"><span>P</span>Pod</span><span class="app-chip on"><span>Z</span>Zwift</span><span class="app-chip on"><span>V</span>Calibrated</span></div>
+            <div class="app-gear"><div class="app-ring"><small>GEAR</small><b id="cGear">-</b></div></div>
+            <div class="app-tiles">
+              <div class="app-tile"><b id="cWatts">-</b><span>Watts</span></div>
+              <div class="app-tile"><b id="cRpm">-</b><span>RPM</span><em>from crank magnet</em></div>
+              <div class="app-tile"><b id="cRes">-</b><span>Resist %</span></div>
+            </div>
+          </div>
+          <div class="app-nav" aria-hidden="true"><span>Ride</span><span>Calibrate</span><span>Diagnose</span><span>Console</span></div>
+        </div>
+      </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="calib" aria-labelledby="calib-h">
+    <figure class="cal-phone" aria-label="The bridge app's Calibrate screen: shift up to gear 7, 6 of 25 points captured">
+      <div class="app cal-app">
+        <div class="app-head"><b>M3 Bridge</b><span class="app-conn"><i></i>Connected</span></div>
+        <div class="cal-body">
+          <div class="cal-cad"><div class="cal-track"><i class="cal-win"></i><b>72</b></div><div class="cal-ticks"><span style="left:28.6%">60</span><span style="left:57.2%">80</span></div></div>
+          <svg class="cal-disc" viewBox="-130 -130 260 260" aria-hidden="true"><circle cx="0.0" cy="-118.0" r="5.5" fill="#30d158"/><circle cx="29.3" cy="-114.3" r="5.5" fill="#30d158"/><circle cx="56.8" cy="-103.4" r="5.5" fill="#30d158"/><circle cx="80.8" cy="-86.0" r="5.5" fill="#30d158"/><circle cx="99.6" cy="-63.2" r="5.5" fill="#30d158"/><circle cx="112.2" cy="-36.5" r="5.5" fill="#30d158"/><circle cx="117.8" cy="-7.4" r="7.5" fill="#d1d1d6"/><circle cx="115.9" cy="22.1" r="5.5" fill="#48484a"/><circle cx="106.8" cy="50.2" r="5.5" fill="#48484a"/><circle cx="90.9" cy="75.2" r="5.5" fill="#48484a"/><circle cx="69.4" cy="95.5" r="5.5" fill="#48484a"/><circle cx="43.4" cy="109.7" r="5.5" fill="#48484a"/><circle cx="14.8" cy="117.1" r="5.5" fill="#48484a"/><circle cx="-14.8" cy="117.1" r="5.5" fill="#48484a"/><circle cx="-43.4" cy="109.7" r="5.5" fill="#48484a"/><circle cx="-69.4" cy="95.5" r="5.5" fill="#48484a"/><circle cx="-90.9" cy="75.2" r="5.5" fill="#48484a"/><circle cx="-106.8" cy="50.2" r="5.5" fill="#48484a"/><circle cx="-115.9" cy="22.1" r="5.5" fill="#48484a"/><circle cx="-117.8" cy="-7.4" r="5.5" fill="#48484a"/><circle cx="-112.2" cy="-36.5" r="5.5" fill="#48484a"/><circle cx="-99.6" cy="-63.2" r="5.5" fill="#48484a"/><circle cx="-80.8" cy="-86.0" r="5.5" fill="#48484a"/><circle cx="-56.8" cy="-103.4" r="5.5" fill="#48484a"/><circle cx="-29.3" cy="-114.3" r="5.5" fill="#48484a"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(-86)"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(34)"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(154)"/><circle r="80" fill="#1c1c1e" stroke="#3a3a3c" stroke-width="2"/><text y="-34" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="2.5" fill="#8e8e93">GEAR</text><text y="44" text-anchor="middle" font-size="92" font-weight="700" fill="#fff">7</text></svg>
+          <div class="cal-say"><b>Shift up to 7</b><span>Stop as soon as it shows 7</span></div>
+          <div class="cal-count">6 of 25</div>
+        </div>
+        <div class="app-nav" aria-hidden="true"><span>Ride</span><span class="on">Calibrate</span><span>Diagnose</span><span>Console</span></div>
+      </div>
+    </figure>
+    <div class="cal-copy">
+      <h2 id="calib-h">Matched to your bike in minutes.</h2>
+      <p class="pitch">M3 Bridge learns your pedal stroke and every gear position, then lines its numbers up with your Keiser console. What you see on the bike is what Zwift sees.</p>
+      <ol class="cal-steps" aria-label="Calibration steps">
+        <li><b>Pedal for ten seconds.</b><span>It learns your cadence.</span></li>
+        <li><b>Shift through every gear.</b><span>Each one is matched to your console.</span></li>
+        <li><b>Ride.</b><span>Zwift sees what your console shows.</span></li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = {"gear":[{"p":[-86.5,52.4,-128.9],"lev":0.014},{"p":[-86.1,52.0,-128.5],"lev":0.018},{"p":[-85.9,52.4,-128.5],"lev":0.019},{"p":[-86.1,51.9,-129.2],"lev":0.016},{"p":[-86.6,51.8,-129.6],"lev":0.013},{"p":[-86.3,52.4,-129.2],"lev":0.015},{"p":[-86.6,52.8,-128.3],"lev":0.014},{"p":[-86.2,52.2,-128.7],"lev":0.017},{"p":[-85.7,52.5,-128.6],"lev":0.02},{"p":[-86.1,52.3,-128.8],"lev":0.017},{"p":[-86.0,52.3,-128.8],"lev":0.018},{"p":[-86.0,52.8,-128.8],"lev":0.017},{"p":[-86.2,52.5,-129.0],"lev":0.016},{"p":[-86.2,52.1,-128.8],"lev":0.016},{"p":[-86.8,52.6,-129.3],"lev":0.011},{"p":[-86.4,52.3,-129.6],"lev":0.013},{"p":[-86.1,52.1,-128.8],"lev":0.017},{"p":[-85.7,52.3,-128.4],"lev":0.02},{"p":[-85.5,52.1,-128.6],"lev":0.021},{"p":[-86.0,52.0,-128.9],"lev":0.018},{"p":[-85.8,52.0,-128.9],"lev":0.019},{"p":[-86.3,52.7,-128.7],"lev":0.015},{"p":[-86.4,52.5,-128.9],"lev":0.015},{"p":[-86.3,52.1,-128.6],"lev":0.016},{"p":[-86.2,52.3,-128.8],"lev":0.016},{"p":[-86.4,52.1,-128.9],"lev":0.015},{"p":[-85.7,52.8,-128.8],"lev":0.019},{"p":[-86.0,52.5,-128.6],"lev":0.018},{"p":[-85.9,52.5,-129.1],"lev":0.017},{"p":[-86.0,52.5,-128.2],"lev":0.019},{"p":[-86.5,52.1,-129.1],"lev":0.014},{"p":[-86.5,52.1,-128.3],"lev":0.016},{"p":[-85.9,52.4,-128.8],"lev":0.018},{"p":[-86.1,52.6,-128.8],"lev":0.017},{"p":[-86.3,51.8,-128.1],"lev":0.018},{"p":[-86.3,52.5,-128.2],"lev":0.017},{"p":[-85.9,52.7,-128.8],"lev":0.018},{"p":[-86.6,52.5,-127.6],"lev":0.016},{"p":[-86.7,52.3,-128.3],"lev":0.014},{"p":[-86.0,52.6,-128.5],"lev":0.018},{"p":[-86.8,52.1,-129.0],"lev":0.012},{"p":[-86.4,52.6,-129.0],"lev":0.014},{"p":[-86.3,52.4,-128.5],"lev":0.016},{"p":[-86.2,52.8,-129.6],"lev":0.014},{"p":[-86.4,52.5,-129.0],"lev":0.014},{"p":[-86.1,52.6,-128.8],"lev":0.017},{"p":[-87.0,52.7,-129.6],"lev":0.009},{"p":[-86.2,52.3,-128.1],"lev":0.018},{"p":[-86.4,52.2,-128.3],"lev":0.016},{"p":[-86.2,52.1,-128.5],"lev":0.017},{"p":[-86.2,52.7,-128.9],"lev":0.016},{"p":[-86.2,52.1,-129.6],"lev":0.015},{"p":[-84.9,51.3,-128.2],"lev":0.027},{"p":[-81.6,50.2,-127.5],"lev":0.051},{"p":[-79.7,49.1,-128.3],"lev":0.062},{"p":[-79.0,48.6,-127.7],"lev":0.069},{"p":[-77.1,47.7,-126.8],"lev":0.084},{"p":[-75.6,46.9,-126.9],"lev":0.094},{"p":[-74.9,46.1,-126.5],"lev":0.1},{"p":[-73.5,45.7,-125.2],"lev":0.112},{"p":[-72.5,45.1,-125.2],"lev":0.119},{"p":[-71.6,44.9,-125.1],"lev":0.125},{"p":[-70.5,44.7,-125.1],"lev":0.133},{"p":[-69.3,43.5,-124.3],"lev":0.143},{"p":[-68.6,43.7,-124.5],"lev":0.147},{"p":[-67.4,43.5,-124.6],"lev":0.155},{"p":[-66.9,42.9,-124.4],"lev":0.159},{"p":[-66.2,42.4,-124.9],"lev":0.163},{"p":[-65.6,42.7,-124.0],"lev":0.168},{"p":[-65.4,42.5,-124.0],"lev":0.17},{"p":[-64.1,42.0,-123.4],"lev":0.18},{"p":[-63.6,41.6,-123.7],"lev":0.183},{"p":[-62.3,40.8,-123.0],"lev":0.194},{"p":[-61.0,40.5,-122.6],"lev":0.203},{"p":[-59.4,40.2,-121.9],"lev":0.215},{"p":[-57.5,38.8,-121.4],"lev":0.23},{"p":[-55.9,38.7,-120.0],"lev":0.243},{"p":[-54.8,38.3,-121.1],"lev":0.248},{"p":[-53.4,37.3,-121.0],"lev":0.258},{"p":[-52.8,37.8,-120.3],"lev":0.263},{"p":[-52.3,37.6,-119.5],"lev":0.268},{"p":[-51.9,37.4,-119.2],"lev":0.272},{"p":[-51.3,37.2,-119.1],"lev":0.276},{"p":[-50.0,36.9,-118.3],"lev":0.286},{"p":[-49.5,36.8,-119.6],"lev":0.287},{"p":[-49.2,36.5,-119.5],"lev":0.289},{"p":[-49.6,35.8,-119.3],"lev":0.288},{"p":[-48.7,36.0,-118.6],"lev":0.295},{"p":[-47.8,35.9,-119.0],"lev":0.3},{"p":[-47.0,35.8,-118.2],"lev":0.307},{"p":[-46.8,35.5,-118.2],"lev":0.308},{"p":[-45.3,35.3,-117.5],"lev":0.32},{"p":[-45.1,35.1,-116.8],"lev":0.323},{"p":[-44.8,34.8,-117.1],"lev":0.324},{"p":[-43.8,34.5,-116.4],"lev":0.332},{"p":[-42.7,34.2,-116.6],"lev":0.339},{"p":[-41.7,34.6,-116.4],"lev":0.346},{"p":[-40.4,33.8,-115.4],"lev":0.357},{"p":[-39.4,33.9,-116.0],"lev":0.362},{"p":[-38.6,33.6,-115.9],"lev":0.368},{"p":[-37.8,32.6,-115.5],"lev":0.375},{"p":[-36.8,32.5,-115.7],"lev":0.381},{"p":[-37.2,32.8,-115.1],"lev":0.379},{"p":[-35.8,32.1,-115.0],"lev":0.389},{"p":[-34.7,32.1,-114.8],"lev":0.397},{"p":[-34.1,31.7,-115.4],"lev":0.399},{"p":[-32.7,31.6,-114.1],"lev":0.411},{"p":[-32.7,31.2,-113.5],"lev":0.413},{"p":[-32.1,31.7,-113.0],"lev":0.417},{"p":[-31.6,31.4,-113.0],"lev":0.421},{"p":[-31.2,31.0,-113.6],"lev":0.423},{"p":[-30.3,31.4,-113.2],"lev":0.429},{"p":[-29.5,30.7,-112.5],"lev":0.436},{"p":[-28.0,30.8,-111.9],"lev":0.447},{"p":[-27.2,30.2,-111.8],"lev":0.453},{"p":[-26.1,30.5,-111.5],"lev":0.46},{"p":[-25.0,30.0,-110.1],"lev":0.471},{"p":[-24.4,29.9,-111.4],"lev":0.472},{"p":[-23.4,29.2,-111.7],"lev":0.478},{"p":[-22.2,29.6,-110.8],"lev":0.487},{"p":[-21.2,29.3,-110.1],"lev":0.496},{"p":[-20.8,29.8,-110.5],"lev":0.497},{"p":[-20.3,29.5,-110.2],"lev":0.501},{"p":[-20.2,29.2,-109.8],"lev":0.503},{"p":[-19.2,28.9,-110.2],"lev":0.509},{"p":[-18.6,29.4,-108.9],"lev":0.515},{"p":[-18.2,29.3,-108.9],"lev":0.517},{"p":[-16.8,28.2,-108.8],"lev":0.528},{"p":[-16.8,28.8,-108.2],"lev":0.528},{"p":[-15.7,28.4,-108.5],"lev":0.535},{"p":[-15.7,28.3,-109.0],"lev":0.534},{"p":[-14.4,28.1,-108.3],"lev":0.544},{"p":[-13.8,28.4,-108.2],"lev":0.548},{"p":[-12.9,27.9,-107.8],"lev":0.555},{"p":[-13.0,28.1,-108.4],"lev":0.553},{"p":[-11.7,27.8,-107.5],"lev":0.563},{"p":[-11.5,28.3,-107.9],"lev":0.563},{"p":[-10.6,28.0,-107.1],"lev":0.571},{"p":[-10.9,28.1,-107.0],"lev":0.569},{"p":[-10.5,28.1,-106.2],"lev":0.573},{"p":[-10.1,27.9,-106.5],"lev":0.576},{"p":[-9.8,27.6,-106.6],"lev":0.578},{"p":[-9.2,27.3,-106.7],"lev":0.582},{"p":[-8.1,27.5,-106.1],"lev":0.59},{"p":[-8.0,27.4,-106.4],"lev":0.59},{"p":[-6.5,27.8,-104.8],"lev":0.602},{"p":[-6.4,27.5,-105.4],"lev":0.602},{"p":[-5.0,27.1,-104.6],"lev":0.613},{"p":[-3.9,27.4,-104.1],"lev":0.621},{"p":[-3.4,27.0,-104.0],"lev":0.625},{"p":[-1.8,26.7,-102.9],"lev":0.637},{"p":[0.3,26.5,-102.8],"lev":0.651},{"p":[0.3,26.6,-102.0],"lev":0.653},{"p":[2.0,26.7,-102.2],"lev":0.663},{"p":[2.6,26.1,-102.2],"lev":0.668},{"p":[2.9,26.6,-101.9],"lev":0.67},{"p":[2.4,26.7,-102.0],"lev":0.666},{"p":[2.4,26.1,-102.2],"lev":0.666},{"p":[2.8,26.9,-102.5],"lev":0.667},{"p":[3.6,26.3,-101.1],"lev":0.676},{"p":[5.9,26.5,-99.9],"lev":0.693},{"p":[7.8,26.1,-99.6],"lev":0.706},{"p":[10.3,26.5,-98.6],"lev":0.724},{"p":[10.8,26.8,-98.4],"lev":0.727},{"p":[12.0,26.4,-98.2],"lev":0.736},{"p":[12.8,26.2,-98.4],"lev":0.741},{"p":[14.3,25.6,-97.7],"lev":0.752},{"p":[15.4,26.0,-96.9],"lev":0.761},{"p":[15.3,26.1,-96.9],"lev":0.76},{"p":[16.7,25.6,-95.7],"lev":0.772},{"p":[17.1,26.2,-95.9],"lev":0.773},{"p":[17.9,26.2,-95.6],"lev":0.779},{"p":[18.8,26.1,-95.6],"lev":0.785},{"p":[19.8,26.1,-94.9],"lev":0.793},{"p":[20.9,25.9,-94.7],"lev":0.801},{"p":[21.0,25.8,-94.4],"lev":0.802},{"p":[21.5,25.7,-94.7],"lev":0.805},{"p":[21.7,26.0,-94.7],"lev":0.805},{"p":[22.9,26.9,-93.2],"lev":0.815},{"p":[23.8,26.5,-93.1],"lev":0.822},{"p":[24.4,26.2,-93.1],"lev":0.826},{"p":[24.6,26.6,-92.9],"lev":0.827},{"p":[25.2,26.4,-92.6],"lev":0.832},{"p":[25.7,26.5,-92.8],"lev":0.834},{"p":[26.7,26.4,-92.9],"lev":0.841},{"p":[26.2,26.7,-92.1],"lev":0.839},{"p":[27.7,26.9,-92.1],"lev":0.848},{"p":[28.7,26.3,-92.3],"lev":0.855},{"p":[28.6,27.1,-91.7],"lev":0.855},{"p":[28.6,26.9,-91.0],"lev":0.856},{"p":[29.8,27.2,-91.7],"lev":0.862},{"p":[30.0,27.1,-91.1],"lev":0.865},{"p":[29.8,26.5,-91.5],"lev":0.863},{"p":[30.3,27.0,-91.1],"lev":0.867},{"p":[30.5,27.1,-90.4],"lev":0.87},{"p":[31.1,26.7,-89.5],"lev":0.876},{"p":[31.5,26.6,-90.5],"lev":0.876},{"p":[32.2,26.9,-89.8],"lev":0.882},{"p":[32.0,26.7,-89.9],"lev":0.881},{"p":[32.3,26.7,-89.5],"lev":0.883},{"p":[33.2,26.4,-104.3],"lev":0.858},{"p":[33.0,26.5,-88.4],"lev":0.89},{"p":[33.0,26.8,-89.0],"lev":0.889},{"p":[33.5,27.1,-89.4],"lev":0.891},{"p":[34.1,26.6,-88.7],"lev":0.897},{"p":[34.4,26.8,-89.1],"lev":0.897},{"p":[34.4,27.1,-88.7],"lev":0.898},{"p":[34.9,27.0,-89.4],"lev":0.9},{"p":[34.8,27.1,-88.5],"lev":0.901},{"p":[36.1,26.5,-87.3],"lev":0.912},{"p":[36.8,27.1,-87.3],"lev":0.916},{"p":[37.3,27.3,-87.9],"lev":0.918},{"p":[38.2,27.8,-87.1],"lev":0.925},{"p":[39.1,27.4,-85.7],"lev":0.934},{"p":[39.8,27.3,-86.0],"lev":0.938},{"p":[40.2,27.5,-86.0],"lev":0.94},{"p":[40.3,27.5,-86.1],"lev":0.941},{"p":[40.8,27.5,-86.1],"lev":0.944},{"p":[40.5,27.1,-86.2],"lev":0.942},{"p":[41.0,26.9,-85.6],"lev":0.947},{"p":[41.4,27.4,-85.0],"lev":0.95},{"p":[41.7,27.1,-85.4],"lev":0.952},{"p":[41.8,27.3,-86.0],"lev":0.951},{"p":[41.6,27.6,-85.7],"lev":0.95},{"p":[42.3,27.4,-85.0],"lev":0.956},{"p":[42.7,27.9,-84.2],"lev":0.96},{"p":[43.0,27.1,-84.7],"lev":0.961},{"p":[42.8,27.5,-84.6],"lev":0.96},{"p":[43.3,27.1,-83.9],"lev":0.965},{"p":[43.1,27.6,-84.3],"lev":0.962},{"p":[43.4,27.2,-84.5],"lev":0.964},{"p":[43.1,27.5,-85.1],"lev":0.961},{"p":[43.8,28.0,-84.2],"lev":0.967},{"p":[44.1,27.2,-84.0],"lev":0.97},{"p":[44.6,27.9,-84.1],"lev":0.972},{"p":[44.2,27.5,-84.2],"lev":0.97},{"p":[45.1,28.4,-83.3],"lev":0.976},{"p":[45.7,28.2,-82.6],"lev":0.982},{"p":[46.6,28.2,-83.0],"lev":0.987},{"p":[46.9,28.2,-82.4],"lev":0.99},{"p":[46.9,28.2,-81.9],"lev":0.991},{"p":[47.6,28.6,-82.3],"lev":0.994},{"p":[46.8,28.3,-82.4],"lev":0.989},{"p":[47.7,27.9,-82.2],"lev":0.996},{"p":[47.7,28.1,-82.1],"lev":0.996},{"p":[47.7,27.6,-81.7],"lev":0.997},{"p":[47.3,28.1,-82.2],"lev":0.993},{"p":[47.5,28.2,-82.2],"lev":0.994},{"p":[47.6,28.1,-82.0],"lev":0.995},{"p":[47.6,28.4,-81.4],"lev":0.996},{"p":[47.0,28.7,-81.5],"lev":0.992},{"p":[47.3,28.2,-82.1],"lev":0.993},{"p":[47.0,28.2,-82.6],"lev":0.99},{"p":[47.5,28.2,-81.9],"lev":0.995},{"p":[47.0,27.8,-82.0],"lev":0.992},{"p":[46.9,28.2,-82.5],"lev":0.99},{"p":[47.6,28.1,-83.0],"lev":0.993},{"p":[47.5,28.1,-82.9],"lev":0.993},{"p":[47.3,28.3,-83.1],"lev":0.991},{"p":[47.7,28.4,-83.9],"lev":0.992},{"p":[47.9,28.4,-82.8],"lev":0.995},{"p":[48.2,28.2,-82.6],"lev":0.998},{"p":[48.3,28.4,-82.2],"lev":0.999},{"p":[47.9,28.4,-82.3],"lev":0.996},{"p":[47.8,28.6,-82.5],"lev":0.995},{"p":[47.4,29.0,-82.8],"lev":0.991},{"p":[47.4,28.1,-82.9],"lev":0.992},{"p":[47.4,28.7,-81.9],"lev":0.994},{"p":[48.1,28.4,-82.2],"lev":0.998},{"p":[47.8,28.9,-82.5],"lev":0.995},{"p":[47.9,28.8,-81.7],"lev":0.997},{"p":[47.9,27.9,-82.2],"lev":0.997},{"p":[47.9,28.6,-81.9],"lev":0.997},{"p":[47.4,28.5,-81.6],"lev":0.994},{"p":[48.0,28.9,-82.6],"lev":0.996},{"p":[47.2,28.3,-83.0],"lev":0.99},{"p":[47.7,28.5,-82.3],"lev":0.995},{"p":[47.3,28.6,-82.9],"lev":0.991},{"p":[47.6,28.0,-82.7],"lev":0.994},{"p":[47.5,28.5,-82.5],"lev":0.993},{"p":[48.0,27.9,-82.2],"lev":0.998},{"p":[47.9,28.0,-82.3],"lev":0.997},{"p":[47.2,28.2,-82.9],"lev":0.991},{"p":[48.0,28.9,-81.8],"lev":0.997},{"p":[47.5,28.9,-82.3],"lev":0.993},{"p":[47.9,28.2,-82.1],"lev":0.997},{"p":[47.7,28.5,-82.7],"lev":0.994},{"p":[47.6,28.3,-82.2],"lev":0.995},{"p":[48.0,28.6,-82.2],"lev":0.997},{"p":[48.0,28.3,-83.2],"lev":0.995},{"p":[47.4,28.8,-83.3],"lev":0.991},{"p":[47.6,28.5,-82.4],"lev":0.994},{"p":[47.4,28.8,-82.4],"lev":0.992},{"p":[47.6,28.5,-82.9],"lev":0.993},{"p":[48.2,28.4,-83.2],"lev":0.996},{"p":[47.9,28.4,-83.0],"lev":0.995},{"p":[48.2,28.8,-82.5],"lev":0.997},{"p":[47.5,28.0,-83.2],"lev":0.992},{"p":[47.5,27.9,-83.2],"lev":0.992},{"p":[46.1,27.9,-83.7],"lev":0.982},{"p":[44.9,28.1,-84.0],"lev":0.974},{"p":[44.2,28.3,-85.1],"lev":0.967},{"p":[43.6,27.7,-85.6],"lev":0.963},{"p":[43.1,27.8,-85.2],"lev":0.96},{"p":[42.0,28.0,-85.7],"lev":0.952},{"p":[41.6,27.8,-86.3],"lev":0.948},{"p":[40.5,27.6,-86.5],"lev":0.941},{"p":[40.3,27.8,-86.2],"lev":0.94},{"p":[38.6,27.2,-87.0],"lev":0.928},{"p":[37.9,27.5,-88.1],"lev":0.921},{"p":[35.5,27.1,-89.2],"lev":0.904},{"p":[34.9,27.3,-88.7],"lev":0.901},{"p":[34.5,26.8,-89.6],"lev":0.897},{"p":[32.8,26.5,-90.3],"lev":0.885},{"p":[33.1,26.9,-89.2],"lev":0.889},{"p":[32.3,26.7,-90.5],"lev":0.881},{"p":[30.0,26.3,-91.1],"lev":0.866},{"p":[30.0,26.6,-91.6],"lev":0.864},{"p":[28.2,26.5,-92.2],"lev":0.852},{"p":[26.7,27.1,-94.2],"lev":0.837},{"p":[25.0,26.8,-93.6],"lev":0.828},{"p":[24.0,26.5,-94.2],"lev":0.821},{"p":[23.7,27.1,-94.6],"lev":0.817},{"p":[22.5,27.2,-95.1],"lev":0.808},{"p":[21.7,26.1,-95.0],"lev":0.805},{"p":[20.0,26.6,-96.2],"lev":0.791},{"p":[18.1,26.1,-96.2],"lev":0.779},{"p":[16.2,26.1,-97.6],"lev":0.764},{"p":[15.4,26.1,-97.5],"lev":0.759},{"p":[14.1,26.5,-97.0],"lev":0.752},{"p":[12.9,26.9,-97.9],"lev":0.742},{"p":[12.6,26.8,-98.5],"lev":0.739},{"p":[11.4,26.9,-98.1],"lev":0.732},{"p":[10.6,26.5,-98.4],"lev":0.726},{"p":[8.8,26.7,-100.2],"lev":0.711},{"p":[7.9,26.7,-100.3],"lev":0.705},{"p":[6.9,26.6,-99.8],"lev":0.7},{"p":[5.2,27.3,-101.1],"lev":0.685},{"p":[3.2,27.4,-101.5],"lev":0.672},{"p":[2.5,27.1,-101.5],"lev":0.667},{"p":[0.4,27.0,-102.3],"lev":0.652},{"p":[-0.5,26.7,-102.0],"lev":0.648},{"p":[-3.0,27.4,-103.3],"lev":0.628},{"p":[-5.0,27.3,-102.7],"lev":0.617},{"p":[-5.3,27.5,-103.6],"lev":0.613},{"p":[-6.2,27.9,-103.4],"lev":0.607},{"p":[-6.5,27.4,-103.9],"lev":0.605},{"p":[-8.5,28.1,-104.8],"lev":0.589},{"p":[-10.6,28.0,-105.0],"lev":0.575},{"p":[-12.4,28.5,-105.7],"lev":0.562},{"p":[-14.6,28.8,-107.0],"lev":0.545},{"p":[-18.0,29.2,-107.5],"lev":0.522},{"p":[-18.7,29.0,-107.4],"lev":0.518},{"p":[-21.9,29.7,-108.9],"lev":0.493},{"p":[-25.4,30.4,-108.9],"lev":0.47},{"p":[-26.4,30.6,-109.7],"lev":0.462},{"p":[-29.2,31.2,-110.0],"lev":0.443},{"p":[-29.3,30.6,-110.3],"lev":0.442},{"p":[-29.7,30.7,-110.2],"lev":0.44},{"p":[-29.4,30.8,-110.2],"lev":0.442},{"p":[-28.8,30.9,-110.5],"lev":0.445},{"p":[-29.6,30.6,-110.5],"lev":0.44},{"p":[-34.6,31.9,-112.0],"lev":0.403},{"p":[-35.5,32.0,-112.4],"lev":0.397},{"p":[-37.6,32.7,-112.2],"lev":0.383},{"p":[-39.3,33.2,-113.7],"lev":0.368},{"p":[-40.8,33.1,-113.9],"lev":0.358},{"p":[-42.5,33.7,-114.1],"lev":0.347},{"p":[-44.3,34.0,-114.1],"lev":0.335},{"p":[-45.3,34.3,-114.6],"lev":0.327},{"p":[-47.7,34.9,-115.0],"lev":0.31},{"p":[-50.2,36.1,-116.1],"lev":0.291},{"p":[-51.6,36.2,-115.5],"lev":0.283},{"p":[-53.0,36.9,-117.1],"lev":0.27},{"p":[-54.2,37.4,-117.6],"lev":0.26},{"p":[-55.5,37.8,-117.7],"lev":0.252},{"p":[-56.8,37.9,-117.6],"lev":0.243},{"p":[-58.7,38.6,-118.5],"lev":0.229},{"p":[-59.4,38.3,-118.4],"lev":0.225},{"p":[-60.9,39.0,-119.0],"lev":0.213},{"p":[-61.8,39.6,-118.6],"lev":0.207},{"p":[-63.6,40.0,-120.1],"lev":0.192},{"p":[-64.0,40.2,-119.1],"lev":0.192},{"p":[-65.2,40.3,-119.7],"lev":0.183},{"p":[-65.8,41.0,-120.2],"lev":0.177},{"p":[-66.1,41.2,-120.7],"lev":0.174},{"p":[-66.6,41.3,-120.7],"lev":0.171},{"p":[-66.9,41.6,-120.8],"lev":0.168},{"p":[-68.4,42.5,-121.6],"lev":0.156},{"p":[-69.2,42.7,-120.9],"lev":0.152},{"p":[-70.3,43.0,-121.4],"lev":0.144},{"p":[-71.1,43.2,-121.7],"lev":0.138},{"p":[-71.4,43.1,-122.3],"lev":0.135},{"p":[-71.7,44.1,-121.8],"lev":0.133},{"p":[-72.9,43.8,-122.0],"lev":0.125},{"p":[-73.1,44.1,-121.6],"lev":0.124},{"p":[-73.1,44.1,-122.1],"lev":0.123},{"p":[-73.7,44.5,-123.3],"lev":0.116},{"p":[-73.4,44.3,-123.3],"lev":0.118},{"p":[-74.1,44.5,-123.3],"lev":0.114},{"p":[-74.6,44.8,-123.4],"lev":0.11},{"p":[-73.7,44.5,-123.8],"lev":0.115},{"p":[-74.7,44.7,-122.9],"lev":0.11},{"p":[-74.5,45.1,-122.4],"lev":0.112},{"p":[-76.0,45.4,-122.9],"lev":0.101},{"p":[-76.2,45.6,-123.3],"lev":0.099},{"p":[-77.2,46.1,-123.1],"lev":0.093},{"p":[-77.6,46.2,-123.4],"lev":0.089},{"p":[-77.8,46.2,-124.1],"lev":0.087},{"p":[-78.8,47.2,-123.8],"lev":0.08},{"p":[-80.1,47.3,-124.3],"lev":0.07},{"p":[-80.8,48.5,-124.5],"lev":0.064},{"p":[-82.9,48.8,-125.8],"lev":0.048},{"p":[-84.0,50.1,-126.4],"lev":0.038},{"p":[-85.7,51.0,-126.7],"lev":0.025},{"p":[-87.9,52.3,-127.3],"lev":0.009},{"p":[-88.2,52.4,-127.8],"lev":0.006},{"p":[-88.5,52.8,-127.9],"lev":0.003},{"p":[-88.4,53.2,-127.9],"lev":0.003},{"p":[-88.1,52.8,-127.4],"lev":0.007},{"p":[-87.8,53.1,-128.6],"lev":0.006},{"p":[-87.9,53.0,-127.6],"lev":0.007},{"p":[-87.8,52.5,-128.1],"lev":0.007},{"p":[-88.1,52.4,-127.9],"lev":0.006},{"p":[-88.1,52.8,-128.3],"lev":0.005},{"p":[-88.3,52.4,-127.2],"lev":0.006},{"p":[-87.7,53.1,-127.9],"lev":0.008},{"p":[-87.6,52.4,-127.6],"lev":0.01},{"p":[-88.0,52.9,-128.1],"lev":0.006},{"p":[-87.1,53.1,-128.3],"lev":0.011}],"crank":[{"p":[-22.0,42.2,-123.4],"ph":0.0,"turn":0},{"p":[-33.1,43.2,-131.9],"ph":0.027,"turn":0},{"p":[-51.3,45.8,-134.7],"ph":0.054,"turn":0},{"p":[-63.7,48.3,-135.2],"ph":0.081,"turn":0},{"p":[-69.0,48.0,-132.9],"ph":0.108,"turn":0},{"p":[-73.8,47.7,-130.3],"ph":0.135,"turn":0},{"p":[-79.9,47.3,-126.8],"ph":0.162,"turn":0},{"p":[-84.7,46.1,-122.3],"ph":0.189,"turn":0},{"p":[-94.5,45.5,-114.5],"ph":0.216,"turn":0},{"p":[-103.0,45.3,-108.7],"ph":0.243,"turn":0},{"p":[-110.8,46.2,-103.6],"ph":0.27,"turn":0},{"p":[-118.1,48.2,-101.1],"ph":0.297,"turn":0},{"p":[-123.7,50.3,-101.5],"ph":0.324,"turn":0},{"p":[-125.7,51.7,-103.0],"ph":0.351,"turn":0},{"p":[-125.9,52.3,-105.7],"ph":0.378,"turn":0},{"p":[-124.5,51.7,-109.4],"ph":0.405,"turn":0},{"p":[-115.8,51.7,-114.7],"ph":0.432,"turn":0},{"p":[-108.3,51.4,-119.2],"ph":0.459,"turn":0},{"p":[-102.6,51.4,-122.3],"ph":0.486,"turn":0},{"p":[-96.7,51.5,-125.0],"ph":0.514,"turn":0},{"p":[-92.7,51.1,-127.1],"ph":0.541,"turn":0},{"p":[-91.3,50.8,-128.8],"ph":0.568,"turn":0},{"p":[-89.5,50.4,-129.6],"ph":0.595,"turn":0},{"p":[-87.8,50.5,-129.6],"ph":0.622,"turn":0},{"p":[-88.6,50.8,-130.0],"ph":0.649,"turn":0},{"p":[-87.1,50.8,-130.6],"ph":0.676,"turn":0},{"p":[-86.3,50.7,-130.3],"ph":0.703,"turn":0},{"p":[-86.4,51.4,-130.0],"ph":0.73,"turn":0},{"p":[-84.0,52.0,-130.0],"ph":0.757,"turn":0},{"p":[-78.8,52.7,-130.3],"ph":0.784,"turn":0},{"p":[-72.2,54.1,-131.8],"ph":0.811,"turn":0},{"p":[-66.7,54.6,-132.0],"ph":0.838,"turn":0},{"p":[-63.2,55.7,-133.1],"ph":0.865,"turn":0},{"p":[-64.5,56.8,-131.4],"ph":0.892,"turn":0},{"p":[-67.1,57.6,-127.4],"ph":0.919,"turn":0},{"p":[-62.4,56.3,-120.4],"ph":0.946,"turn":0},{"p":[-41.3,50.4,-115.1],"ph":0.973,"turn":0},{"p":[-23.0,42.5,-121.7],"ph":0.0,"turn":1},{"p":[-37.1,43.5,-132.6],"ph":0.027,"turn":1},{"p":[-54.5,46.8,-135.3],"ph":0.054,"turn":1},{"p":[-65.3,47.9,-134.0],"ph":0.081,"turn":1},{"p":[-70.1,47.4,-132.3],"ph":0.108,"turn":1},{"p":[-75.2,47.6,-129.6],"ph":0.135,"turn":1},{"p":[-81.0,47.0,-126.9],"ph":0.162,"turn":1},{"p":[-86.2,46.3,-121.5],"ph":0.189,"turn":1},{"p":[-94.1,45.5,-115.1],"ph":0.216,"turn":1},{"p":[-105.3,45.5,-107.2],"ph":0.243,"turn":1},{"p":[-112.3,46.9,-102.5],"ph":0.27,"turn":1},{"p":[-119.1,48.6,-101.9],"ph":0.297,"turn":1},{"p":[-124.8,50.4,-102.0],"ph":0.324,"turn":1},{"p":[-126.2,51.5,-103.2],"ph":0.351,"turn":1},{"p":[-126.3,52.0,-106.6],"ph":0.378,"turn":1},{"p":[-124.0,51.8,-110.4],"ph":0.405,"turn":1},{"p":[-117.0,51.4,-115.0],"ph":0.432,"turn":1},{"p":[-106.8,51.3,-120.9],"ph":0.459,"turn":1},{"p":[-101.2,51.5,-123.9],"ph":0.486,"turn":1},{"p":[-95.8,51.2,-125.9],"ph":0.514,"turn":1},{"p":[-92.5,50.8,-127.4],"ph":0.541,"turn":1},{"p":[-91.1,51.0,-129.5],"ph":0.568,"turn":1},{"p":[-88.6,50.6,-129.6],"ph":0.595,"turn":1},{"p":[-88.0,50.6,-130.5],"ph":0.622,"turn":1},{"p":[-88.5,50.3,-130.5],"ph":0.649,"turn":1},{"p":[-87.1,50.3,-130.5],"ph":0.676,"turn":1},{"p":[-86.1,50.5,-131.1],"ph":0.703,"turn":1},{"p":[-86.4,50.8,-130.7],"ph":0.73,"turn":1},{"p":[-82.2,52.0,-130.0],"ph":0.757,"turn":1},{"p":[-76.9,52.4,-131.6],"ph":0.784,"turn":1},{"p":[-72.1,53.4,-132.0],"ph":0.811,"turn":1},{"p":[-66.5,54.1,-132.7],"ph":0.838,"turn":1},{"p":[-63.4,55.6,-132.7],"ph":0.865,"turn":1},{"p":[-66.2,56.9,-129.7],"ph":0.892,"turn":1},{"p":[-66.5,56.9,-124.2],"ph":0.919,"turn":1},{"p":[-55.6,54.0,-117.2],"ph":0.946,"turn":1},{"p":[-29.8,45.5,-116.8],"ph":0.973,"turn":1},{"p":[-24.0,41.1,-126.7],"ph":0.0,"turn":2},{"p":[-39.9,43.5,-133.0],"ph":0.029,"turn":2},{"p":[-57.0,47.0,-134.7],"ph":0.057,"turn":2},{"p":[-66.0,48.1,-133.7],"ph":0.086,"turn":2},{"p":[-71.0,47.7,-131.2],"ph":0.114,"turn":2},{"p":[-77.9,47.2,-127.6],"ph":0.143,"turn":2},{"p":[-83.7,46.4,-123.9],"ph":0.171,"turn":2},{"p":[-90.5,45.7,-117.4],"ph":0.2,"turn":2},{"p":[-99.7,45.2,-111.7],"ph":0.229,"turn":2},{"p":[-107.2,45.6,-106.2],"ph":0.257,"turn":2},{"p":[-114.3,47.0,-102.2],"ph":0.286,"turn":2},{"p":[-121.7,49.6,-101.0],"ph":0.314,"turn":2},{"p":[-125.2,51.4,-102.7],"ph":0.343,"turn":2},{"p":[-126.2,51.7,-106.3],"ph":0.371,"turn":2},{"p":[-124.8,51.7,-110.1],"ph":0.4,"turn":2},{"p":[-118.0,51.8,-113.9],"ph":0.429,"turn":2},{"p":[-110.4,51.3,-117.8],"ph":0.457,"turn":2},{"p":[-103.7,51.1,-122.1],"ph":0.486,"turn":2},{"p":[-97.0,51.0,-125.2],"ph":0.514,"turn":2},{"p":[-92.8,50.9,-126.7],"ph":0.543,"turn":2},{"p":[-91.4,50.6,-128.1],"ph":0.571,"turn":2},{"p":[-88.4,50.6,-129.5],"ph":0.6,"turn":2},{"p":[-87.3,50.4,-128.9],"ph":0.629,"turn":2},{"p":[-88.4,50.0,-129.9],"ph":0.657,"turn":2},{"p":[-87.0,50.4,-130.3],"ph":0.686,"turn":2},{"p":[-86.5,50.7,-130.5],"ph":0.714,"turn":2},{"p":[-85.8,51.3,-130.7],"ph":0.743,"turn":2},{"p":[-81.9,52.2,-130.7],"ph":0.771,"turn":2},{"p":[-74.9,52.9,-131.4],"ph":0.8,"turn":2},{"p":[-68.4,54.5,-132.6],"ph":0.829,"turn":2},{"p":[-63.4,55.4,-133.1],"ph":0.857,"turn":2},{"p":[-64.2,56.6,-130.9],"ph":0.886,"turn":2},{"p":[-66.7,57.5,-126.7],"ph":0.914,"turn":2},{"p":[-62.4,56.2,-120.3],"ph":0.943,"turn":2},{"p":[-38.7,49.5,-115.4],"ph":0.971,"turn":2}],"slow":[{"p":[-26.7,43.1,-119.3],"ph":0.0},{"p":[-30.2,43.4,-123.2],"ph":0.008},{"p":[-36.1,43.8,-126.5],"ph":0.016},{"p":[-41.7,44.6,-128.1],"ph":0.024},{"p":[-46.8,45.8,-129.7],"ph":0.032},{"p":[-51.6,47.1,-130.5],"ph":0.04},{"p":[-57.0,48.2,-131.7],"ph":0.048},{"p":[-60.8,49.2,-131.6],"ph":0.056},{"p":[-64.4,49.9,-132.0],"ph":0.064},{"p":[-66.6,49.5,-130.9],"ph":0.072},{"p":[-68.7,49.9,-130.9],"ph":0.08},{"p":[-70.7,49.9,-130.5],"ph":0.088},{"p":[-72.7,49.7,-130.2],"ph":0.096},{"p":[-74.2,49.2,-129.4],"ph":0.104},{"p":[-75.9,49.0,-128.6],"ph":0.112},{"p":[-77.4,49.6,-127.6],"ph":0.12},{"p":[-79.6,49.4,-126.8],"ph":0.128},{"p":[-80.4,48.7,-125.5],"ph":0.136},{"p":[-82.6,48.8,-124.7],"ph":0.144},{"p":[-84.2,48.0,-123.1],"ph":0.152},{"p":[-85.9,48.1,-122.3],"ph":0.16},{"p":[-88.0,47.8,-120.5],"ph":0.168},{"p":[-89.9,47.3,-118.6],"ph":0.176},{"p":[-92.0,47.5,-117.0],"ph":0.184},{"p":[-94.0,47.6,-115.3],"ph":0.192},{"p":[-97.0,46.8,-112.6],"ph":0.2},{"p":[-99.8,46.1,-110.9],"ph":0.208},{"p":[-102.0,47.0,-109.1],"ph":0.216},{"p":[-104.7,46.6,-106.9],"ph":0.224},{"p":[-107.8,46.6,-105.1],"ph":0.232},{"p":[-110.1,46.8,-103.2],"ph":0.24},{"p":[-112.5,47.2,-101.9],"ph":0.248},{"p":[-114.4,47.6,-101.2],"ph":0.256},{"p":[-116.7,48.2,-100.1],"ph":0.264},{"p":[-119.0,49.6,-99.1],"ph":0.272},{"p":[-121.4,49.3,-99.2],"ph":0.28},{"p":[-123.0,50.7,-98.4],"ph":0.288},{"p":[-124.7,51.3,-98.2],"ph":0.296},{"p":[-125.9,51.8,-98.7],"ph":0.304},{"p":[-126.5,52.1,-99.2],"ph":0.312},{"p":[-127.4,52.7,-99.3],"ph":0.32},{"p":[-128.2,52.7,-100.8],"ph":0.328},{"p":[-127.9,52.8,-101.2],"ph":0.336},{"p":[-127.9,53.5,-102.2],"ph":0.344},{"p":[-127.6,53.4,-103.0],"ph":0.352},{"p":[-127.1,53.9,-104.4],"ph":0.36},{"p":[-126.2,53.9,-105.7],"ph":0.368},{"p":[-125.1,53.9,-107.2],"ph":0.376},{"p":[-123.4,54.2,-108.5],"ph":0.384},{"p":[-121.0,53.8,-109.7],"ph":0.392},{"p":[-118.8,54.1,-111.6],"ph":0.4},{"p":[-117.1,54.2,-113.0],"ph":0.408},{"p":[-114.8,53.7,-114.5],"ph":0.416},{"p":[-112.4,53.9,-115.3],"ph":0.424},{"p":[-110.5,53.9,-116.6],"ph":0.432},{"p":[-108.5,53.9,-117.2],"ph":0.44},{"p":[-106.7,53.8,-118.9],"ph":0.448},{"p":[-104.7,53.2,-119.9],"ph":0.456},{"p":[-102.2,53.3,-120.5],"ph":0.464},{"p":[-101.1,53.8,-122.1],"ph":0.472},{"p":[-99.6,53.4,-122.4],"ph":0.48},{"p":[-97.7,53.9,-123.1],"ph":0.488},{"p":[-96.6,53.7,-124.3],"ph":0.496},{"p":[-95.4,53.5,-124.3],"ph":0.504},{"p":[-94.7,53.4,-124.1],"ph":0.512},{"p":[-93.3,53.4,-125.3],"ph":0.52},{"p":[-93.0,53.2,-127.1],"ph":0.528},{"p":[-92.3,53.1,-126.5],"ph":0.536},{"p":[-92.2,52.9,-126.7],"ph":0.544},{"p":[-91.0,53.0,-125.9],"ph":0.552},{"p":[-90.8,52.8,-127.1],"ph":0.56},{"p":[-90.2,52.8,-127.5],"ph":0.568},{"p":[-90.3,52.9,-126.4],"ph":0.576},{"p":[-90.0,52.8,-126.5],"ph":0.584},{"p":[-89.9,52.8,-126.4],"ph":0.592},{"p":[-88.8,52.3,-127.5],"ph":0.6},{"p":[-88.8,52.4,-127.5],"ph":0.608},{"p":[-88.7,52.5,-127.7],"ph":0.616},{"p":[-88.6,52.6,-127.6],"ph":0.624},{"p":[-88.4,52.5,-128.3],"ph":0.632},{"p":[-88.5,52.3,-128.2],"ph":0.64},{"p":[-88.7,52.3,-128.1],"ph":0.648},{"p":[-88.3,52.8,-128.3],"ph":0.656},{"p":[-88.2,52.5,-127.8],"ph":0.664},{"p":[-88.3,52.3,-127.8],"ph":0.672},{"p":[-88.1,52.9,-128.1],"ph":0.68},{"p":[-87.6,53.0,-128.1],"ph":0.688},{"p":[-87.0,53.0,-128.1],"ph":0.696},{"p":[-86.8,53.0,-129.0],"ph":0.704},{"p":[-86.0,53.5,-127.9],"ph":0.712},{"p":[-85.9,53.4,-127.7],"ph":0.72},{"p":[-84.8,53.4,-128.1],"ph":0.728},{"p":[-83.9,53.8,-128.0],"ph":0.736},{"p":[-83.2,54.0,-127.3],"ph":0.744},{"p":[-81.9,53.8,-127.8],"ph":0.752},{"p":[-80.3,54.6,-127.9],"ph":0.76},{"p":[-78.7,55.0,-128.1],"ph":0.768},{"p":[-77.6,54.6,-128.4],"ph":0.776},{"p":[-76.2,55.2,-128.2],"ph":0.784},{"p":[-73.9,55.5,-128.2],"ph":0.792},{"p":[-72.1,55.8,-129.1],"ph":0.8},{"p":[-70.9,56.5,-129.2],"ph":0.808},{"p":[-68.9,56.2,-129.7],"ph":0.816},{"p":[-67.5,56.0,-129.9],"ph":0.824},{"p":[-66.0,56.6,-130.5],"ph":0.832},{"p":[-65.1,56.9,-130.6],"ph":0.84},{"p":[-63.8,57.6,-130.2],"ph":0.848},{"p":[-63.6,57.1,-131.1],"ph":0.856},{"p":[-64.1,57.3,-130.8],"ph":0.864},{"p":[-64.5,57.9,-130.2],"ph":0.872},{"p":[-65.1,58.4,-129.3],"ph":0.88},{"p":[-67.2,58.2,-129.2],"ph":0.888},{"p":[-67.7,58.4,-127.8],"ph":0.896},{"p":[-69.7,58.4,-127.0],"ph":0.904},{"p":[-70.4,58.9,-124.8],"ph":0.912},{"p":[-70.4,58.9,-123.1],"ph":0.92},{"p":[-70.1,58.7,-121.9],"ph":0.928},{"p":[-69.2,58.8,-119.4],"ph":0.936},{"p":[-65.8,58.0,-116.9],"ph":0.944},{"p":[-59.3,56.4,-114.7],"ph":0.952},{"p":[-52.6,54.0,-113.3],"ph":0.96},{"p":[-44.5,51.8,-111.8],"ph":0.968},{"p":[-36.8,48.8,-111.3],"ph":0.976},{"p":[-29.8,46.1,-113.2],"ph":0.984},{"p":[-27.0,44.7,-114.7],"ph":0.992}],"turns":[{"p":[-84.1,50.4,-123.3],"lev":0.043,"rpm":77.1},{"p":[-86.6,50.7,-122.2],"lev":0.03,"rpm":71.3},{"p":[-85.0,50.7,-123.1],"lev":0.038,"rpm":76.9},{"p":[-83.8,50.6,-123.7],"lev":0.044,"rpm":81.2},{"p":[-84.9,50.5,-122.8],"lev":0.04,"rpm":75.1},{"p":[-85.4,50.5,-122.9],"lev":0.036,"rpm":73.1},{"p":[-84.8,50.0,-123.0],"lev":0.04,"rpm":77.0},{"p":[-74.7,45.5,-121.8],"lev":0.112,"rpm":79.1},{"p":[-64.0,41.8,-120.1],"lev":0.188,"rpm":81.3},{"p":[-63.7,41.4,-119.4],"lev":0.191,"rpm":81.3},{"p":[-64.7,41.6,-119.2],"lev":0.185,"rpm":79.1},{"p":[-63.0,41.5,-119.9],"lev":0.195,"rpm":81.3},{"p":[-64.5,41.7,-119.3],"lev":0.186,"rpm":76.9},{"p":[-63.2,41.6,-119.3],"lev":0.195,"rpm":77.0},{"p":[-63.7,41.4,-119.3],"lev":0.192,"rpm":75.0},{"p":[-64.4,41.7,-119.0],"lev":0.188,"rpm":73.1},{"p":[-54.6,38.2,-116.8],"lev":0.259,"rpm":77.0},{"p":[-52.6,37.2,-116.0],"lev":0.274,"rpm":76.8},{"p":[-51.7,37.4,-115.7],"lev":0.28,"rpm":76.9},{"p":[-53.0,37.4,-115.1],"lev":0.273,"rpm":73.1},{"p":[-41.5,34.5,-113.1],"lev":0.354,"rpm":75.1},{"p":[-40.0,34.0,-113.3],"lev":0.364,"rpm":75.0},{"p":[-40.4,34.0,-112.4],"lev":0.363,"rpm":73.1},{"p":[-40.0,34.1,-112.6],"lev":0.365,"rpm":71.3},{"p":[-41.7,34.2,-112.3],"lev":0.355,"rpm":68.0},{"p":[-38.6,33.9,-113.2],"lev":0.373,"rpm":73.2},{"p":[-37.5,33.3,-111.3],"lev":0.385,"rpm":71.3},{"p":[-37.6,33.4,-111.6],"lev":0.384,"rpm":71.4},{"p":[-36.3,33.5,-111.8],"lev":0.391,"rpm":73.2},{"p":[-36.7,33.4,-111.9],"lev":0.389,"rpm":71.4},{"p":[-36.3,33.2,-112.0],"lev":0.391,"rpm":73.1},{"p":[-36.5,33.3,-112.0],"lev":0.389,"rpm":74.9},{"p":[-35.2,33.5,-111.9],"lev":0.398,"rpm":77.0},{"p":[-35.6,33.3,-110.9],"lev":0.398,"rpm":75.0},{"p":[-36.0,32.9,-110.6],"lev":0.396,"rpm":73.2},{"p":[-36.2,33.3,-110.4],"lev":0.395,"rpm":71.3},{"p":[-35.4,33.0,-110.7],"lev":0.4,"rpm":73.1},{"p":[-36.4,33.2,-110.4],"lev":0.394,"rpm":71.4},{"p":[-35.5,33.2,-111.0],"lev":0.399,"rpm":73.3},{"p":[-34.6,32.8,-109.9],"lev":0.407,"rpm":71.3},{"p":[-33.8,32.7,-109.7],"lev":0.412,"rpm":71.5},{"p":[-31.8,32.7,-110.8],"lev":0.423,"rpm":74.9},{"p":[-34.4,32.6,-109.3],"lev":0.409,"rpm":69.7},{"p":[-31.6,32.9,-110.7],"lev":0.424,"rpm":75.1},{"p":[-33.0,32.5,-109.6],"lev":0.418,"rpm":71.4},{"p":[-29.1,32.0,-109.5],"lev":0.444,"rpm":71.3},{"p":[-28.3,32.1,-110.1],"lev":0.447,"rpm":73.2},{"p":[-29.0,32.0,-109.5],"lev":0.444,"rpm":69.6},{"p":[-29.2,32.3,-109.2],"lev":0.443,"rpm":68.2},{"p":[-26.7,31.9,-109.5],"lev":0.459,"rpm":69.5},{"p":[-23.4,31.3,-107.6],"lev":0.485,"rpm":65.1},{"p":[-21.9,31.3,-108.8],"lev":0.492,"rpm":68.1},{"p":[-21.3,31.1,-109.3],"lev":0.495,"rpm":69.5},{"p":[-21.9,31.2,-108.7],"lev":0.492,"rpm":68.0},{"p":[-17.9,31.1,-107.9],"lev":0.52,"rpm":66.6},{"p":[-17.8,31.0,-107.7],"lev":0.521,"rpm":66.5},{"p":[-17.6,31.0,-107.9],"lev":0.522,"rpm":66.4},{"p":[-17.1,31.0,-108.2],"lev":0.524,"rpm":68.0},{"p":[-17.8,31.4,-107.9],"lev":0.52,"rpm":69.7},{"p":[-12.9,30.8,-108.0],"lev":0.552,"rpm":71.3},{"p":[-14.1,31.3,-106.7],"lev":0.546,"rpm":66.5},{"p":[-12.2,31.0,-107.9],"lev":0.556,"rpm":67.9},{"p":[-13.0,30.7,-107.7],"lev":0.551,"rpm":66.5},{"p":[-13.4,30.7,-107.3],"lev":0.55,"rpm":66.5},{"p":[-9.9,30.7,-106.9],"lev":0.573,"rpm":66.4},{"p":[-8.5,30.7,-107.0],"lev":0.582,"rpm":66.5},{"p":[-9.4,30.7,-106.7],"lev":0.577,"rpm":66.4},{"p":[-7.4,30.8,-108.0],"lev":0.586,"rpm":71.3},{"p":[-8.4,30.5,-106.5],"lev":0.584,"rpm":68.0},{"p":[-7.1,30.4,-107.2],"lev":0.59,"rpm":68.0},{"p":[-6.3,30.3,-107.2],"lev":0.595,"rpm":69.7},{"p":[-7.2,30.4,-106.7],"lev":0.591,"rpm":69.7},{"p":[-6.4,30.4,-107.5],"lev":0.594,"rpm":71.3},{"p":[-5.5,30.6,-107.3],"lev":0.601,"rpm":72.9},{"p":[-6.3,30.5,-107.2],"lev":0.596,"rpm":71.3},{"p":[-6.5,30.5,-106.3],"lev":0.596,"rpm":68.0},{"p":[-3.2,30.3,-107.1],"lev":0.616,"rpm":69.6},{"p":[-5.1,30.2,-105.8],"lev":0.607,"rpm":69.7},{"p":[-3.0,30.2,-106.8],"lev":0.618,"rpm":71.3},{"p":[-3.8,30.7,-107.2],"lev":0.611,"rpm":71.3},{"p":[-4.4,30.3,-106.0],"lev":0.61,"rpm":69.7},{"p":[-3.3,30.3,-106.6],"lev":0.616,"rpm":71.3},{"p":[-3.6,30.5,-106.8],"lev":0.614,"rpm":73.2},{"p":[-3.7,30.6,-106.7],"lev":0.613,"rpm":71.3},{"p":[-3.0,30.4,-106.6],"lev":0.618,"rpm":71.4},{"p":[-0.3,30.5,-106.2],"lev":0.636,"rpm":68.0},{"p":[3.2,30.6,-106.5],"lev":0.657,"rpm":71.4},{"p":[2.3,30.8,-105.4],"lev":0.654,"rpm":69.6},{"p":[3.5,31.0,-106.1],"lev":0.659,"rpm":69.9},{"p":[2.6,30.8,-105.8],"lev":0.655,"rpm":68.0},{"p":[3.4,30.8,-106.1],"lev":0.659,"rpm":69.7},{"p":[2.0,30.8,-105.4],"lev":0.652,"rpm":68.0},{"p":[3.1,30.8,-106.0],"lev":0.658,"rpm":71.3},{"p":[3.1,30.7,-105.8],"lev":0.658,"rpm":68.0},{"p":[5.8,30.9,-105.9],"lev":0.675,"rpm":69.7},{"p":[8.5,31.0,-105.0],"lev":0.694,"rpm":66.5},{"p":[9.5,31.4,-105.1],"lev":0.7,"rpm":68.0},{"p":[9.3,31.0,-104.5],"lev":0.7,"rpm":65.0},{"p":[9.5,31.1,-105.2],"lev":0.7,"rpm":63.6},{"p":[9.4,31.1,-105.3],"lev":0.699,"rpm":66.4},{"p":[9.5,31.2,-104.9],"lev":0.7,"rpm":65.0},{"p":[9.6,31.4,-105.3],"lev":0.7,"rpm":68.2},{"p":[9.4,31.1,-104.8],"lev":0.7,"rpm":66.4},{"p":[10.0,31.2,-105.1],"lev":0.703,"rpm":66.5},{"p":[10.4,31.1,-104.6],"lev":0.707,"rpm":63.5},{"p":[13.4,31.6,-104.7],"lev":0.725,"rpm":65.1},{"p":[14.3,31.9,-105.0],"lev":0.73,"rpm":68.0},{"p":[14.0,31.8,-105.0],"lev":0.728,"rpm":66.4},{"p":[13.2,31.9,-104.9],"lev":0.723,"rpm":65.1},{"p":[15.0,31.8,-104.3],"lev":0.736,"rpm":65.0},{"p":[16.9,32.2,-104.0],"lev":0.748,"rpm":62.2},{"p":[18.4,32.3,-104.3],"lev":0.757,"rpm":66.4},{"p":[18.0,32.1,-104.1],"lev":0.755,"rpm":66.4},{"p":[17.6,32.0,-104.4],"lev":0.752,"rpm":65.0},{"p":[16.5,32.3,-104.4],"lev":0.745,"rpm":65.0},{"p":[17.6,32.2,-104.5],"lev":0.751,"rpm":65.1},{"p":[19.9,32.5,-104.1],"lev":0.767,"rpm":62.3},{"p":[21.3,33.3,-104.1],"lev":0.775,"rpm":63.6},{"p":[21.3,33.0,-103.9],"lev":0.775,"rpm":62.2},{"p":[21.6,32.9,-104.3],"lev":0.777,"rpm":62.2},{"p":[21.0,33.1,-104.1],"lev":0.773,"rpm":62.2},{"p":[21.4,33.0,-104.1],"lev":0.776,"rpm":59.8},{"p":[24.4,33.3,-103.8],"lev":0.795,"rpm":58.5},{"p":[25.3,33.7,-103.9],"lev":0.8,"rpm":59.7},{"p":[25.5,33.9,-104.3],"lev":0.8,"rpm":60.9},{"p":[25.7,34.1,-104.4],"lev":0.801,"rpm":61.0},{"p":[26.0,34.1,-104.4],"lev":0.803,"rpm":61.0},{"p":[26.4,33.8,-102.7],"lev":0.81,"rpm":54.2},{"p":[28.2,34.5,-102.8],"lev":0.82,"rpm":54.2},{"p":[29.4,34.9,-103.1],"lev":0.827,"rpm":57.3},{"p":[28.7,34.7,-102.6],"lev":0.824,"rpm":55.2},{"p":[28.8,34.6,-102.6],"lev":0.824,"rpm":55.1},{"p":[28.0,34.5,-102.8],"lev":0.819,"rpm":54.1},{"p":[28.4,34.7,-103.3],"lev":0.82,"rpm":54.2},{"p":[30.0,34.7,-102.2],"lev":0.832,"rpm":49.6},{"p":[30.5,35.1,-102.1],"lev":0.836,"rpm":49.6},{"p":[30.8,35.3,-102.1],"lev":0.838,"rpm":50.4},{"p":[31.3,35.5,-102.5],"lev":0.839,"rpm":51.3},{"p":[31.0,35.8,-102.4],"lev":0.837,"rpm":52.2},{"p":[30.9,35.6,-102.5],"lev":0.837,"rpm":51.4},{"p":[31.8,35.8,-102.7],"lev":0.842,"rpm":50.5},{"p":[30.4,35.6,-102.4],"lev":0.834,"rpm":50.5},{"p":[30.3,35.5,-102.3],"lev":0.833,"rpm":47.2},{"p":[33.6,36.3,-102.5],"lev":0.853,"rpm":47.2},{"p":[34.0,36.7,-102.0],"lev":0.856,"rpm":47.2},{"p":[35.1,36.5,-102.3],"lev":0.863,"rpm":45.8},{"p":[34.5,36.5,-102.4],"lev":0.859,"rpm":46.4},{"p":[35.2,36.7,-102.6],"lev":0.863,"rpm":46.5},{"p":[34.4,36.7,-102.5],"lev":0.858,"rpm":47.2},{"p":[34.5,36.7,-102.2],"lev":0.86,"rpm":47.2},{"p":[37.4,37.1,-101.7],"lev":0.878,"rpm":44.3},{"p":[38.0,37.5,-100.3],"lev":0.884,"rpm":41.2},{"p":[38.5,37.0,-100.2],"lev":0.888,"rpm":39.5},{"p":[39.1,37.8,-101.3],"lev":0.89,"rpm":42.4},{"p":[37.0,37.2,-99.9],"lev":0.879,"rpm":39.0}],"axes":{"lever":[0.9357,-0.1614,0.3138],"crank":[-0.9697,-0.0179,0.2435]},"lever_span_uT":146.9};
+(function () {
+  if (!window.THREE || !THREE.OrbitControls) {
+    document.querySelector('.sec-head h2').insertAdjacentHTML('afterend', '<p class="lede err">The 3D library did not load, so the views are empty. Reload the page to try again.</p>');
+    return;
+  }
+  const $ = (id) => document.getElementById(id);
+  const css = getComputedStyle(document.documentElement);
+  const C = (n) => new THREE.Color(css.getPropertyValue(n).trim());
+  const COL = { lo: C('--lo'), hi: C('--hi'), hot: C('--hot'), stage: C('--stage'), muted: C('--muted'), line: C('--line') };
+  const levColor = (t) => COL.lo.clone().lerp(COL.hi, Math.max(0, Math.min(1, t)));
+  const phaseColor = (ph) => new THREE.Color().setHSL((0.97 + ph) % 1, 0.75, 0.6);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ------------------------------------------------------------- Keiser power model (from the bridge sketch; KBikeBLE, MIT)
+  const EDGES = [0.00, 7.51, 11.40, 14.59, 18.57, 20.12, 23.32, 24.87, 27.03, 29.53, 31.87, 34.20, 36.70, 39.72, 42.83, 46.03, 49.14, 53.11, 56.99, 60.97, 66.49, 72.02, 78.41, 89.38, 100.00];
+  const P90 = [20.9, 24.3, 27.7, 33.5, 40.4, 45.0, 54.3, 61.3, 71.7, 84.4, 98.3, 118.0, 136.6, 163.3, 193.4, 225.9, 261.9, 308.3, 360.5, 415.0, 497.4, 577.5, 671.5, 796.8, 878.0];
+  const interp = (xs, ys, x) => { if (x <= xs[0]) return ys[0]; for (let i = 1; i < xs.length; i++) if (x < xs[i]) return ys[i - 1] + (x - xs[i - 1]) / (xs[i] - xs[i - 1]) * (ys[i] - ys[i - 1]); return ys[ys.length - 1]; };
+  // power = P90(resistance) x (PC2 + PB2*rpm + PA2*rpm^2), 0 below 1 rpm, capped at 2000 W, as in the firmware
+  const watts = (res, rpm) => rpm < 1 ? 0 : Math.min(2000, Math.max(0, interp(EDGES, P90, res) * (-2.70e-3 + 6.79e-3 * rpm + 4.75e-5 * rpm * rpm)));
+  const gearOf = (res) => { for (let g = 1; g <= 24; g++) if (res < EDGES[g]) return g; return 24; };
+  // The 24 gears are evenly spaced along the lever's travel. Calibration ties each gear's
+  // first position to its Keiser resistance (EDGES), and the firmware interpolates between them.
+  const levToRes = (lev) => {
+    const x = Math.max(0, Math.min(1, lev)) * 24, i = Math.min(23, Math.floor(x));
+    return EDGES[i] + (x - i) * (EDGES[i + 1] - EDGES[i]);
+  };
+  const gearMidLev = (g) => (g - 0.5) / 24;
+
+  // ------------------------------------------------------------- shared stage helper
+  function makeStage(canvas, camPos, target, shift) {
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 5000);
+    camera.position.copy(camPos);
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.target.copy(target);
+    controls.enabled = false;           // the view moves only with the buttons, so scrolling the page can't move it
+    controls.update();
+    const resize = () => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // on wide stages, frame the scene left of centre to leave room for the phone
+      const narrow = w < 740;
+      camera.zoom = shift && narrow ? Math.min(1, w / h * 0.48) : 1;   // fit the bike in the left half
+      if (shift && (narrow || w / h > 1.25)) camera.setViewOffset(w, h, w * (narrow ? 0.26 : shift), 0, w, h); else camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+    };
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+    return { renderer, scene, camera, controls, canvas };
+  }
+  function tag(stageEl, text, cls) {
+    const el = document.createElement('div');
+    el.className = 'tag' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    stageEl.appendChild(el);
+    return el;
+  }
+  function placeTag(el, pos, st) {
+    const v = pos.clone().project(st.camera);
+    const vis = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+    el.hidden = !vis;
+    if (!vis) return;
+    el.style.left = ((v.x + 1) / 2 * st.canvas.clientWidth) + 'px';
+    el.style.top = ((1 - v.y) / 2 * st.canvas.clientHeight) + 'px';
+  }
+  // ------------------------------------------------------------- the bike (x forward, y up, z = rider's left)
+  const bike = makeStage($('bikeCanvas'), new THREE.Vector3(-80, 82, 176), new THREE.Vector3(-8, 40, 0), 0.14);
+  bike.renderer.outputEncoding = THREE.sRGBEncoding;
+  bike.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  bike.renderer.toneMappingExposure = 1.05;
+  const lin = (c) => new THREE.Color(c).convertSRGBToLinear();
+  // a soft studio environment for smooth reflections: bright softbox above, dark floor
+  (() => {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+    const g = c.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, 256);
+    sky.addColorStop(0, '#8d97a6'); sky.addColorStop(0.45, '#39404b'); sky.addColorStop(0.55, '#1c2027'); sky.addColorStop(1, '#0b0d10');
+    g.fillStyle = sky; g.fillRect(0, 0, 512, 256);
+    [[150, 46, 70, 'rgba(255,255,255,.95)'], [380, 60, 60, 'rgba(180,160,255,.55)']].forEach(([x, y, r, col]) => {
+      const b = g.createRadialGradient(x, y, 0, x, y, r); b.addColorStop(0, col); b.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = b; g.fillRect(0, 0, 512, 256);
+    });
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping; tex.encoding = THREE.sRGBEncoding;
+    const pmrem = new THREE.PMREMGenerator(bike.renderer);
+    bike.scene.environment = pmrem.fromEquirectangular(tex).texture;
+    pmrem.dispose(); tex.dispose();
+  })();
+  bike.scene.add(new THREE.HemisphereLight(0xe8eef7, 0x1a1e24, 0.35));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(-60, 120, 110); bike.scene.add(key);
+  const rim = new THREE.DirectionalLight(0xb4a8ff, 0.7); rim.position.set(80, 60, -120); bike.scene.add(rim);
+  const metal = new THREE.MeshStandardMaterial({ color: lin(0x7c8592), metalness: 0.7, roughness: 0.28 });   // satin aluminium frame
+  const dark = new THREE.MeshStandardMaterial({ color: lin(0x3a414b), metalness: 0.5, roughness: 0.4 });
+  const black = new THREE.MeshStandardMaterial({ color: lin(0x1a1d22), metalness: 0.2, roughness: 0.45 });
+  // soft contact shadow under the bike
+  const shadowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(0,0,0,.55)'); grd.addColorStop(0.6, 'rgba(0,0,0,.2)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(190, 110), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(-5, 0.3, 0); bike.scene.add(floor);
+  // every part is round: rods with ball ends, pucks with rounded rims, an oval saddle
+  function rod(a, b, r, mat, parent) {
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), g = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, A.distanceTo(B), 40, 1, true), mat);
+    m.position.copy(A).add(B).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+    const cap = new THREE.SphereGeometry(r, 40, 20);
+    const ca = new THREE.Mesh(cap, mat), cb = new THREE.Mesh(cap, mat);
+    ca.position.copy(A); cb.position.copy(B);
+    g.add(m, ca, cb);
+    (parent || bike.scene).add(g);
+    return g;
+  }
+  function puck(center, r, thick, mat, parent) {
+    const h = thick / 2, e = Math.min(h, r * 0.4), pts = [new THREE.Vector2(0, -h)];
+    for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 + Math.PI * i / 12; pts.push(new THREE.Vector2(r - e + e * Math.cos(a), h * Math.sin(a))); }
+    pts.push(new THREE.Vector2(0, h));
+    const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 96), mat);
+    m.rotation.x = Math.PI / 2;
+    m.position.set(...center);
+    (parent || bike.scene).add(m);
+    return m;
+  }
+  rod([-58, 3, -26], [-58, 3, 26], 2.2, dark); rod([48, 3, -24], [48, 3, 24], 2.2, dark);
+  rod([-58, 3, 0], [48, 3, 0], 2.6, dark);
+  rod([18, 4, 0], [40, 92, 0], 3.2, metal);
+  rod([-12, 6, 0], [-20, 84, 0], 2.8, metal);
+  rod([-12, 6, 0], [18, 4, 0], 3, metal);
+  rod([-4, 30, 0], [24, 40, 0], 2.6, metal);
+  rod([-20, 84, 0], [-20, 89, 0], 1.6, dark);
+  const saddle = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), black);
+  saddle.scale.set(13, 2.4, 6.5); saddle.position.set(-20, 91, 0); bike.scene.add(saddle);
+  rod([40, 92, -22], [40, 92, 22], 1.6, black);
+  rod([40, 92, 0], [52, 96, 0], 1.6, black);
+  const CRANK = new THREE.Vector3(0, 30, 0);
+  puck([0, 30, 7], 18, 1.6, new THREE.MeshStandardMaterial({ color: lin(0x8a939f), metalness: 0.5, roughness: 0.32 }));
+  const crankGroup = new THREE.Group(); crankGroup.position.copy(CRANK); bike.scene.add(crankGroup);
+  rod([0, 0, 10], [0, -17, 10], 1.3, black, crankGroup);
+  rod([0, 0, -10], [0, 17, -10], 1.3, black, crankGroup);
+  rod([-4.5, -17, 14], [4.5, -17, 14], 1.4, black, crankGroup);
+  rod([-4.5, 17, -14], [4.5, 17, -14], 1.4, black, crankGroup);
+  const FLY = new THREE.Vector3(-40, 27, 9);
+  puck([FLY.x, FLY.y, FLY.z], 24, 1.6, new THREE.MeshStandardMaterial({ color: lin(0x8f98a4), metalness: 0.6, roughness: 0.3 }));
+  puck([FLY.x, FLY.y, FLY.z + 1], 4, 2.5, dark);
+  rod([-2, 48, 7.5], [FLY.x, FLY.y + 4, 7.5], 0.5, black);
+  rod([-2, 12, 7.5], [FLY.x, FLY.y - 4, 7.5], 0.5, black);
+  const PIVOT = new THREE.Vector3(-16, 22, 9);
+  const holder = new THREE.Group(); holder.position.copy(PIVOT); bike.scene.add(holder);
+  rod([0, 0, 0], [-14, 0, 0], 1.5, dark, holder);
+  const magMat = new THREE.MeshStandardMaterial({ color: lin(COL.hi.getHex()), metalness: 0.3, roughness: 0.35, emissive: COL.hi, emissiveIntensity: 0.2 });
+  puck([-14, 0, 2.6], 3.2, 1.8, magMat, holder);
+  puck([-14, 0, -2.6], 3.2, 1.8, magMat, holder);
+  const leverGroup = new THREE.Group(); leverGroup.position.set(36, 78, 3.5); bike.scene.add(leverGroup);
+  rod([0, 0, 0], [0, 11, 0], 0.8, new THREE.MeshStandardMaterial({ color: lin(COL.hi.getHex()), roughness: 0.4 }), leverGroup);
+  const BOARD = new THREE.Vector3(-17, 12, 12);
+  const board = puck([BOARD.x, BOARD.y, BOARD.z], 3, 1.3, new THREE.MeshStandardMaterial({ color: lin(0x5560e0), emissive: 0x3b3fc0, emissiveIntensity: 0.6, metalness: 0.2, roughness: 0.3 }));
+  const toBoard = Math.atan2(BOARD.y - CRANK.y, BOARD.x - CRANK.x);
+  const crankMag = new THREE.Mesh(new THREE.SphereGeometry(1.8, 40, 24), new THREE.MeshStandardMaterial({ color: COL.hot, emissive: COL.hot, emissiveIntensity: 0.6 }));
+  bike.scene.add(crankMag);
+  const bikeStage = $('bikeStage');
+  const bikeTags = {
+    board: [tag(bikeStage, 'Sensor', 'sense'), BOARD.clone().add(new THREE.Vector3(0, -17, 0))],
+    mag: [tag(bikeStage, 'Crank magnet', 'hot'), new THREE.Vector3(CRANK.x, CRANK.y + 22, 8.2)],
+    res: [tag(bikeStage, 'Gear magnets', 'gear'), new THREE.Vector3(-31, 31, 12)],
+    lev: [tag(bikeStage, 'Gear lever'), new THREE.Vector3(36, 92, 3.5)],
+  };
+
+  // ------------------------------------------------------------- field data (for the readout)
+  // gear path (recorded with the crank parked) binned by lever position
+  function binned(list, bins) {
+    const acc = Array.from({ length: bins }, () => ({ s: [0, 0, 0], n: 0 }));
+    list.forEach((d) => { const b = Math.min(bins - 1, Math.max(0, Math.floor(d.lev * bins))); acc[b].n++; d.p.forEach((v, k) => acc[b].s[k] += v); });
+    const out = [];
+    acc.forEach((a, i) => { if (a.n) out.push({ lev: (i + 0.5) / bins, p: a.s.map((v) => v / a.n) }); });
+    return out;
+  }
+  const gearTrack = binned(DATA.gear, 40);
+  const at = (lev) => {
+    const t = gearTrack;
+    if (lev <= t[0].lev) return t[0].p;
+    if (lev >= t[t.length - 1].lev) return t[t.length - 1].p;
+    for (let i = 1; i < t.length; i++) if (lev <= t[i].lev) { const a = t[i - 1], b = t[i], f = (lev - a.lev) / (b.lev - a.lev); return a.p.map((v, k) => v + f * (b.p[k] - v)); }
+  };
+  // crank loop relative to its own centre (one recorded turn)
+  const turn0 = DATA.crank.filter((d) => d.turn === 0);
+  const lctr = [0, 1, 2].map((k) => turn0.reduce((s, d) => s + d.p[k], 0) / turn0.length);
+  const loopAt = (ph) => {
+    const n = turn0.length, x = ((ph % 1) + 1) % 1 * n, i = Math.floor(x) % n, j = (i + 1) % n, f = x - Math.floor(x);
+    return turn0[i].p.map((v, k) => v + f * (turn0[j].p[k] - v));
+  };
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const GEAR_MAX = dist(at(1), at(0));
+  const CRANK_MAX = Math.max(...turn0.map((d) => dist(d.p, lctr)));
+
+  // ------------------------------------------------------------- the magnets' fields, drawn in place on the bike
+  // Textbook dipole field lines (r = L·sin²θ about the magnet's axis) with soft pulses
+  // flowing north to south. Each set rides along with its magnet.
+  const flowTime = { value: 0 };
+  function flowMat(color, gain) {
+    return new THREE.ShaderMaterial({
+      uniforms: { uTime: flowTime, uColor: { value: new THREE.Color(color) }, uGain: { value: gain } },
+      vertexShader: 'attribute float u; attribute float fade; varying float vU; varying float vF; void main() { vU = u; vF = fade; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 uColor; uniform float uTime; uniform float uGain; varying float vU; varying float vF; void main() { float p = fract(vU * 0.1 - uTime * 0.35) - 0.5; float pulse = exp(-p * p * 28.0); gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.3 * pulse), (0.4 + 0.6 * pulse) * vF * uGain); }',
+      transparent: true, depthWrite: false, depthTest: false,
+    });
+  }
+  // a thin tube along pts, with its length along the line (u) for the flow
+  function flowTube(pts, mats, fade) {
+    const SEG = Math.max(24, (pts.length - 1) * 2), RAD = 10, g = new THREE.Group();
+    const curve = new THREE.CatmullRomCurve3(pts), len = curve.getLength();
+    mats.forEach(([mat, radius]) => {
+      const geo = new THREE.TubeGeometry(curve, SEG, radius, RAD, false);
+      const n = geo.attributes.position.count, u = new Float32Array(n), f = new Float32Array(n).fill(fade);
+      for (let i = 0; i < n; i++) u[i] = Math.floor(i / (RAD + 1)) / SEG * len;
+      geo.setAttribute('u', new THREE.BufferAttribute(u, 1));
+      geo.setAttribute('fade', new THREE.BufferAttribute(f, 1));
+      g.add(new THREE.Mesh(geo, mat));
+    });
+    return g;
+  }
+  const lineMats = (color) => [[flowMat(color, 1), 0.2], [flowMat(color, 0.18), 0.75]];   // core, halo
+  function fieldLines(axis, Ls, planes, mats) {
+    const g = new THREE.Group(), a = axis.clone().normalize();
+    const ref = Math.abs(a.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const p0 = ref.sub(a.clone().multiplyScalar(ref.dot(a))).normalize();
+    Ls.forEach((L, li) => {
+      const fade = 1 - 0.5 * li / Math.max(1, Ls.length - 1);
+      for (let k = 0; k < planes; k++) {
+        const v = p0.clone().applyAxisAngle(a, k * 2 * Math.PI / planes), pts = [];
+        for (let i = 0; i <= 96; i++) {
+          const th = 0.06 + (Math.PI - 0.12) * i / 96, r = L * Math.sin(th) ** 2;
+          pts.push(a.clone().multiplyScalar(r * Math.cos(th)).addScaledVector(v, r * Math.sin(th)));
+        }
+        g.add(flowTube(pts, mats, fade));
+      }
+    });
+    return g;
+  }
+  const glowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.3, 'rgba(255,255,255,.45)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function glow(color, size) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
+    s.scale.set(size, size, 1);
+    return s;
+  }
+  // crank magnet: a point dipole whose axis points out from the crank (at the board at 0°)
+  const crankField = new THREE.Group();
+  crankField.add(fieldLines(new THREE.Vector3(1, 0, 0), [5, 9, 13.5, 19], 4, lineMats(COL.hot)), glow(COL.hot, 12));
+  bike.scene.add(crankField);
+  const orbit = new THREE.Mesh(new THREE.TorusGeometry(18, 0.12, 8, 192), new THREE.MeshBasicMaterial({ color: COL.hot, transparent: true, opacity: 0.3, depthWrite: false }));
+  orbit.position.set(CRANK.x, CRANK.y, 8.2); bike.scene.add(orbit);
+  // gear magnets: drawn as one bar magnet, north end turned towards the sensor
+  const gearMats = lineMats(COL.hi);
+  const gearField = fieldLines(new THREE.Vector3(1, 0, 0), [6, 10, 15, 21], 4, gearMats);
+  [-1, 1].forEach((d) => gearField.add(flowTube(Array.from({ length: 9 }, (_, i) => new THREE.Vector3(d < 0 ? -9 + i : 1.5 + i, 0, 0)), gearMats, 1)));
+  gearField.add(glow(COL.hi, 10));
+  bike.scene.add(gearField);
+  // the sensor glows with how much field reaches it
+  const SENSE = C('--sense');
+  const sensorGlow = glow(SENSE, 8);
+  sensorGlow.position.copy(BOARD);
+  bike.scene.add(sensorGlow);
+
+  // ------------------------------------------------------------- state, animation and processing
+  // As on the bridge: the crank point moves continuously; the gear estimate is the
+  // average over each completed pedal turn, so it updates once per turn.
+  const S = { phase: 0.04, lever: +$('lever').value, rpm: 40, manualRpm: null, manualLever: false, playing: !reduceMotion };
+  const SCHEDULE = [3, 9, 15, 21, 24, 18, 12, 6];          // gears the animated rider shifts through: the lever's full travel
+  let schedIdx = 0, schedT = 0, lastT = 0;
+
+  function show() {
+    const ang = toBoard - S.phase * 2 * Math.PI;
+    crankMag.position.set(CRANK.x + 18 * Math.cos(ang), CRANK.y + 18 * Math.sin(ang), 8.2);
+    crankGroup.rotation.z = ang - toBoard;
+    crankField.position.copy(crankMag.position);
+    crankField.rotation.z = ang;
+    holder.rotation.z = -0.15 + S.lever * 0.9;
+    leverGroup.rotation.z = 0.9 - S.lever * 1.6;
+    holder.updateMatrixWorld();
+    const gp = holder.localToWorld(new THREE.Vector3(-14, 0, 0));
+    gearField.position.copy(gp);
+    gearField.rotation.z = Math.atan2(BOARD.y - gp.y, BOARD.x - gp.x);
+    const res = levToRes(S.lever), g = gearOf(res);
+    $('cGear').textContent = g;
+    $('cRpm').textContent = Math.round(S.rpm);
+    $('cWatts').textContent = Math.round(watts(res, S.rpm));
+    $('cRes').textContent = Math.round(res);
+    const gUT = dist(at(S.lever), at(0)), cUT = dist(loopAt(S.phase), lctr);
+    gearMats.forEach(([m]) => m.uniforms.uColor.value.copy(levColor(S.lever)));
+    sensorGlow.scale.setScalar(6 + 20 * Math.min(1, 0.6 * gUT / GEAR_MAX + 0.6 * cUT / CRANK_MAX));
+    $('crankVal').textContent = Math.round(S.rpm) + ' rpm';
+    $('leverVal').textContent = `gear ${g}`;
+  }
+  function setPlaying(on) {
+    S.playing = on;
+    $('play').setAttribute('aria-pressed', String(on));
+    $('play').setAttribute('aria-label', on ? 'Pause the animation' : 'Play the animation');
+    $('playIcon').setAttribute('d', on ? 'M5 3h3.5v14H5zM11.5 3H15v14h-3.5z' : 'M6 3l11 7-11 7z');
+    lastT = 0;
+  }
+  $('play').addEventListener('click', () => setPlaying(!S.playing));
+  // the sliders take over from the animated rider without stopping the ride
+  $('crank').addEventListener('input', (e) => { S.manualRpm = S.rpm = +e.target.value; show(); });
+  $('lever').addEventListener('input', (e) => { S.manualLever = true; S.lever = +e.target.value; show(); });
+  setPlaying(S.playing);
+  show();
+
+  // view buttons: orbit about the bike and zoom, eased
+  const HOME = bike.camera.position.clone().sub(bike.controls.target);
+  let viewAnim = null;
+  function moveView(turn, scale) {
+    const from = bike.camera.position.clone().sub(bike.controls.target);
+    const sph = new THREE.Spherical().setFromVector3(from);
+    const to = { theta: sph.theta + turn, radius: Math.max(HOME.length() * 0.45, Math.min(HOME.length() * 1.8, sph.radius * scale)) };
+    viewAnim = { t0: performance.now(), sph, to };
+  }
+  function stepView(t) {
+    if (!viewAnim) return;
+    const k = Math.min(1, (t - viewAnim.t0) / 420), e = 1 - Math.pow(1 - k, 3), a = viewAnim.sph;
+    const sp = new THREE.Spherical(a.radius + (viewAnim.to.radius - a.radius) * e, a.phi, a.theta + (viewAnim.to.theta - a.theta) * e);
+    bike.camera.position.copy(bike.controls.target).add(new THREE.Vector3().setFromSpherical(sp));
+    bike.camera.lookAt(bike.controls.target);
+    if (k >= 1) viewAnim = null;
+  }
+  $('rotL').addEventListener('click', () => moveView(-Math.PI / 6, 1));
+  $('rotR').addEventListener('click', () => moveView(Math.PI / 6, 1));
+  $('zoomIn').addEventListener('click', () => moveView(0, 0.8));
+  $('zoomOut').addEventListener('click', () => moveView(0, 1.25));
+
+  function tick(t) {
+    if (S.playing) {
+      const dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0;
+      lastT = t;
+      flowTime.value += dt;
+      // the rider: an easy steady cadence, shifting through a few gears
+      S.rpm = S.manualRpm !== null ? S.manualRpm : 40 + 2 * Math.sin(t / 3000);
+      if (!S.manualLever) {
+        schedT += dt;
+        if (schedT > 5) { schedT = 0; schedIdx = (schedIdx + 1) % SCHEDULE.length; }
+        const target = gearMidLev(SCHEDULE[schedIdx]);
+        S.lever += (target - S.lever) * (1 - Math.exp(-2.2 * dt));
+      }
+      S.phase = (S.phase + dt * S.rpm / 60) % 1;
+      if (S.manualRpm === null) $('crank').value = S.rpm;
+      if (!S.manualLever) $('lever').value = S.lever;
+      show();
+    }
+    stepView(t);
+    bike.renderer.render(bike.scene, bike.camera);
+    Object.values(bikeTags).forEach(([el, pos]) => pos && placeTag(el, pos, bike));
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</html>

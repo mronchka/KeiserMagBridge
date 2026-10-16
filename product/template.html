@@ -1,0 +1,642 @@
+<title>Keiser M3 Bridge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: product intro, then the ride view (bike with its magnet fields, the live app floating over it), with its controls docked in the view. */
+:root {
+  /* brand: ink-violet night, electric violet accent, magenta for the crank magnet */
+  --bg: #0e0f16;
+  --stage: #151723;
+  --line: #262a3a;
+  --ink: #ecedf5;
+  --muted: #9a9fb5;
+  --brand: #8b7cff;       /* electric violet: accents, numbers, steps */
+  --lo: #5d7bff;          /* gear magnets, lever down / gear 1 (indigo) */
+  --hi: #b47cff;          /* gear magnets, lever up / top gear (orchid) */
+  --hot: #ff4f9a;         /* the crank magnet (magenta) */
+  --sense: #b9c6ff;       /* the sensor (ice periwinkle) */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; font-feature-settings: "tnum" 1, "cv11" 1; }
+button, input { font: inherit; }
+.wrap { max-width: 88rem; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: clamp(2.4rem, 7vw, 4.6rem); font-weight: 700; line-height: 1.04; margin: 0; letter-spacing: -0.04em; text-wrap: balance; }
+h2 { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 700; line-height: 1.1; margin: 0; letter-spacing: -0.03em; }
+.lede { margin: 0; color: var(--muted); }
+.pitch { margin: 0; font-size: clamp(1.1rem, 2.4vw, 1.4rem); color: var(--muted); text-wrap: balance; }
+.hero .pitch { max-width: 40ch; }
+
+.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; padding-block: 56px 8px; }
+.eyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--brand); display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.status { color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; letter-spacing: .04em; }
+.facts { list-style: none; margin: 18px 0 0; padding: 0; width: min(100%, 44rem); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.facts li { display: flex; flex-direction: column; gap: 2px; }
+.fact-n { font-size: clamp(1.7rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -0.03em; color: var(--brand); line-height: 1.1; }
+.fact-l { font-size: .9rem; color: var(--muted); }
+.how { list-style: none; margin: 0; padding: 24px 0 8px; display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 52rem) { .how { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.how li { padding: 22px; background: var(--stage); border: 1px solid var(--line); border-radius: 16px; font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; }
+.sec-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding-top: 40px; }
+
+/* The ride view: one stage with the bike and its magnet fields drawn in place, and the bridge app floating over it */
+.ride { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .07);
+  background: radial-gradient(110% 95% at 32% 38%, #23243a 0%, #161827 55%, #0d0e15 100%); box-shadow: 0 30px 60px -32px rgba(0, 0, 0, .7); }
+.view { position: relative; min-width: 0; perspective: 1600px; }
+.view canvas { display: block; width: 100%; height: clamp(460px, 74vh, 680px); }
+.view-tools { position: absolute; top: 16px; left: 18px; z-index: 2; display: flex; gap: 8px; }
+.tool { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .06); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); cursor: pointer; transition: background .15s; }
+.tool:hover { background: rgba(255, 255, 255, .13); }
+.tool:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.tool svg { width: 18px; height: 18px; }
+
+/* the bridge app: a phone floating over the scene, turned slightly towards the bike, showing the live Ride screen */
+.app-col { position: absolute; top: 4%; bottom: 4%; right: 5%; justify-content: center; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; perspective: 1600px; pointer-events: none; }
+.inset, .cal-phone { position: relative; height: 88%; aspect-ratio: 9 / 19; margin: 0; padding: 7px; border-radius: 40px;
+  background: linear-gradient(150deg, #3a404a 0%, #121418 22%, #0a0b0d 60%, #2a2f37 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 0 0 3px #050608, 0 50px 90px -30px rgba(0, 0, 0, .85), 0 20px 40px -20px rgba(0, 0, 0, .6), 0 0 80px -20px rgba(139, 124, 255, .3);
+  transform: rotateY(-14deg) rotateX(2deg); transform-origin: right center; }
+.inset::after, .cal-phone::after { content: ""; position: absolute; inset: 7px; border-radius: 33px; background: linear-gradient(118deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .03) 30%, rgba(255, 255, 255, 0) 31%); pointer-events: none; }
+.inset::before, .cal-phone::before { content: ""; position: absolute; right: -3px; top: 22%; width: 3px; height: 10%; border-radius: 0 3px 3px 0; background: #2a2f37; }
+/* the app's own dark theme, scaled to the phone with container units */
+.app { --a-bg: #000; --a-surface: #1c1c1e; --a-line: #38383a; --a-muted: #8e8e93; --a-accent: var(--brand); --a-ok: #30d158; --a-ok-bg: #0f2a17;
+  container-type: inline-size; height: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: 33px; background: var(--a-bg); color: #fff;
+  font-family: var(--font-ui); }
+.app-head { display: flex; align-items: center; gap: 3cqw; padding: 9cqw 5cqw 3.5cqw; background: var(--a-surface); border-bottom: 1px solid var(--a-line); }
+.app-head b { font-size: 5.6cqw; font-weight: 700; }
+.app-conn { display: inline-flex; align-items: center; gap: 2cqw; font-size: 4.4cqw; color: var(--a-muted); }
+.app-conn i { width: 3.4cqw; height: 3.4cqw; border-radius: 50%; background: var(--a-ok); }
+.app-body { flex: 1; display: flex; flex-direction: column; gap: 4cqw; padding: 4cqw; min-height: 0; }
+.app-chips { display: flex; gap: 2cqw; }
+.app-chip { display: inline-flex; align-items: center; gap: 1.5cqw; padding: 1.6cqw 3.4cqw; border-radius: 999px; border: 1px solid transparent; background: var(--a-surface); font-size: 4.1cqw; font-weight: 700; color: var(--a-muted); }
+.app-chip.on { color: var(--a-ok); background: var(--a-ok-bg); border-color: var(--a-ok); }
+.app-chip span { font-size: 3.4cqw; }
+.app-gear { flex: 1; display: grid; place-items: center; min-height: 0; }
+.app-ring { width: 68cqw; aspect-ratio: 1; border-radius: 50%; border: 2.2cqw solid var(--a-accent); background: var(--a-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.app-ring small { font-size: 3.8cqw; font-weight: 600; letter-spacing: .14em; color: var(--a-muted); }
+.app-ring b { font-size: 34cqw; line-height: 1; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.app-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.6cqw; }
+.app-tile { background: var(--a-surface); border-radius: 4cqw; padding: 3cqw 1cqw 3.4cqw; text-align: center; min-width: 0; }
+.app-tile b { display: block; font-size: 10.5cqw; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.app-tile span { display: block; font-size: 3.6cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--a-muted); }
+.app-tile em { display: block; font-style: normal; font-size: 3cqw; font-weight: 600; color: var(--a-muted); margin-top: .5cqw; }
+.app-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--a-surface); border-top: 1px solid var(--a-line); padding-bottom: 4cqw; }
+.app-nav span { padding: 3.6cqw 0 2.4cqw; text-align: center; font-size: 3.7cqw; font-weight: 700; color: var(--a-muted); border-top: 1cqw solid transparent; }
+.app-nav span:first-child { color: #fff; border-top-color: var(--a-accent); }
+
+.tag { position: absolute; transform: translate(-50%, -135%); font-size: .64rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); background: rgba(15, 18, 22, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, .09); padding: 3px 9px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+.tag.hot { color: var(--hot); }
+.tag.gear { color: var(--hi); }
+.tag.sense { color: var(--sense); }
+
+/* round play / pause */
+.play { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .06); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; transition: background .15s; }
+.play:hover { background: rgba(255, 255, 255, .13); }
+.play svg { width: 18px; height: 18px; fill: currentColor; }
+.play:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* narrow screens: still side by side. A taller stage, the bike drawn smaller on the left,
+   the phone on the right with the less important details dropped so the numbers stay big. */
+@media (max-width: 46rem) {
+  .ride { margin-inline: -16px; border-radius: 0; border-inline: 0; }
+  .view canvas { height: clamp(440px, 128vw, 580px); }
+  .view-tools { top: 12px; left: 12px; gap: 6px; }
+  .tool { width: 34px; height: 34px; }
+  .app-col { right: 3%; top: 3%; bottom: 62px; }
+  .inset { height: 100%; padding: 5px; border-radius: 26px; transform: rotateY(-8deg); }
+  .cal-phone { padding: 5px; border-radius: 26px; }
+  .cal-phone::after { inset: 5px; border-radius: 21px; }
+  .inset::after { inset: 5px; border-radius: 21px; }
+  .app { border-radius: 21px; }
+  .tag { font-size: .54rem; letter-spacing: .06em; padding: 2px 6px; }
+}
+@container (max-width: 240px) {
+  .app-head { padding: 8cqw 5cqw 4cqw; }
+  .app-head b { font-size: 7.4cqw; }
+  .app-conn { display: none; }
+  .app-chips { display: none; }
+  .app-ring { width: 80cqw; border-width: 3cqw; }
+  .app-ring small { font-size: 5.4cqw; }
+  .app-ring b { font-size: 40cqw; }
+  .app-tiles { grid-template-columns: 1fr; gap: 3cqw; }
+  .app-tile { display: flex; align-items: baseline; justify-content: space-between; padding: 2.4cqw 5cqw; border-radius: 5cqw; }
+  .app-tile b { font-size: 13cqw; }
+  .app-tile span { font-size: 5.6cqw; }
+  .app-tile em { display: none; }
+  .app-nav span { font-size: 0; padding: 3cqw 0 2cqw; }
+  .app-nav span::before { content: ""; display: block; width: 8cqw; height: 8cqw; margin: 0 auto; border-radius: 50%; background: currentColor; opacity: .5; }
+  .app-nav span:first-child::before { opacity: 1; }
+}
+
+/* the dock: play / pause, cadence and gear, side by side over the scene */
+.dock { position: absolute; left: 18px; bottom: 18px; z-index: 2; display: flex; align-items: center; gap: 26px; }
+.ctl { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.ctl .ico { width: 18px; height: 18px; flex: none; filter: drop-shadow(0 1px 4px rgba(0, 0, 0, .6)); }
+.crank-row .ico { color: var(--hot); }
+.lever-row .ico { color: var(--hi); }
+.ctl input { width: 140px; height: 24px; margin: 0; }
+.ctl span { min-width: 4.4em; font-size: .74rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+#crank { accent-color: var(--hot); }
+#lever { accent-color: var(--hi); }
+@media (max-width: 68rem) { .ctl input { width: 96px; } }
+@media (max-width: 46rem) {
+  .dock { left: 12px; right: 12px; bottom: 10px; gap: 18px; }
+  .ctl { flex: 1; min-width: 0; gap: 6px; }
+  .ctl input { width: 100%; min-width: 0; height: 32px; }
+  .ctl span { min-width: 3.6em; font-size: .66rem; }
+}
+
+/* calibration: the app's Calibrate screen on the left, the pitch and steps on the right */
+.calib { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(20px, 6vw, 80px); width: min(100%, 60rem); margin: 0 auto; padding-block: 72px 32px; perspective: 1600px; }
+.cal-copy { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cal-copy h2 { text-wrap: balance; }
+.cal-copy .pitch { font-size: clamp(1rem, 2vw, 1.2rem); max-width: 36ch; }
+.cal-steps { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 16px; counter-reset: cs; }
+.cal-steps li { counter-increment: cs; display: grid; grid-template-columns: 2rem minmax(0, 1fr); column-gap: 12px; }
+.cal-steps li::before { content: counter(cs); grid-row: span 2; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--brand); color: #fff; font-size: .9rem; font-weight: 700; }
+.cal-steps b { font-weight: 600; font-size: 1.05rem; align-self: center; }
+.cal-steps span { color: var(--muted); font-size: .92rem; }
+.cal-phone { width: clamp(150px, 26vw, 290px); height: auto; transform: rotateY(12deg) rotateX(2deg); transform-origin: left center; }
+/* the Calibrate screen, drawn like the real app */
+.cal-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; gap: 3cqw; padding: 4cqw 5cqw; min-height: 0; }
+.cal-cad { width: 80%; }
+.cal-track { position: relative; height: 1.2cqw; border-radius: 1cqw; background: #2c2c2e; margin: 4cqw 0 1.5cqw; }
+.cal-win { position: absolute; left: 28.6%; width: 28.6%; top: 0; bottom: 0; border-radius: inherit; background: var(--a-ok); }
+.cal-track b { position: absolute; left: 47%; top: 50%; transform: translate(-50%, -50%); width: 9cqw; height: 9cqw; border-radius: 50%; background: var(--a-ok); color: #04210f; display: grid; place-items: center; font-size: 3.6cqw; font-weight: 800; }
+.cal-ticks { position: relative; height: 4cqw; font-size: 3cqw; font-weight: 600; color: var(--a-muted); }
+.cal-ticks span { position: absolute; transform: translateX(-50%); }
+.cal-disc { width: 92%; flex: none; margin-top: 2cqw; }
+.cal-say { text-align: center; }
+.cal-say b { display: block; font-size: 6.6cqw; font-weight: 700; }
+.cal-say span { display: block; font-size: 4cqw; color: var(--a-muted); }
+.cal-count { font-size: 3.8cqw; color: var(--a-muted); }
+.cal-app .app-nav span:first-child { color: var(--a-muted); border-top-color: transparent; }
+.cal-app .app-nav span.on { color: #fff; border-top-color: var(--a-accent); }
+@media (max-width: 46rem) {
+  .calib { padding-block: 48px 16px; gap: 18px; }
+  .cal-phone { width: 40vw; transform: rotateY(8deg); }
+  .cal-copy h2 { font-size: 1.35rem; }
+  .cal-copy .pitch { font-size: .9rem; }
+  .cal-steps { gap: 10px; }
+  .cal-steps li { grid-template-columns: 1.5rem minmax(0, 1fr); column-gap: 8px; }
+  .cal-steps li::before { width: 1.5rem; height: 1.5rem; font-size: .72rem; }
+  .cal-steps b { font-size: .85rem; }
+  .cal-steps span { font-size: .76rem; }
+}
+.err { color: var(--hot); }
+</style>
+
+<div class="wrap">
+  <section class="hero" aria-label="About the Keiser M3 Bridge">
+    <span class="eyebrow">Keiser M3 Bridge <span class="status">In development</span></span>
+    <h1>Your Keiser M3.<br>Now in Zwift.</h1>
+    <p class="pitch">Upgrade your Keiser M3 to a smart trainer in seconds, with power and cadence detected wirelessly and broadcast over Bluetooth.</p>
+    <ul class="facts" aria-label="Key facts">
+      <li><span class="fact-n">0</span><span class="fact-l">wires cut</span></li>
+      <li><span class="fact-n">±2 rpm</span><span class="fact-l">cadence accuracy</span></li>
+      <li><span class="fact-n">50</span><span class="fact-l">readings a second</span></li>
+    </ul>
+  </section>
+
+  <ol class="how" aria-label="How it works">
+    <li>Reads your gear from the magnets on the flywheel.</li>
+    <li>Counts every pedal turn from the crank magnet.</li>
+    <li>Sends watts to Zwift as a standard power meter.</li>
+  </ol>
+
+  <header class="sec-head">
+    <h2>How it works.</h2>
+  </header>
+
+  <section class="ride" aria-label="The bike with its magnet fields">
+    <div class="view" id="bikeStage">
+      <div class="view-tools" aria-label="View">
+        <button type="button" class="tool" id="rotL" aria-label="Rotate left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 9a6 6 0 1 1 1.8 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M2.5 5.5 5 9.4 8.8 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tool" id="rotR" aria-label="Rotate right"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15 9a6 6 0 1 0-1.8 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.5 5.5 15 9.4 11.2 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tool" id="zoomIn" aria-label="Zoom in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="tool" id="zoomOut" aria-label="Zoom out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+      <canvas id="bikeCanvas" aria-label="3D model of the Keiser M3 with the field lines of the crank magnet and the gear magnets drawn in place around the sensor board"></canvas>
+      <div class="dock" aria-label="Controls">
+        <button type="button" class="play" id="play" aria-label="Pause the animation" aria-pressed="true">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path id="playIcon" d="M5 3h3.5v14H5zM11.5 3H15v14h-3.5z"/></svg>
+        </button>
+        <label class="ctl crank-row" title="Cadence"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.8 9.8 L13.6 13.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="11" y="14.6" width="7.6" height="3" rx="1.3" fill="currentColor"/></svg><input type="range" id="crank" min="0" max="120" step="1" value="40" aria-label="Cadence"><span id="crankVal"></span></label>
+        <label class="ctl lever-row" title="Gear lever"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M16.09 8.02 L18.45 8.39 L18.45 11.61 L16.09 11.98 L15.70 12.91 L17.11 14.83 L14.83 17.11 L12.91 15.70 L11.98 16.09 L11.61 18.45 L8.39 18.45 L8.02 16.09 L7.09 15.70 L5.17 17.11 L2.89 14.83 L4.30 12.91 L3.91 11.98 L1.55 11.61 L1.55 8.39 L3.91 8.02 L4.30 7.09 L2.89 5.17 L5.17 2.89 L7.09 4.30 L8.02 3.91 L8.39 1.55 L11.61 1.55 L11.98 3.91 L12.91 4.30 L14.83 2.89 L17.11 5.17 L15.70 7.09 Z M12.7 10 A2.7 2.7 0 1 1 7.3 10 A2.7 2.7 0 1 1 12.7 10 Z"/></svg><input type="range" id="lever" min="0" max="1" step="0.001" value="0.3" aria-label="Gear lever"><span id="leverVal"></span></label>
+      </div>
+      <div class="app-col">
+      <figure class="inset" aria-label="The bridge app's Ride screen, following the animation">
+        <div class="app">
+          <div class="app-head"><b>M3 Bridge</b><span class="app-conn"><i></i>Connected</span></div>
+          <div class="app-body">
+            <div class="app-chips"><span class="app-chip"><span>P</span>Pod</span><span class="app-chip on"><span>Z</span>Zwift</span><span class="app-chip on"><span>V</span>Calibrated</span></div>
+            <div class="app-gear"><div class="app-ring"><small>GEAR</small><b id="cGear">-</b></div></div>
+            <div class="app-tiles">
+              <div class="app-tile"><b id="cWatts">-</b><span>Watts</span></div>
+              <div class="app-tile"><b id="cRpm">-</b><span>RPM</span><em>from crank magnet</em></div>
+              <div class="app-tile"><b id="cRes">-</b><span>Resist %</span></div>
+            </div>
+          </div>
+          <div class="app-nav" aria-hidden="true"><span>Ride</span><span>Calibrate</span><span>Diagnose</span><span>Console</span></div>
+        </div>
+      </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="calib" aria-labelledby="calib-h">
+    <figure class="cal-phone" aria-label="The bridge app's Calibrate screen: shift up to gear 7, 6 of 25 points captured">
+      <div class="app cal-app">
+        <div class="app-head"><b>M3 Bridge</b><span class="app-conn"><i></i>Connected</span></div>
+        <div class="cal-body">
+          <div class="cal-cad"><div class="cal-track"><i class="cal-win"></i><b>72</b></div><div class="cal-ticks"><span style="left:28.6%">60</span><span style="left:57.2%">80</span></div></div>
+          <svg class="cal-disc" viewBox="-130 -130 260 260" aria-hidden="true"><circle cx="0.0" cy="-118.0" r="5.5" fill="#30d158"/><circle cx="29.3" cy="-114.3" r="5.5" fill="#30d158"/><circle cx="56.8" cy="-103.4" r="5.5" fill="#30d158"/><circle cx="80.8" cy="-86.0" r="5.5" fill="#30d158"/><circle cx="99.6" cy="-63.2" r="5.5" fill="#30d158"/><circle cx="112.2" cy="-36.5" r="5.5" fill="#30d158"/><circle cx="117.8" cy="-7.4" r="7.5" fill="#d1d1d6"/><circle cx="115.9" cy="22.1" r="5.5" fill="#48484a"/><circle cx="106.8" cy="50.2" r="5.5" fill="#48484a"/><circle cx="90.9" cy="75.2" r="5.5" fill="#48484a"/><circle cx="69.4" cy="95.5" r="5.5" fill="#48484a"/><circle cx="43.4" cy="109.7" r="5.5" fill="#48484a"/><circle cx="14.8" cy="117.1" r="5.5" fill="#48484a"/><circle cx="-14.8" cy="117.1" r="5.5" fill="#48484a"/><circle cx="-43.4" cy="109.7" r="5.5" fill="#48484a"/><circle cx="-69.4" cy="95.5" r="5.5" fill="#48484a"/><circle cx="-90.9" cy="75.2" r="5.5" fill="#48484a"/><circle cx="-106.8" cy="50.2" r="5.5" fill="#48484a"/><circle cx="-115.9" cy="22.1" r="5.5" fill="#48484a"/><circle cx="-117.8" cy="-7.4" r="5.5" fill="#48484a"/><circle cx="-112.2" cy="-36.5" r="5.5" fill="#48484a"/><circle cx="-99.6" cy="-63.2" r="5.5" fill="#48484a"/><circle cx="-80.8" cy="-86.0" r="5.5" fill="#48484a"/><circle cx="-56.8" cy="-103.4" r="5.5" fill="#48484a"/><circle cx="-29.3" cy="-114.3" r="5.5" fill="#48484a"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(-86)"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(34)"/><circle r="96" fill="none" stroke="#3a3a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="186 417.2" transform="rotate(154)"/><circle r="80" fill="#1c1c1e" stroke="#3a3a3c" stroke-width="2"/><text y="-34" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="2.5" fill="#8e8e93">GEAR</text><text y="44" text-anchor="middle" font-size="92" font-weight="700" fill="#fff">7</text></svg>
+          <div class="cal-say"><b>Shift up to 7</b><span>Stop as soon as it shows 7</span></div>
+          <div class="cal-count">6 of 25</div>
+        </div>
+        <div class="app-nav" aria-hidden="true"><span>Ride</span><span class="on">Calibrate</span><span>Diagnose</span><span>Console</span></div>
+      </div>
+    </figure>
+    <div class="cal-copy">
+      <h2 id="calib-h">Matched to your bike in minutes.</h2>
+      <p class="pitch">M3 Bridge learns your pedal stroke and every gear position, then lines its numbers up with your Keiser console. What you see on the bike is what Zwift sees.</p>
+      <ol class="cal-steps" aria-label="Calibration steps">
+        <li><b>Pedal for ten seconds.</b><span>It learns your cadence.</span></li>
+        <li><b>Shift through every gear.</b><span>Each one is matched to your console.</span></li>
+        <li><b>Ride.</b><span>Zwift sees what your console shows.</span></li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = /*DATA*/;
+(function () {
+  if (!window.THREE || !THREE.OrbitControls) {
+    document.querySelector('.sec-head h2').insertAdjacentHTML('afterend', '<p class="lede err">The 3D library did not load, so the views are empty. Reload the page to try again.</p>');
+    return;
+  }
+  const $ = (id) => document.getElementById(id);
+  const css = getComputedStyle(document.documentElement);
+  const C = (n) => new THREE.Color(css.getPropertyValue(n).trim());
+  const COL = { lo: C('--lo'), hi: C('--hi'), hot: C('--hot'), stage: C('--stage'), muted: C('--muted'), line: C('--line') };
+  const levColor = (t) => COL.lo.clone().lerp(COL.hi, Math.max(0, Math.min(1, t)));
+  const phaseColor = (ph) => new THREE.Color().setHSL((0.97 + ph) % 1, 0.75, 0.6);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ------------------------------------------------------------- Keiser power model (from the bridge sketch; KBikeBLE, MIT)
+  const EDGES = [0.00, 7.51, 11.40, 14.59, 18.57, 20.12, 23.32, 24.87, 27.03, 29.53, 31.87, 34.20, 36.70, 39.72, 42.83, 46.03, 49.14, 53.11, 56.99, 60.97, 66.49, 72.02, 78.41, 89.38, 100.00];
+  const P90 = [20.9, 24.3, 27.7, 33.5, 40.4, 45.0, 54.3, 61.3, 71.7, 84.4, 98.3, 118.0, 136.6, 163.3, 193.4, 225.9, 261.9, 308.3, 360.5, 415.0, 497.4, 577.5, 671.5, 796.8, 878.0];
+  const interp = (xs, ys, x) => { if (x <= xs[0]) return ys[0]; for (let i = 1; i < xs.length; i++) if (x < xs[i]) return ys[i - 1] + (x - xs[i - 1]) / (xs[i] - xs[i - 1]) * (ys[i] - ys[i - 1]); return ys[ys.length - 1]; };
+  // power = P90(resistance) x (PC2 + PB2*rpm + PA2*rpm^2), 0 below 1 rpm, capped at 2000 W, as in the firmware
+  const watts = (res, rpm) => rpm < 1 ? 0 : Math.min(2000, Math.max(0, interp(EDGES, P90, res) * (-2.70e-3 + 6.79e-3 * rpm + 4.75e-5 * rpm * rpm)));
+  const gearOf = (res) => { for (let g = 1; g <= 24; g++) if (res < EDGES[g]) return g; return 24; };
+  // The 24 gears are evenly spaced along the lever's travel. Calibration ties each gear's
+  // first position to its Keiser resistance (EDGES), and the firmware interpolates between them.
+  const levToRes = (lev) => {
+    const x = Math.max(0, Math.min(1, lev)) * 24, i = Math.min(23, Math.floor(x));
+    return EDGES[i] + (x - i) * (EDGES[i + 1] - EDGES[i]);
+  };
+  const gearMidLev = (g) => (g - 0.5) / 24;
+
+  // ------------------------------------------------------------- shared stage helper
+  function makeStage(canvas, camPos, target, shift) {
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 5000);
+    camera.position.copy(camPos);
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.target.copy(target);
+    controls.enabled = false;           // the view moves only with the buttons, so scrolling the page can't move it
+    controls.update();
+    const resize = () => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // on wide stages, frame the scene left of centre to leave room for the phone
+      const narrow = w < 740;
+      camera.zoom = shift && narrow ? Math.min(1, w / h * 0.48) : 1;   // fit the bike in the left half
+      if (shift && (narrow || w / h > 1.25)) camera.setViewOffset(w, h, w * (narrow ? 0.26 : shift), 0, w, h); else camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+    };
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+    return { renderer, scene, camera, controls, canvas };
+  }
+  function tag(stageEl, text, cls) {
+    const el = document.createElement('div');
+    el.className = 'tag' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    stageEl.appendChild(el);
+    return el;
+  }
+  function placeTag(el, pos, st) {
+    const v = pos.clone().project(st.camera);
+    const vis = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+    el.hidden = !vis;
+    if (!vis) return;
+    el.style.left = ((v.x + 1) / 2 * st.canvas.clientWidth) + 'px';
+    el.style.top = ((1 - v.y) / 2 * st.canvas.clientHeight) + 'px';
+  }
+  // ------------------------------------------------------------- the bike (x forward, y up, z = rider's left)
+  const bike = makeStage($('bikeCanvas'), new THREE.Vector3(-80, 82, 176), new THREE.Vector3(-8, 40, 0), 0.14);
+  bike.renderer.outputEncoding = THREE.sRGBEncoding;
+  bike.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  bike.renderer.toneMappingExposure = 1.05;
+  const lin = (c) => new THREE.Color(c).convertSRGBToLinear();
+  // a soft studio environment for smooth reflections: bright softbox above, dark floor
+  (() => {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+    const g = c.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, 256);
+    sky.addColorStop(0, '#8d97a6'); sky.addColorStop(0.45, '#39404b'); sky.addColorStop(0.55, '#1c2027'); sky.addColorStop(1, '#0b0d10');
+    g.fillStyle = sky; g.fillRect(0, 0, 512, 256);
+    [[150, 46, 70, 'rgba(255,255,255,.95)'], [380, 60, 60, 'rgba(180,160,255,.55)']].forEach(([x, y, r, col]) => {
+      const b = g.createRadialGradient(x, y, 0, x, y, r); b.addColorStop(0, col); b.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = b; g.fillRect(0, 0, 512, 256);
+    });
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping; tex.encoding = THREE.sRGBEncoding;
+    const pmrem = new THREE.PMREMGenerator(bike.renderer);
+    bike.scene.environment = pmrem.fromEquirectangular(tex).texture;
+    pmrem.dispose(); tex.dispose();
+  })();
+  bike.scene.add(new THREE.HemisphereLight(0xe8eef7, 0x1a1e24, 0.35));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(-60, 120, 110); bike.scene.add(key);
+  const rim = new THREE.DirectionalLight(0xb4a8ff, 0.7); rim.position.set(80, 60, -120); bike.scene.add(rim);
+  const metal = new THREE.MeshStandardMaterial({ color: lin(0x7c8592), metalness: 0.7, roughness: 0.28 });   // satin aluminium frame
+  const dark = new THREE.MeshStandardMaterial({ color: lin(0x3a414b), metalness: 0.5, roughness: 0.4 });
+  const black = new THREE.MeshStandardMaterial({ color: lin(0x1a1d22), metalness: 0.2, roughness: 0.45 });
+  // soft contact shadow under the bike
+  const shadowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(0,0,0,.55)'); grd.addColorStop(0.6, 'rgba(0,0,0,.2)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(190, 110), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(-5, 0.3, 0); bike.scene.add(floor);
+  // every part is round: rods with ball ends, pucks with rounded rims, an oval saddle
+  function rod(a, b, r, mat, parent) {
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), g = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, A.distanceTo(B), 40, 1, true), mat);
+    m.position.copy(A).add(B).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+    const cap = new THREE.SphereGeometry(r, 40, 20);
+    const ca = new THREE.Mesh(cap, mat), cb = new THREE.Mesh(cap, mat);
+    ca.position.copy(A); cb.position.copy(B);
+    g.add(m, ca, cb);
+    (parent || bike.scene).add(g);
+    return g;
+  }
+  function puck(center, r, thick, mat, parent) {
+    const h = thick / 2, e = Math.min(h, r * 0.4), pts = [new THREE.Vector2(0, -h)];
+    for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 + Math.PI * i / 12; pts.push(new THREE.Vector2(r - e + e * Math.cos(a), h * Math.sin(a))); }
+    pts.push(new THREE.Vector2(0, h));
+    const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 96), mat);
+    m.rotation.x = Math.PI / 2;
+    m.position.set(...center);
+    (parent || bike.scene).add(m);
+    return m;
+  }
+  rod([-58, 3, -26], [-58, 3, 26], 2.2, dark); rod([48, 3, -24], [48, 3, 24], 2.2, dark);
+  rod([-58, 3, 0], [48, 3, 0], 2.6, dark);
+  rod([18, 4, 0], [40, 92, 0], 3.2, metal);
+  rod([-12, 6, 0], [-20, 84, 0], 2.8, metal);
+  rod([-12, 6, 0], [18, 4, 0], 3, metal);
+  rod([-4, 30, 0], [24, 40, 0], 2.6, metal);
+  rod([-20, 84, 0], [-20, 89, 0], 1.6, dark);
+  const saddle = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), black);
+  saddle.scale.set(13, 2.4, 6.5); saddle.position.set(-20, 91, 0); bike.scene.add(saddle);
+  rod([40, 92, -22], [40, 92, 22], 1.6, black);
+  rod([40, 92, 0], [52, 96, 0], 1.6, black);
+  const CRANK = new THREE.Vector3(0, 30, 0);
+  puck([0, 30, 7], 18, 1.6, new THREE.MeshStandardMaterial({ color: lin(0x8a939f), metalness: 0.5, roughness: 0.32 }));
+  const crankGroup = new THREE.Group(); crankGroup.position.copy(CRANK); bike.scene.add(crankGroup);
+  rod([0, 0, 10], [0, -17, 10], 1.3, black, crankGroup);
+  rod([0, 0, -10], [0, 17, -10], 1.3, black, crankGroup);
+  rod([-4.5, -17, 14], [4.5, -17, 14], 1.4, black, crankGroup);
+  rod([-4.5, 17, -14], [4.5, 17, -14], 1.4, black, crankGroup);
+  const FLY = new THREE.Vector3(-40, 27, 9);
+  puck([FLY.x, FLY.y, FLY.z], 24, 1.6, new THREE.MeshStandardMaterial({ color: lin(0x8f98a4), metalness: 0.6, roughness: 0.3 }));
+  puck([FLY.x, FLY.y, FLY.z + 1], 4, 2.5, dark);
+  rod([-2, 48, 7.5], [FLY.x, FLY.y + 4, 7.5], 0.5, black);
+  rod([-2, 12, 7.5], [FLY.x, FLY.y - 4, 7.5], 0.5, black);
+  const PIVOT = new THREE.Vector3(-16, 22, 9);
+  const holder = new THREE.Group(); holder.position.copy(PIVOT); bike.scene.add(holder);
+  rod([0, 0, 0], [-14, 0, 0], 1.5, dark, holder);
+  const magMat = new THREE.MeshStandardMaterial({ color: lin(COL.hi.getHex()), metalness: 0.3, roughness: 0.35, emissive: COL.hi, emissiveIntensity: 0.2 });
+  puck([-14, 0, 2.6], 3.2, 1.8, magMat, holder);
+  puck([-14, 0, -2.6], 3.2, 1.8, magMat, holder);
+  const leverGroup = new THREE.Group(); leverGroup.position.set(36, 78, 3.5); bike.scene.add(leverGroup);
+  rod([0, 0, 0], [0, 11, 0], 0.8, new THREE.MeshStandardMaterial({ color: lin(COL.hi.getHex()), roughness: 0.4 }), leverGroup);
+  const BOARD = new THREE.Vector3(-17, 12, 12);
+  const board = puck([BOARD.x, BOARD.y, BOARD.z], 3, 1.3, new THREE.MeshStandardMaterial({ color: lin(0x5560e0), emissive: 0x3b3fc0, emissiveIntensity: 0.6, metalness: 0.2, roughness: 0.3 }));
+  const toBoard = Math.atan2(BOARD.y - CRANK.y, BOARD.x - CRANK.x);
+  const crankMag = new THREE.Mesh(new THREE.SphereGeometry(1.8, 40, 24), new THREE.MeshStandardMaterial({ color: COL.hot, emissive: COL.hot, emissiveIntensity: 0.6 }));
+  bike.scene.add(crankMag);
+  const bikeStage = $('bikeStage');
+  const bikeTags = {
+    board: [tag(bikeStage, 'Sensor', 'sense'), BOARD.clone().add(new THREE.Vector3(0, -17, 0))],
+    mag: [tag(bikeStage, 'Crank magnet', 'hot'), new THREE.Vector3(CRANK.x, CRANK.y + 22, 8.2)],
+    res: [tag(bikeStage, 'Gear magnets', 'gear'), new THREE.Vector3(-31, 31, 12)],
+    lev: [tag(bikeStage, 'Gear lever'), new THREE.Vector3(36, 92, 3.5)],
+  };
+
+  // ------------------------------------------------------------- field data (for the readout)
+  // gear path (recorded with the crank parked) binned by lever position
+  function binned(list, bins) {
+    const acc = Array.from({ length: bins }, () => ({ s: [0, 0, 0], n: 0 }));
+    list.forEach((d) => { const b = Math.min(bins - 1, Math.max(0, Math.floor(d.lev * bins))); acc[b].n++; d.p.forEach((v, k) => acc[b].s[k] += v); });
+    const out = [];
+    acc.forEach((a, i) => { if (a.n) out.push({ lev: (i + 0.5) / bins, p: a.s.map((v) => v / a.n) }); });
+    return out;
+  }
+  const gearTrack = binned(DATA.gear, 40);
+  const at = (lev) => {
+    const t = gearTrack;
+    if (lev <= t[0].lev) return t[0].p;
+    if (lev >= t[t.length - 1].lev) return t[t.length - 1].p;
+    for (let i = 1; i < t.length; i++) if (lev <= t[i].lev) { const a = t[i - 1], b = t[i], f = (lev - a.lev) / (b.lev - a.lev); return a.p.map((v, k) => v + f * (b.p[k] - v)); }
+  };
+  // crank loop relative to its own centre (one recorded turn)
+  const turn0 = DATA.crank.filter((d) => d.turn === 0);
+  const lctr = [0, 1, 2].map((k) => turn0.reduce((s, d) => s + d.p[k], 0) / turn0.length);
+  const loopAt = (ph) => {
+    const n = turn0.length, x = ((ph % 1) + 1) % 1 * n, i = Math.floor(x) % n, j = (i + 1) % n, f = x - Math.floor(x);
+    return turn0[i].p.map((v, k) => v + f * (turn0[j].p[k] - v));
+  };
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const GEAR_MAX = dist(at(1), at(0));
+  const CRANK_MAX = Math.max(...turn0.map((d) => dist(d.p, lctr)));
+
+  // ------------------------------------------------------------- the magnets' fields, drawn in place on the bike
+  // Textbook dipole field lines (r = L·sin²θ about the magnet's axis) with soft pulses
+  // flowing north to south. Each set rides along with its magnet.
+  const flowTime = { value: 0 };
+  function flowMat(color, gain) {
+    return new THREE.ShaderMaterial({
+      uniforms: { uTime: flowTime, uColor: { value: new THREE.Color(color) }, uGain: { value: gain } },
+      vertexShader: 'attribute float u; attribute float fade; varying float vU; varying float vF; void main() { vU = u; vF = fade; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 uColor; uniform float uTime; uniform float uGain; varying float vU; varying float vF; void main() { float p = fract(vU * 0.1 - uTime * 0.35) - 0.5; float pulse = exp(-p * p * 28.0); gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.3 * pulse), (0.4 + 0.6 * pulse) * vF * uGain); }',
+      transparent: true, depthWrite: false, depthTest: false,
+    });
+  }
+  // a thin tube along pts, with its length along the line (u) for the flow
+  function flowTube(pts, mats, fade) {
+    const SEG = Math.max(24, (pts.length - 1) * 2), RAD = 10, g = new THREE.Group();
+    const curve = new THREE.CatmullRomCurve3(pts), len = curve.getLength();
+    mats.forEach(([mat, radius]) => {
+      const geo = new THREE.TubeGeometry(curve, SEG, radius, RAD, false);
+      const n = geo.attributes.position.count, u = new Float32Array(n), f = new Float32Array(n).fill(fade);
+      for (let i = 0; i < n; i++) u[i] = Math.floor(i / (RAD + 1)) / SEG * len;
+      geo.setAttribute('u', new THREE.BufferAttribute(u, 1));
+      geo.setAttribute('fade', new THREE.BufferAttribute(f, 1));
+      g.add(new THREE.Mesh(geo, mat));
+    });
+    return g;
+  }
+  const lineMats = (color) => [[flowMat(color, 1), 0.2], [flowMat(color, 0.18), 0.75]];   // core, halo
+  function fieldLines(axis, Ls, planes, mats) {
+    const g = new THREE.Group(), a = axis.clone().normalize();
+    const ref = Math.abs(a.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const p0 = ref.sub(a.clone().multiplyScalar(ref.dot(a))).normalize();
+    Ls.forEach((L, li) => {
+      const fade = 1 - 0.5 * li / Math.max(1, Ls.length - 1);
+      for (let k = 0; k < planes; k++) {
+        const v = p0.clone().applyAxisAngle(a, k * 2 * Math.PI / planes), pts = [];
+        for (let i = 0; i <= 96; i++) {
+          const th = 0.06 + (Math.PI - 0.12) * i / 96, r = L * Math.sin(th) ** 2;
+          pts.push(a.clone().multiplyScalar(r * Math.cos(th)).addScaledVector(v, r * Math.sin(th)));
+        }
+        g.add(flowTube(pts, mats, fade));
+      }
+    });
+    return g;
+  }
+  const glowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.3, 'rgba(255,255,255,.45)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function glow(color, size) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
+    s.scale.set(size, size, 1);
+    return s;
+  }
+  // crank magnet: a point dipole whose axis points out from the crank (at the board at 0°)
+  const crankField = new THREE.Group();
+  crankField.add(fieldLines(new THREE.Vector3(1, 0, 0), [5, 9, 13.5, 19], 4, lineMats(COL.hot)), glow(COL.hot, 12));
+  bike.scene.add(crankField);
+  const orbit = new THREE.Mesh(new THREE.TorusGeometry(18, 0.12, 8, 192), new THREE.MeshBasicMaterial({ color: COL.hot, transparent: true, opacity: 0.3, depthWrite: false }));
+  orbit.position.set(CRANK.x, CRANK.y, 8.2); bike.scene.add(orbit);
+  // gear magnets: drawn as one bar magnet, north end turned towards the sensor
+  const gearMats = lineMats(COL.hi);
+  const gearField = fieldLines(new THREE.Vector3(1, 0, 0), [6, 10, 15, 21], 4, gearMats);
+  [-1, 1].forEach((d) => gearField.add(flowTube(Array.from({ length: 9 }, (_, i) => new THREE.Vector3(d < 0 ? -9 + i : 1.5 + i, 0, 0)), gearMats, 1)));
+  gearField.add(glow(COL.hi, 10));
+  bike.scene.add(gearField);
+  // the sensor glows with how much field reaches it
+  const SENSE = C('--sense');
+  const sensorGlow = glow(SENSE, 8);
+  sensorGlow.position.copy(BOARD);
+  bike.scene.add(sensorGlow);
+
+  // ------------------------------------------------------------- state, animation and processing
+  // As on the bridge: the crank point moves continuously; the gear estimate is the
+  // average over each completed pedal turn, so it updates once per turn.
+  const S = { phase: 0.04, lever: +$('lever').value, rpm: 40, manualRpm: null, manualLever: false, playing: !reduceMotion };
+  const SCHEDULE = [3, 9, 15, 21, 24, 18, 12, 6];          // gears the animated rider shifts through: the lever's full travel
+  let schedIdx = 0, schedT = 0, lastT = 0;
+
+  function show() {
+    const ang = toBoard - S.phase * 2 * Math.PI;
+    crankMag.position.set(CRANK.x + 18 * Math.cos(ang), CRANK.y + 18 * Math.sin(ang), 8.2);
+    crankGroup.rotation.z = ang - toBoard;
+    crankField.position.copy(crankMag.position);
+    crankField.rotation.z = ang;
+    holder.rotation.z = -0.15 + S.lever * 0.9;
+    leverGroup.rotation.z = 0.9 - S.lever * 1.6;
+    holder.updateMatrixWorld();
+    const gp = holder.localToWorld(new THREE.Vector3(-14, 0, 0));
+    gearField.position.copy(gp);
+    gearField.rotation.z = Math.atan2(BOARD.y - gp.y, BOARD.x - gp.x);
+    const res = levToRes(S.lever), g = gearOf(res);
+    $('cGear').textContent = g;
+    $('cRpm').textContent = Math.round(S.rpm);
+    $('cWatts').textContent = Math.round(watts(res, S.rpm));
+    $('cRes').textContent = Math.round(res);
+    const gUT = dist(at(S.lever), at(0)), cUT = dist(loopAt(S.phase), lctr);
+    gearMats.forEach(([m]) => m.uniforms.uColor.value.copy(levColor(S.lever)));
+    sensorGlow.scale.setScalar(6 + 20 * Math.min(1, 0.6 * gUT / GEAR_MAX + 0.6 * cUT / CRANK_MAX));
+    $('crankVal').textContent = Math.round(S.rpm) + ' rpm';
+    $('leverVal').textContent = `gear ${g}`;
+  }
+  function setPlaying(on) {
+    S.playing = on;
+    $('play').setAttribute('aria-pressed', String(on));
+    $('play').setAttribute('aria-label', on ? 'Pause the animation' : 'Play the animation');
+    $('playIcon').setAttribute('d', on ? 'M5 3h3.5v14H5zM11.5 3H15v14h-3.5z' : 'M6 3l11 7-11 7z');
+    lastT = 0;
+  }
+  $('play').addEventListener('click', () => setPlaying(!S.playing));
+  // the sliders take over from the animated rider without stopping the ride
+  $('crank').addEventListener('input', (e) => { S.manualRpm = S.rpm = +e.target.value; show(); });
+  $('lever').addEventListener('input', (e) => { S.manualLever = true; S.lever = +e.target.value; show(); });
+  setPlaying(S.playing);
+  show();
+
+  // view buttons: orbit about the bike and zoom, eased
+  const HOME = bike.camera.position.clone().sub(bike.controls.target);
+  let viewAnim = null;
+  function moveView(turn, scale) {
+    const from = bike.camera.position.clone().sub(bike.controls.target);
+    const sph = new THREE.Spherical().setFromVector3(from);
+    const to = { theta: sph.theta + turn, radius: Math.max(HOME.length() * 0.45, Math.min(HOME.length() * 1.8, sph.radius * scale)) };
+    viewAnim = { t0: performance.now(), sph, to };
+  }
+  function stepView(t) {
+    if (!viewAnim) return;
+    const k = Math.min(1, (t - viewAnim.t0) / 420), e = 1 - Math.pow(1 - k, 3), a = viewAnim.sph;
+    const sp = new THREE.Spherical(a.radius + (viewAnim.to.radius - a.radius) * e, a.phi, a.theta + (viewAnim.to.theta - a.theta) * e);
+    bike.camera.position.copy(bike.controls.target).add(new THREE.Vector3().setFromSpherical(sp));
+    bike.camera.lookAt(bike.controls.target);
+    if (k >= 1) viewAnim = null;
+  }
+  $('rotL').addEventListener('click', () => moveView(-Math.PI / 6, 1));
+  $('rotR').addEventListener('click', () => moveView(Math.PI / 6, 1));
+  $('zoomIn').addEventListener('click', () => moveView(0, 0.8));
+  $('zoomOut').addEventListener('click', () => moveView(0, 1.25));
+
+  function tick(t) {
+    if (S.playing) {
+      const dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0;
+      lastT = t;
+      flowTime.value += dt;
+      // the rider: an easy steady cadence, shifting through a few gears
+      S.rpm = S.manualRpm !== null ? S.manualRpm : 40 + 2 * Math.sin(t / 3000);
+      if (!S.manualLever) {
+        schedT += dt;
+        if (schedT > 5) { schedT = 0; schedIdx = (schedIdx + 1) % SCHEDULE.length; }
+        const target = gearMidLev(SCHEDULE[schedIdx]);
+        S.lever += (target - S.lever) * (1 - Math.exp(-2.2 * dt));
+      }
+      S.phase = (S.phase + dt * S.rpm / 60) % 1;
+      if (S.manualRpm === null) $('crank').value = S.rpm;
+      if (!S.manualLever) $('lever').value = S.lever;
+      show();
+    }
+    stepView(t);
+    bike.renderer.render(bike.scene, bike.camera);
+    Object.values(bikeTags).forEach(([el, pos]) => pos && placeTag(el, pos, bike));
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
