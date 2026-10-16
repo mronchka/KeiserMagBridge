@@ -406,7 +406,11 @@ static bool      behindSent = false;            // N,behind already sent for thi
 static bool      fixArmed   = false;            // fix: the reading has been past the point
 static bool      backGate   = false;            // auto-redo: waiting for the reading to go back
 static float     backOld[3];                    // ...past the point it overshot (saved here)
+static bool      backRising = false;            // gone back: waiting for it to come up again
+static float     backMin    = 0;                // ...lowest reading so far (along the way back)
+static bool      backUpOk   = true;             // going back allowed: not right after an undo / going back
 static bool      behindNow  = false;            // set by calMovedOn: agreeing turns behind the last point
+static const float BACK_RISE_UT = 1.0f;         // after going back, come up this far before a point counts
 static float     capSum[3];
 static uint16_t  capCount   = 0;
 
@@ -1009,6 +1013,8 @@ static void calPrompt() {
   settleSince = 0;
   behindSent = false;
   backGate = false;
+  backRising = false;
+  behindNow = false;
   stabReset();
 }
 
@@ -1028,6 +1034,7 @@ static void calStart() {
   staging = false;
   calPass = PASS_UP;
   calDownMask = 0;
+  backUpOk = true;
   calLearnStart();
 }
 
@@ -1284,6 +1291,7 @@ static void calOnSample(const float b[3]) {
 
 // Store a calibration point and move on (shared by both capture methods).
 static void calStorePoint(const float b[3]) {
+  backUpOk = true;
   calRedo = false;
   pendingCap = false;
   settleSince = 0;
@@ -1363,6 +1371,7 @@ static bool calPrevRef(float prev[3], float dir[3], bool* hasDir) {
 static bool calMovedOn(const float mean[3], bool agreeing) {
   float prev[3], dir[3];
   bool hasDir;
+  behindNow = false;
   if (!calPrevRef(prev, dir, &hasDir)) return true;
   float d[3] = { mean[0] - prev[0], mean[1] - prev[1], mean[2] - prev[2] };
   float dist  = sqrtf(dot3(d, d));
@@ -1375,15 +1384,16 @@ static bool calMovedOn(const float mean[3], bool agreeing) {
 // overshot). Go back to it by itself and ask the rider to drop into the gear
 // before it and come back; it is taken again once the reading has gone back
 // at least halfway from the point before it (backGate).
-static void calBackUp() {
+// Returns true if it went back (the turn is used up).
+static bool calBackUp() {
   bool down = calPass == PASS_DOWN;
-  bool can = down ? calStep < DOWN_FIRST : calStep >= 2;
-  if (!can) {                                     // nothing to go back to: just say so, once
+  bool can = backUpOk && (down ? calStep < DOWN_FIRST : calStep >= 2);
+  if (!can) {                                     // nothing to go back to (or just did): say so, once
     if (!behindSent) {
       behindSent = true;
       Log.println(F("N,behind"));
     }
-    return;
+    return false;
   }
   int bad = down ? calStep + 1 : calStep - 1;
   memcpy(backOld, down ? calDown[bad] : calRaw[bad], sizeof(backOld));
@@ -1399,6 +1409,20 @@ static void calBackUp() {
   calRedo = true;
   calPrompt();
   backGate = true;                                // after calPrompt(), which clears it
+  backUpOk = false;                               // once: never go back again before the next point
+  return true;
+}
+
+// Along the way back: the reading's position from the point before this one,
+// towards where this one was wrongly saved.
+static float calBackAlong(const float avg[3]) {
+  float prev[3], dir[3];
+  bool hasDir;
+  if (!calPrevRef(prev, dir, &hasDir)) return 0;
+  float span[3] = { backOld[0] - prev[0], backOld[1] - prev[1], backOld[2] - prev[2] };
+  float L = sqrtf(dot3(span, span));
+  float d[3] = { avg[0] - prev[0], avg[1] - prev[1], avg[2] - prev[2] };
+  return L > 0 ? dot3(d, span) / L : 0;
 }
 
 // While backGate: has the reading gone back at least halfway from the point
@@ -1413,6 +1437,8 @@ static bool calBackGate(const float avg[3]) {
   float d[3] = { avg[0] - prev[0], avg[1] - prev[1], avg[2] - prev[2] };
   if (dot3(d, span) / L <= 0.5f * L) {
     backGate = false;
+    backRising = true;                            // a pause down here must not count as the point
+    backMin = dot3(d, span) / L;
     Log.println(F("Now come back to the point and hold it there."));
     turnHistN = 0;
     pendingCap = false;
@@ -1421,6 +1447,21 @@ static bool calBackGate(const float avg[3]) {
   }
   stabPct = 0;
   return false;
+}
+
+// After going back: turns count only once the reading has come up
+// BACK_RISE_UT from the lowest it went (a pause in the gear below isn't the point).
+static bool calBackRise(const float avg[3]) {
+  float a = calBackAlong(avg);
+  if (a < backMin) backMin = a;
+  if (a < backMin + BACK_RISE_UT) {
+    turnHistN = 0;
+    pendingCap = false;
+    stabPct = 0;
+    return false;
+  }
+  backRising = false;
+  return true;
 }
 
 // Direction of travel for the "still moving?" check (zero: no check).
@@ -1469,6 +1510,7 @@ static void calOnTurn(const float avg[3]) {
   memcpy(lastTurnAvg, avg, sizeof(lastTurnAvg));
   if ((calPass == PASS_FIX_UP || calPass == PASS_FIX_DOWN) && !calFixGate(avg)) return;
   if (backGate && !calBackGate(avg)) return;
+  if (backRising && !calBackRise(avg)) return;
   // Couldn't settle for a while: stop and let the rider redo or capture anyway.
   if (settleSince && millis() - settleSince >= SETTLE_GIVEUP_MS) {
     calState = CAL_POINT_CHECK;
@@ -1535,7 +1577,7 @@ static void calOnTurn(const float avg[3]) {
   float mean[3];
   turnHistMean(mean);
   bool moved = calMovedOn(mean, turnHistN >= 2);
-  if (behindNow && (calPass == PASS_UP || calPass == PASS_DOWN)) { calBackUp(); return; }
+  if (behindNow && (calPass == PASS_UP || calPass == PASS_DOWN) && calBackUp()) return;
   stabPct = moved ? (turnHistN >= 2 ? 67 : 34) : 0;
   if (moved && autoCapture && turnHistN == 2) {
     // Don't store yet: check one more turn (calOnTurn above).
@@ -1563,7 +1605,7 @@ static void calCapture() {
       Log.println(F("N,noturn"));
       return;
     }
-    if (((calPass == PASS_FIX_UP || calPass == PASS_FIX_DOWN) && !fixArmed) || backGate) {
+    if (((calPass == PASS_FIX_UP || calPass == PASS_FIX_DOWN) && !fixArmed) || backGate || backRising) {
       Log.println(F("Not captured: first move the lever past this point, then come back."));
       Log.println(F("N,notmoved"));
       return;
@@ -1589,6 +1631,7 @@ static void calCapture() {
 }
 
 static void calUndo() {
+  backUpOk = false;                               // the rider is going back on purpose
   if (calState == CAL_POINT_CHECK) {           // redo the point that wouldn't settle
     calState = CAL_WAITING;
     calRedo  = true;
