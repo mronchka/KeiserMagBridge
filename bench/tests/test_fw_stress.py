@@ -166,6 +166,13 @@ def feed(f, samples, notify=True):
     return cads
 
 
+def skip_survey(f):
+    """v3.3: after the cadence check comes the survey (noise turns, sweep up, sweep down);
+    these tests don't sweep, so tap through it to point 1."""
+    while f.calState == fw.CAL_SURVEY:
+        f.command('n')
+
+
 def learn_on(samples):
     f = fw.Firmware()
     f.command('c')
@@ -292,6 +299,7 @@ seq, _ = ride(8, 70, seed=11)
 feed(f, seq, notify=False)
 check(f.calState == fw.CAL_CONFIRM, "learning on synthetic 70 rpm -> cadence check")
 f.command('n')
+skip_survey(f)
 levels = [0, 6, 12, 18, 24]
 
 
@@ -311,6 +319,7 @@ f2 = fw.Firmware()
 f2.command('c')
 feed(f2, seq, notify=False)
 f2.command('n')
+skip_survey(f2)
 
 
 def creep(t):
@@ -360,7 +369,8 @@ for rpm in (50, 60, 70, 80, 90):
 
 # ------------------------------------------------------------------ I. state machine
 print("\nI. Calibration state machine: every command in every state")
-names = {0: "IDLE", 1: "WAITING", 2: "CAPTURING", 3: "LEARN", 4: "CONFIRM"}
+names = {0: "IDLE", 1: "WAITING", 2: "CAPTURING", 3: "LEARN", 4: "CONFIRM", 5: "CHECK", 6: "SURVEY",
+         7: "DOWNREADY"}
 learn_smp, _ = ride(8, 70, seed=51)
 steady, _ = ride(6, 70, seed=52, t0_ms=learn_smp[-1][0] + 20)
 still, _ = ride(6, 0, seed=53, t0_ms=learn_smp[-1][0] + 20)
@@ -379,6 +389,7 @@ def make(state, crank_mode=True):
         if state == fw.CAL_CONFIRM:
             return f
         f.command('n')
+        skip_survey(f)
         return f
     feed(f, ride(16, 0, seed=54)[0], notify=False)     # learning fails -> hold-still method
     if state == fw.CAL_CAPTURING:
@@ -420,6 +431,7 @@ for when in ("learn", "confirm", "waiting"):
         feed(f, ride(16, 70, seed=61, scale=0.5)[0], notify=False)
     if when == "waiting":
         f.command('n')
+        skip_survey(f)
     f.command('x')
     check(f.crank["ok"] and f.crank["depth"] == CK["depth"] and f.crank["u"] == CK["u"],
           f"abort during {when}: previous crank restored")

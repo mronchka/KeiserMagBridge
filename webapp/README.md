@@ -9,7 +9,7 @@ A single-file phone page (`index.html`) for the Keiser M3 Bridge (Adafruit CLUE 
 
 The page is dark by default, whatever the phone is set to; the sun/moon button in the header switches between dark and light, and the phone remembers the choice.
 
-Everything is inline: there is no build step and no network access beyond Bluetooth. It needs the bridge running the v2 firmware, which sends the status lines this page reads; with older firmware only the Console tab works.
+Everything is inline: there is no build step, and the only network access besides Bluetooth is a check for a newer published copy of the page. It needs the bridge running the v2 firmware, which sends the status lines this page reads; with older firmware only the Console tab works.
 
 ## Which browser
 
@@ -50,6 +50,22 @@ Web Bluetooth only works on secure pages: `https://`, or `http://localhost` on a
      - **Undo** at the first gear coming down goes back to gear 24 going up.
      - **Redo one gear:** the circle comes back for just that gear: "Redo gear 20: lever DOWN below gear 20 first, then up to where the console FIRST shows gear 20, then hold" (coming down: from above, down to where the console first shows the gear). Until the reading has been past the gear, the line under the circle says to go past it first. **CANCEL** stops the redo; the saved calibration is unchanged.
      - **Gear check:** once no gear needs another look (or you close that card), the page offers a short ride (app only, nothing changes on the bridge): a low gear (about 5), a middle gear (about 12) at an easy pace, the same gear faster, and a high gear (about 19). Each shows the bridge's gear big and asks "Does the Keiser console show gear N?". **No** opens a − / + picker for the console's gear. The summary offers **Redo gear G** for each mismatch (the higher of the two gears: that's the gear edge between them). Watts read a little below the console on purpose, because the bridge uses Keiser's measured power scale, so only the gear is checked. **Skip** is always there. The answers are added to the saved calibration file as `# gear_check` lines.
+   - **[v3.3] Firmware v3.3: one flow of six numbered steps.** A breadcrumb at the top shows "STEP 3 OF 6 · Sweep the lever" and six small segments (done = green, current = blue). The step titles are plain instructions:
+     1. **Find a good spot.** Pedal and move the lever from the bottom to the top and back. Three live meters show how well the bridge sees the magnets: **Lever swing** (a big arc gauge, µT covered by the lever), **Crank dip** (how clearly each pedal turn shows) and **Headroom** (room before the sensor saturates), each with weak / good / great zones. A verdict card says "Good spot" or "Great spot", or what to change ("Move closer to the magnets", "Too close to the magnets", "Move closer to the crank"). On iPhone a tip explains how to stop the screen locking (Settings → Display & Brightness → Auto-Lock → Never). **Next** starts the calibration.
+     2. **Learn your pedalling.** As before: pedal steadily, then check the rpm against the console, then a few more turns with the lever still.
+     3. **Sweep the lever.** Pedal and slowly push the lever up as far as you can still pedal, tap **Next**, then slowly back down to the bottom and tap **Next**. No stops at each gear. (The board says which half it is in, `su` / `sd`; the page also counts its Next taps as a fallback.)
+     4. **Up through the gears.** As before. When the gears going up are done they are **saved and ready to ride**, and a **Saved** card offers **Continue down** (`n`; the board waits at this checkpoint) or **Later** (`x`, which keeps everything saved).
+     5. **Back down through the gears.** As before. Gears saved coming down turn blue; each is saved as soon as it is measured, so stopping (`x` or **Finish without the down pass**) keeps them.
+     6. **Check a few gears.** Starts by itself once any gears that needed another look are done. Each answer is also sent to the bridge (`#J,check,<bridge gear>,<console gear>,<rpm>`) so it lands in the USB log. **Skip this step** is always there.
+     - **Stop any time.** On the gear steps the page says so: stop pedalling, shift, then pedal again. When the bridge pauses (no pedal turn for a few seconds, flag `O`) the circle goes quiet and says "Paused — pedal to continue". Nothing is lost.
+     - **Pick up later.** If you chose **Later**, or stopped the down pass, the Calibrate start screen offers **Continue down through the gears** (`#D`) and **Check a few gears** until they are done (remembered on this phone).
+     - **The circle shows the gear to be in now.** When the bridge goes back to a gear (a redo, or a gear saved too far), the circle first shows the gear to go back into ("GO TO 16", "Shift down into gear 16"), turns green when you're there, then shows the gear to aim for ("Now up to gear 17").
+     - **Cadence guide.** Under the rpm dot a small bar shows a green window for the gear you're in: 60–90 rpm for gears 1–10, sliding to 30–55 rpm at gear 24 (the same for every rider). Outside the window the dot goes grey with "Comfortable here: …"; it turns red only below 30 or above 120 rpm.
+     - **Gears that need another look** wait until the down pass is done (or you tap **Later**), then the guided redos run as with v3.2. If the end of the check list (`F,end`) never arrives, the page uses the flags it received after 3 s.
+     - **Turns agree but the reading stays put** (`N,stuck`): a gentle note says "If the console already shows gear N, ease back into gear N−1 and come up to it again" (coming down: into gear N+1, then down).
+     - The breadcrumb always follows the board while it is calibrating (e.g. a `#D` started during the gear check shows step 5).
+     - **Stuck hint** at the first gear coming down now says "Still on gear 24 or 23?", because you start that pass in gear 24.
+   - **Reload bar.** A tab left open keeps old code, and GitHub Pages lets phones cache the page for 10 minutes. The page compares its build with the published copy when it opens and when you come back to it, and shows **Reload** if they differ. It also shows **Reload** if the bridge sends status lines with more fields than this page knows. (This is why the v3.2 bike run showed no guided redo and green down-pass dots: the phone was still on the v3.1 page.)
    - On the Ride tab the cadence shows where it comes from (crank magnet or Wahoo pod). When you stop pedalling it says "Not pedalling" and dims the gear, because the gear only updates on whole turns. Watts at 0 is normal then.
 
    Every finished calibration (saved or rejected) is saved on the phone automatically. A calibration that ends early (cancelled, aborted, or the connection drops) is also saved, with the points captured so far, as "Calibration incomplete (N of 25 points)". If the connection drops and you reconnect while the bridge is still calibrating, the page carries on with the same run. **Save stored calibration** reads the calibration currently stored on the bridge and saves it the same way; if the bridge has no complete calibration yet, the page says so.
@@ -87,7 +103,9 @@ The simulator also answers the stored-calibration request and runs diagnostic re
 
 Extra options, added after `?demo=1`:
 
-- `&v3=1`: simulate firmware v3.2 (cadence from the crank magnet, short pedalling stops, turn-based crank learning and the cadence check, calibration while pedalling with 2 turns plus a check turn, the automatic top point, the down pass with **Finish without the down pass** and undo, the check after saving, `#R` redo and `#G` best guess, the Turns stream, and crank data and down points in the stored calibration). Without it the simulator behaves like v2.
+- `&v3=1`: simulate firmware v3.3: the six-step flow (placement `X` stream on `v`, the sweep and its `Z` result, steps in the status line, the Saved checkpoint, `#D`, `#J` echoes, pause with flag `O`) on top of everything v3.2 does. `&v32=1` simulates v3.2 instead (cadence from the crank magnet, short pedalling stops, turn-based crank learning and the cadence check, calibration while pedalling with 2 turns plus a check turn, the automatic top point, the down pass with **Finish without the down pass** and undo, the check after saving, `#R` redo and `#G` best guess, the Turns stream, and crank data and down points in the stored calibration). Without it the simulator behaves like v2.
+- `&nstuck=1` (v3.3): an `N,stuck` at point 5, to see its hint.
+- `&rest=1` (v3.3): short pedalling breaks while calibrating, to see "Paused — pedal to continue".
 - `&v31=1`: simulate firmware v3.1 instead (3 turns, top point pedalled, no down pass, no `pass` field).
 - `&review=1` (v3.2): after saving, the check flags gear 20 going up (`behind`) and gear 22 coming down (`updown`, if it was measured), to see the guided redos, **Use best guess instead** and **Skip**. A redo shows the "go past it first" line for a few seconds. Also flags them on **Save stored calibration**.
 - `&stubborn=1` (with `&review=1`): gear 20 stays flagged after every redo, to see the card that appears after 2 tries.
@@ -101,3 +119,10 @@ Extra options, added after `?demo=1`:
 - `&drop=1`: lose one line in the first recording transfer, to see "Transfer incomplete" and Retry.
 - `&stall=1`: hold back status lines for 3 s every 12 s, like a stalling Bluetooth link.
 - `&oldfw=1`: behave like firmware without recording, to see the "update to v2" message.
+
+## Tests in node
+
+`bench/tests/app_harness/harness.js` runs this page's script in node (a small DOM stub, a virtual clock, writes captured), so board lines go through the same parser as on the phone.
+
+- `node bench/tests/app_harness/replay_v32b.js [log] [--page file]`: replays a real board log (default `bench/logs/2026-10-16_v3_2b.log`) and checks that the guided redo starts after `F,end` and that the down-pass dots turn blue. `--page` runs an older copy of the page (e.g. from `git show`).
+- `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.

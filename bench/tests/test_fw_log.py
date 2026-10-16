@@ -184,6 +184,9 @@ def hook(fwi, s):
         state["confirm_at"] = s["ms"] + 1500
     if state["confirm_at"] and fwi.calState == fw.CAL_CONFIRM and s["ms"] >= state["confirm_at"]:
         fwi.command('n')
+    # v3.3: the survey's sweep comes next; this recording has none, so tap through it
+    while fwi.calState == fw.CAL_SURVEY:
+        fwi.command('n')
     # couldn't settle for 15 s (cal state 5): the rider captures anyway after 1.5 s
     if fwi.calState == fw.CAL_POINT_CHECK:
         if state.get("check_at") is None:

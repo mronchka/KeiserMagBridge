@@ -147,6 +147,28 @@ class Rider:
             return False
         if f.calState == fw.CAL_IDLE:
             return True
+        # v3.3: the sweep (lever up as far as it goes, Next, back down, Next) and the
+        # "up pass saved" checkpoint (Next comes back down) need a tap each.
+        if f.calState == fw.CAL_SURVEY:
+            if f.survPhase == fw.SURV_NOISE:
+                return False
+            target = TOP_L - 1.0 if f.survPhase == fw.SURV_UP else 0.0
+            if sim.target != target:
+                sim.target, self.tap_at = target, None
+            elif sim.L == target:
+                if self.tap_at is None:
+                    self.tap_at = now + 1000
+                elif now >= self.tap_at:
+                    f.command('n')
+                    self.tap_at = None
+            return False
+        if f.calState == fw.CAL_DOWN_READY:
+            if getattr(self, "tap_at", None) is None:
+                self.tap_at = now + 1000
+            elif now >= self.tap_at:
+                f.command('n')
+                self.tap_at = None
+            return False
         key = (f.calPass, f.calStep, f.calState)
         if key != self.key:
             self.key, self.since = key, now
@@ -475,13 +497,14 @@ flags, _ = checked(pts=side)
 print(f"   up point 10 knocked 2.5 uT sideways: {flags}")
 check(('u', 10) in flags, "an up point off the path is flagged even though its spacing is fine")
 # up only, a mildly early point: invisible without the previous calibration...
-up_only_bad = moved(base["pts"], 11, -2.5)
+# v3.3: the prior limit is max(4 noise, 0.5 x the local step) (V3_3_PLAN 2.2): 2.5 uT at this point, so 3.5 uT early
+up_only_bad = moved(base["pts"], 11, -3.5)
 flags_np, _ = checked(pts=up_only_bad, mask=0)
 shift = [0.4, -0.3, 0.2]
 prev = [[p[k] + shift[k] for k in range(3)] for p in base["pts"]]
 flags_p, g = checked(pts=up_only_bad, mask=0, prev=prev)
 guess = [x[3] for x in g.suspects if x[0] == 'u' and x[1] == 12]
-print(f"   up only, point 12 taken 2.5 uT early: without the previous calibration {flags_np or 'nothing'}; "
+print(f"   up only, point 12 taken 3.5 uT early: without the previous calibration {flags_np or 'nothing'}; "
       f"with it {flags_p}; guess off by {fw.dist3(guess[0], base['pts'][11]):.2f} uT" if guess else "")
 check(flags_p.get(('u', 12)) == "prior", "...the previous calibration (shifted 0.5 uT overall) catches it")
 check(guess and fw.dist3(guess[0], base["pts"][11]) < 0.6, "...and its guess is within 0.6 uT of the true point")
@@ -497,6 +520,69 @@ f2.crank = dict(f.crank)
 old_pts = [list(p) for p in f2.cal["pts"]]
 f2.cal_commit(moved(base["pts"], 5, 0.3), base["down"], base["downMask"], True)
 check(f2.prev == old_pts, "saving a new calibration keeps the one it replaces for the next check")
+
+# ------------------------------------------------------------------ I. the 2026-10-16 bike failures
+print("\nI. From the first v3.2 bike run: restart after going back; dropping too far after going back")
+
+
+class DropTooFar(Overshooter):
+    """After the board goes back, the rider drops a whole gear too far and pauses
+    there for 4 s (both as on the bike), then comes up to the edge."""
+
+    def __call__(self, sim):
+        f = sim.f
+        r = Rider.__call__(self, sim)
+        if not self.did and f.calPass == self.ps and f.calStep == self.step_ and sim.stops.get((self.ps, self.step_)):
+            self.did = True
+            sim.target = UP_EDGE[self.step_ + 1] + 1.5
+        if getattr(f, "backGate", False) or getattr(f, "backRising", False):
+            i = f.calStep
+            now = fw.tick_millis(sim.k)
+            if not hasattr(self, "pause_until"):
+                self.pause_until = now + 4000 + int(1000 * abs(sim.L - UP_EDGE[i - 1]) / sim.speed) + 2000
+            if now < self.pause_until:
+                sim.target = UP_EDGE[i - 1] - 1.0               # into the gear below the one asked for
+            else:
+                sim.target = UP_EDGE[i] + 0.25
+                sim.stops[(fw.PASS_UP, i)] = sim.target
+        return r
+
+
+# 1. a calibration that went back, aborted, then started again: point 1 must still be taken
+f = new_cal_fw()
+sim = Sim(f, seed=81)
+o = Overshooter(sim, fw.PASS_UP, 9)
+
+
+def abort_after_back(s):
+    o(s)
+    if any(l.startswith("U,") for _, l in s.f.out) and s.f.calState == fw.CAL_WAITING and s.f.calStep == 9:
+        s.f.command('x')
+        return True
+    return False
+
+
+sim.run(400, abort_after_back)
+f.behindNow = True                                             # as left by the last turn on the bike
+f.command('c')
+r2 = Rider(sim)
+sim.run(600, r2)                                               # v3.3: the sweep adds about a minute
+ups = [c for c in f.captures if isinstance(c[1], int) and c[0] > 0]
+check(any(l.startswith("K,1") for _, l in f.out[-60:]), "after an aborted run that went back, a new calibration completes")
+# 2. drop too far after going back, pause, then up to the edge
+f = new_cal_fw()
+sim = Sim(f, seed=82)
+sim.run(500, DropTooFar(sim, fw.PASS_UP, 9))
+us = [l for _, l in f.out if l.startswith("U,")]
+last = {}
+for _, i, p in f.captures:
+    last[i] = p
+got = along(last[9])
+ups = [along(last[i]) for i in range(24) if i in last]
+print(f"   went back: {' '.join(us)}; point 10 redone at {got:.1f} (edge {UP_EDGE[9]:.1f}); "
+      f"{len(ups)} up points in order: {all(b > a for a, b in zip(ups, ups[1:]))}")
+check(len(us) == 1, "it goes back only once, even though the rider dropped into the gear below that")
+check(abs(got - UP_EDGE[9]) < 0.8, "the pause in the lower gear isn't taken: point 10 is redone at its edge")
 
 print("\nRESULT:", "all checks passed" if not fails else f"{len(fails)} check(s) failed: " + "; ".join(fails))
 sys.exit(1 if fails else 0)
