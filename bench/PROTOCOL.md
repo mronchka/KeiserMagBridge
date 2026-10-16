@@ -23,7 +23,8 @@ Each command is a single ASCII character. Send one character per write.
 | `1` | Status stream ON: an `S` line about 4 times a second. Send this on connect. |
 | `0` | Status stream OFF. |
 | `c` | Start calibration. |
-| `n` | Capture the current calibration point (manual capture). |
+| `n` | Capture the current calibration point (manual capture). [v3.1] Refused with an `N` line if the lever has not moved from the previous point. While `cal`=4 it confirms the cadence instead. |
+| `l` | [v3.1] Learn the crank again. Accepted while `cal`=4 (cadence check), or at point 1 of a calibration that fell back to the hold-still method. |
 | `u` | Undo: go back one calibration point. |
 | `x` | Abort calibration. |
 | `a` | Toggle auto-capture. Default is ON. |
@@ -44,8 +45,10 @@ Each command is a single ASCII character. Send one character per write.
 About 4 times a second while the status stream is on.
 
 ```
-S,<gear>,<res>,<watts>,<cad>,<cal>,<step>,<stab>,<off>,<flags>,<rec>,<src>
+S,<gear>,<res>,<watts>,<cad>,<cal>,<step>,<stab>,<off>,<flags>,<rec>,<src>,<lturns>
 ```
+
+[v3.1] `lturns` is the number of full pedal turns seen so far while learning the crank (`cal`=3), else 0. While learning, `cad` is the provisional rpm from those turns. Absent on earlier firmware.
 
 [v3] `src` is the cadence source currently in use:
 
@@ -65,9 +68,9 @@ It is absent on v2.
 | `res` | Keiser resistance 0–100, 1 decimal. |
 | `watts` | Integer. |
 | `cad` | rpm, 1 decimal. |
-| `cal` | `0` idle, `1` waiting for a point, `2` capturing (averaging), `3` [v3] learning the crank ("pedal steadily"; `step` stays 0). |
+| `cal` | `0` idle, `1` waiting for a point, `2` capturing (averaging), `3` [v3] learning the crank ("pedal steadily"; `step` stays 0), `4` [v3.1] cadence check: the crank is learned and the board waits for `n` (the rpm matches the console) or `l` (learn again). |
 | `step` | Current calibration point, 0-based (0–24). Only meaningful when `cal` is not 0. |
-| `stab` | 0–100: progress towards auto-capture. v2: the "held steady" timer. [v3]: agreeing pedal turns (0, 33, 67, 100 for 0–3 turns). While `cal`=3 it is the crank-learning progress. |
+| `stab` | 0–100: progress towards auto-capture. v2: the "held steady" timer. [v3]: agreeing pedal turns (0, 33, 67, 100 for 0–3 turns). While `cal`=3 it is the crank-learning progress: [v3] time, 0–100 over 10 s; [v3.1] turns, `lturns` / 6 × 100, at most 95 until learning succeeds. |
 | `off` | Distance of the current reading from the calibrated path, in µT, 1 decimal. Large = something disturbing. |
 | `flags` | Letters, any order; empty if none. See below. |
 
@@ -87,12 +90,39 @@ It is absent on v2.
 
 | `step` | Prompt (v2) | Prompt [v3] (keep pedalling throughout) |
 |---|---|---|
-| (cal=3) | — | "Pedal steadily for about 10 seconds so the bridge can learn your crank" |
+| (cal=3) | — | "Pedal steadily at 60–80 rpm so the bridge can learn your crank" (5–15 s) |
+| (cal=4) | — | [v3.1] "Check the cadence matches the Keiser console" |
 | 0 | "Push the gear lever ALL THE WAY DOWN" | "Keep pedalling. Push the gear lever ALL THE WAY DOWN" |
 | 1–23 | "Move the lever up until the console FIRST shows gear `step+1`, then stop pedalling" | "Keep pedalling. Move the lever up until the console FIRST shows gear `step+1`, then hold it there" |
 | 24 | "Push the gear lever ALL THE WAY UP" | "Keep pedalling. Push the gear lever ALL THE WAY UP" |
 
 The page tells v2 from v3 by whether `S` lines carry `src`.
+
+### `L`: crank learning result [v3.1]
+
+Sent once when learning ends.
+
+```
+L,<ok>,<turns>,<rpm>,<depth>,<reason>
+```
+
+| Field | Meaning |
+|---|---|
+| `ok` | `1` = crank learned (the board goes to `cal`=4), `0` = not found (it falls back to the hold-still method, `cal`=1) |
+| `turns` | Full turns counted |
+| `rpm` | From the median turn |
+| `depth` | Dip depth in µT |
+| `reason` | `ok`, `dip too shallow`, `too few turns`, `irregular turns`, or `too fast - counting twice per turn?` |
+
+Learning ends early once 6 turns are seen, most of them (75 %) within 0.75–1.33 × the median turn, and the rpm is at most 160. Otherwise it ends after 15 s, accepting 4 turns. `bench/replay_learn.py` replays this on a recording.
+
+### `N`: manual capture refused [v3.1]
+
+```
+N,<reason>
+```
+
+`reason` is `noturn` (no full pedal turn yet) or `notmoved` (the reading is within 1 µT of the previous point).
 
 ### `C`: point captured
 
@@ -201,7 +231,7 @@ Y,end,<count>,<checksum>
 | Sound | Meaning |
 |---|---|
 | Short high beep | Point captured |
-| Two quick high beeps | [v3] Crank learned. Start the 25 points. |
+| Two quick high beeps | [v3] Crank learned. Start the 25 points. [v3.1] Check the cadence, then confirm. |
 | Two low beeps | Undo |
 | Rising chime | Calibration saved |
 | Long low buzz | Calibration rejected or aborted |

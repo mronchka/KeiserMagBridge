@@ -33,9 +33,10 @@ Web Bluetooth only works on secure pages: `https://`, or `http://localhost` on a
    With **Auto-capture** on, each point is taken once the ring fills (about 2 seconds held steady). Turn it off to use **CAPTURE** yourself. **UNDO** goes back one point. **CANCEL** needs a second tap to confirm.
    At the end you get a result card with the path span and the smallest step between gears. A smallest step under 1.5 µT is flagged as marginal.
    **Firmware v3: calibrate while pedalling.** v3 works out the gear from each full pedal turn (it sees the crank magnet), so calibration is done while you pedal and the Calibrate tab changes to match (the page detects v3 by itself):
-   - First the bridge learns your crank: pedal steadily for about 10 seconds while the ring fills. The board gives **two quick high beeps** when it is done, and the page shows "Crank learned".
-   - Then the same 25 points, but **keep pedalling throughout**: move the lever until the console first shows the next gear, then hold it there. The console keeps showing the gear while you pedal.
-   - The meter shows "Turns agreeing: n of 3". With auto-capture on, the point is taken at 3 of 3.
+   - The screen shows one big circle for the current position, with the 25 positions as dots around it. Grey means move the lever; blue means hold it there (the three segments around the circle fill one per matching pedal turn); green with a tick means saved. A slider at the top shows your cadence against the 60–80 rpm target: the dot is green inside the window and red outside it.
+   - First the bridge learns your crank: pedal steadily at 60–80 rpm with the lever still. With firmware v3.1 this ends as soon as 6 regular pedal turns are seen (about 5 s at 80 rpm, up to 15 s), and the circle counts the turns. The board gives **two quick high beeps**.
+   - [v3.1] Then check the rpm in the circle against the Keiser console and tap **Yes, it matches**, or **Learn again**. If the crank was not found, the page says why and offers to try again; otherwise calibration carries on with the hold-still method.
+   - Then the 25 points, **keep pedalling throughout**: move the lever until the console first shows the next gear, then hold it there. With auto-capture on, the point is taken at 3 of 3; **Capture now** (small) saves early once 2 of 3 agree. With auto-capture off, tap the big **CAPTURE**. [v3.1] A manual capture is refused if the lever hasn't moved from the previous point.
    - On the Ride tab the cadence shows where it comes from (crank magnet or Wahoo pod). When you stop pedalling it says "Not pedalling" and dims the gear, because the gear only updates on whole turns. Watts at 0 is normal then.
 
    Every finished calibration (saved or rejected) is saved on the phone automatically. A calibration that ends early (cancelled, aborted, or the connection drops) is also saved, with the points captured so far, as "Calibration incomplete (N of 25 points)". If the connection drops and you reconnect while the bridge is still calibrating, the page carries on with the same run. **Save stored calibration** reads the calibration currently stored on the bridge and saves it the same way; if the bridge has no complete calibration yet, the page says so.
@@ -72,7 +73,9 @@ The simulator also answers the stored-calibration request and runs diagnostic re
 
 Extra options, added after `?demo=1`:
 
-- `&v3=1`: simulate firmware v3 (cadence from the crank magnet, short pedalling stops, crank learning, calibration while pedalling at about 75 rpm, the Turns stream, and crank data in the stored calibration). Without it the simulator behaves like v2.
+- `&v3=1`: simulate firmware v3.1 (cadence from the crank magnet, short pedalling stops, turn-based crank learning and the cadence check, calibration while pedalling, the Turns stream, and crank data in the stored calibration). Without it the simulator behaves like v2.
+- `&cad=NN` (with `&v3=1`): the cadence while calibrating, default 72 rpm. Try `&cad=50` or `&cad=95` to see the slider turn red.
+- `&learnfail=1` (with `&v3=1`): the first crank learning fails, to see the message and **Try learning the crank again**.
 - `&uncal=1`: start uncalibrated.
 - `&fast=1`: divide the diagnostic step times by 5 (the whole run takes about 35 s).
 - `&drop=1`: lose one line in the first recording transfer, to see "Transfer incomplete" and Retry.

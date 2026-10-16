@@ -26,6 +26,17 @@
  *   - Phone output goes out a whole line per notification (fewer sends).
  *   - Per-turn 'T' lines go to USB only.
  *   - Calibration capture: 3 turns within 2.0 uT (was 1.0).
+ *   - Crank learning ends on turns, not a fixed 10 s (tested first with
+ *     bench/replay_learn.py, which mirrors it): every 0.5 s the crank is
+ *     learned again from everything so far and the turns counted; it ends
+ *     once 6 turns are regular (most turns within 0.75-1.33x the median,
+ *     under 160 rpm), or after 15 s. Turns seen and the provisional rpm go
+ *     in the status line while learning.
+ *   - Cadence check: after learning the board waits (cal state 4) for the
+ *     rider to confirm the rpm matches the console ('n' / button A), or to
+ *     learn again ('l'). An 'L' line reports the learning result.
+ *   - Manual captures get the same "the lever moved" check as auto-capture
+ *     (an 'N' line says why a capture was refused).
  *
  * v2 changes (see bench/PROTOCOL.md for the phone-page protocol):
  *   - Follow-the-path gear detection: the 25 calibration readings are kept
@@ -76,6 +87,8 @@
  * or the bridge's web page (bench/PROTOCOL.md).
  *   Hold button 3 s / send 'c'  -> start calibration
  *   Short press   / send 'n'    -> capture current calibration point now
+ *                                  (or confirm the cadence after learning)
+ *   send 'l'                    -> learn the crank again (cadence check)
  *   send 'u'                    -> undo last calibration point
  *   send 'a'                    -> auto-capture on/off (default on)
  *   Hold button 3 s / send 'x'  -> abort calibration (while calibrating)
@@ -144,10 +157,19 @@ static const float    AUTO_MIN_MOVE_UT   = 1.0f;
 static const float    OFFPATH_HOLD_UT    = 8.0f;
 static const uint32_t OFFPATH_HOLD_MAX_MS = 2000;
 
+// Crank learning (same values as bench/replay_learn.py): every 0.5 s the
+// crank is learned again from everything buffered so far; learning ends as
+// soon as there are enough regular turns, or at the cap.
+static const uint16_t LEARN_MAX_SAMPLES  = 750;   // 15 s cap at 50 Hz
+static const uint16_t LEARN_FIRST_PROBE  = 100;   // first look after 2 s
+static const uint16_t LEARN_PROBE_EVERY  = 25;    // then every 0.5 s
+static const uint8_t  LEARN_TARGET_TURNS = 6;     // regular full turns needed to finish early
+static const uint8_t  LEARN_MIN_TURNS    = 4;     // at the cap, accept with this many
+static const float    LEARN_REG_LO       = 0.75f; // a regular turn lasts LO..HI x the median turn
+static const float    LEARN_REG_HI       = 1.33f;
+static const float    LEARN_REG_SHARE    = 0.75f; // at least this share of turns must be regular
+static const float    LEARN_MAX_RPM      = 160.0f;// faster: counting twice per turn
 // Crank-magnet turn detector (same values as bench/replay_v3.py).
-static const uint32_t LEARN_MS           = 10000; // pedal steadily this long to learn the crank
-static const uint16_t LEARN_SAMPLES      = 500;   // = LEARN_MS at 50 Hz
-static const uint8_t  LEARN_MIN_DIPS     = 4;     // must see this many dips while learning
 static const float    CRANK_MIN_DEPTH_UT = 8.0f;  // weaker dips: crank too far away to use
 static const float    DIP_FRAC           = 0.5f;  // dip when below baseline by this x depth
 static const float    REARM_FRAC         = 0.25f; // turn boundary when back above this x depth
@@ -285,7 +307,7 @@ static float     powerW       = 0.0f;
 static float     cadenceRpm   = 0.0f;
 
 // Calibration state machine
-enum CalState { CAL_IDLE, CAL_WAITING, CAL_CAPTURING, CAL_LEARN };
+enum CalState { CAL_IDLE, CAL_WAITING, CAL_CAPTURING, CAL_LEARN, CAL_CONFIRM };
 static CalState  calState   = CAL_IDLE;
 static int       calStep    = 0;
 static float     calRaw[NUM_GEARS + 1][3];
@@ -299,9 +321,21 @@ static uint32_t  stabSince   = 0;
 static uint8_t   stabPct     = 0;           // 0-100, for the web page
 
 // Crank learning buffer (filled during CAL_LEARN)
-static float     learnBuf[LEARN_SAMPLES][3];
-static float     learnP[LEARN_SAMPLES];
+static float     learnBuf[LEARN_MAX_SAMPLES][3];
+static float     learnP[LEARN_MAX_SAMPLES];
+static uint16_t  learnPer[LEARN_MAX_SAMPLES / 10];   // full-turn periods (200 ms refractory)
 static uint16_t  learnCount  = 0;
+
+// Result of the latest look at the learning buffer.
+struct LearnResult {
+  bool        ok;
+  uint8_t     turns;      // full turns counted
+  uint8_t     regular;    // of those, how many are LEARN_REG_LO..HI x the median
+  float       rpm;        // from the median turn
+  float       depth;      // dip depth (uT)
+  const char* why;        // "ok" or why not (no commas: goes in the L line)
+};
+static LearnResult learnLast = { false, 0, 0, 0, 0, "no signal" };
 
 // Turn detector state
 static bool      crArmed = true, crHaveBoundary = false;
@@ -607,11 +641,18 @@ static int cmpFloat(const void* a, const void* b) {
   return (x > y) - (x < y);
 }
 
-// Learn the crank from LEARN_SAMPLES raw samples of steady pedalling:
-// main direction of variation, dip polarity and depth. Returns true if the
-// dips are deep enough and regular enough to count turns by.
-static bool crankLearn() {
-  const int n = LEARN_SAMPLES;
+static int cmpU16(const void* a, const void* b) {
+  return (int)*(const uint16_t*)a - (int)*(const uint16_t*)b;
+}
+
+// Learn the crank from the first n buffered raw samples of steady pedalling:
+// main direction of variation, dip polarity and depth (into `crank`, with
+// crank.ok left alone), then count the turns with the real detector and
+// judge them: deep enough, enough turns, regular, and not impossibly fast.
+// `atCap`: the buffer is full, so accept with LEARN_MIN_TURNS instead of
+// LEARN_TARGET_TURNS. Mirrors learn()/verdict() in bench/replay_learn.py.
+static LearnResult crankLearn(int n, bool atCap) {
+  LearnResult r = { false, 0, 0, 0, 0, "no signal" };
   float m[3] = {0, 0, 0};
   for (int i = 0; i < n; i++) for (int k = 0; k < 3; k++) m[k] += learnBuf[i][k] / n;
   float C[3][3] = {{0}};
@@ -624,7 +665,7 @@ static bool crankLearn() {
     float v[3];
     for (int a = 0; a < 3; a++) v[a] = C[a][0] * u[0] + C[a][1] * u[1] + C[a][2] * u[2];
     float nv = sqrtf(dot3(v, v));
-    if (nv <= 0) return false;
+    if (nv <= 0) return r;
     for (int a = 0; a < 3; a++) u[a] = v[a] / nv;
   }
   for (int i = 0; i < n; i++) learnP[i] = dot3(learnBuf[i], u);
@@ -639,19 +680,35 @@ static bool crankLearn() {
   for (int i = 0; i < n; i++) base += crank.sign * dot3(learnBuf[i], u) / n;
   crank.base = base;
 
-  // Count dips in the learning window with the real detector.
+  // Count full turns in the buffer with the real detector.
+  const int maxTurns = sizeof(learnPer) / sizeof(learnPer[0]);
   crankReset(base);
-  int dips = 0;
+  int turns = 0;
   float avg[3];
   uint32_t per;
   for (int i = 0; i < n; i++) {
-    if (crankSample(1 + i * SAMPLE_PERIOD_MS, learnBuf[i], avg, &per)) dips++;
+    if (crankSample(1 + i * SAMPLE_PERIOD_MS, learnBuf[i], avg, &per) == 2 && turns < maxTurns)
+      learnPer[turns++] = (uint16_t)min(per, (uint32_t)65535);
   }
-  Log.printf("Crank: dip depth %.1f uT, %d turns seen in %lu s.\n", crank.depth, dips,
-             (unsigned long)(LEARN_MS / 1000));
-  crank.ok = crank.depth >= CRANK_MIN_DEPTH_UT && dips >= LEARN_MIN_DIPS;
   crankReset(base);
-  return crank.ok;
+
+  r.depth = crank.depth;
+  r.turns = (uint8_t)min(turns, 255);
+  if (turns > 0) {
+    qsort(learnPer, turns, sizeof(learnPer[0]), cmpU16);
+    float medPer = learnPer[turns / 2];
+    int regular = 0;
+    for (int i = 0; i < turns; i++)
+      if (learnPer[i] >= LEARN_REG_LO * medPer && learnPer[i] <= LEARN_REG_HI * medPer) regular++;
+    r.regular = (uint8_t)min(regular, 255);
+    r.rpm = 60000.0f / medPer;
+  }
+  if (r.depth < CRANK_MIN_DEPTH_UT)                         r.why = "dip too shallow";
+  else if (turns < (atCap ? LEARN_MIN_TURNS : LEARN_TARGET_TURNS)) r.why = "too few turns";
+  else if (r.regular < LEARN_REG_SHARE * turns)              r.why = "irregular turns";
+  else if (r.rpm > LEARN_MAX_RPM)                            r.why = "too fast - counting twice per turn?";
+  else { r.ok = true; r.why = "ok"; }
+  return r;
 }
 
 static void loadCrankFromCal() {
@@ -706,26 +763,66 @@ static void calPrompt() {
   stabReset();
 }
 
-static void calStart() {
+static void calLearnStart() {
   calState   = CAL_LEARN;
   calStep    = 0;
   learnCount = 0;
   crank.ok   = false;                     // re-learned for this calibration
   stabPct    = 0;
-  Log.println(F("\n=== Calibration started (hold button 3 s or send 'x' to abort, 'u' to undo) ==="));
-  Log.println(F("Pedal steadily for about 10 seconds so the bridge can learn your crank."));
+  learnLast  = { false, 0, 0, 0, 0, "no signal" };
+  Log.println(F("Pedal steadily at 60-80 rpm so the bridge can learn your crank (5-15 s)."));
 }
 
-// End of the learning stage: crank found -> per-turn calibration while
+static void calStart() {
+  Log.println(F("\n=== Calibration started (hold button 3 s or send 'x' to abort, 'u' to undo) ==="));
+  calLearnStart();
+}
+
+// Learn the crank again: after the cadence check, or at point 1 of a
+// calibration that fell back to the hold-still method.
+static void calRelearn() {
+  if (calState != CAL_CONFIRM && !(calState == CAL_WAITING && calStep == 0)) return;
+  Log.println(F("Learning the crank again."));
+  calLearnStart();
+}
+
+// End of the learning stage: crank found -> the rider checks the cadence
+// against the console (CAL_CONFIRM), then per-turn calibration while
 // pedalling; not found -> v2-style calibration with the flywheel still.
 static void calLearnDone() {
-  if (crankLearn()) {
-    Log.println(F("Crank learned: keep pedalling through all 25 points."));
+  const LearnResult& r = learnLast;
+  crank.ok = r.ok;                         // crankLearn() left the rest of `crank` set
+  Log.printf("Crank: dip depth %.1f uT, %u turns (%u regular) at %.0f rpm in %.1f s: %s.\n",
+             r.depth, r.turns, r.regular, r.rpm, learnCount * SAMPLE_PERIOD_MS / 1000.0f, r.why);
+  Log.printf("L,%d,%u,%.0f,%.1f,%s\n", r.ok ? 1 : 0, r.turns, r.rpm, r.depth, r.why);
+  if (r.ok) {
+    Log.println(F("Crank learned. Check that the cadence matches the Keiser console:"));
+    Log.println(F("press button A or send 'n' if it does, send 'l' to learn again."));
     playNotes(BEEP_LEARNED, 3);
-  } else {
-    Log.println(F("Crank magnet not detected well enough (too far from the board?)."));
-    Log.println(F("Continuing without it: stop pedalling at each point; cadence comes from a pod."));
+    calState = CAL_CONFIRM;
+    stabPct  = 100;
+    return;
   }
+  Log.println(F("Crank magnet not detected well enough (too far from the board?)."));
+  Log.println(F("Continuing without it: stop pedalling at each point; cadence comes from a pod."));
+  Log.println(F("Send 'l' to try learning the crank again."));
+  calState = CAL_WAITING;
+  calPrompt();
+}
+
+// Every 0.5 s of learning: look at everything buffered so far.
+static void calLearnProbe() {
+  bool atCap = learnCount + LEARN_PROBE_EVERY > LEARN_MAX_SAMPLES;
+  learnLast = crankLearn(learnCount, atCap);
+  stabPct = learnLast.ok ? 100 : (uint8_t)min(95, learnLast.turns * 100 / LEARN_TARGET_TURNS);
+  if (learnLast.ok || atCap) calLearnDone();
+}
+
+// The rider confirmed the cadence: on to the 25 points.
+static void calConfirm() {
+  if (calState != CAL_CONFIRM) return;
+  Log.println(F("Cadence confirmed: keep pedalling through all 25 points."));
+  playNotes(BEEP_CAPTURE, 1);
   calState = CAL_WAITING;
   calPrompt();
 }
@@ -871,12 +968,28 @@ static void calOnTurn(const float avg[3]) {
 }
 
 static void calCapture() {
+  if (calState == CAL_CONFIRM) { calConfirm(); return; }   // 'n' / button A also confirms
   if (calState != CAL_WAITING) return;
+  // Manual captures get the same "the lever moved" check as auto-capture.
   if (crank.ok) {                              // manual capture while pedalling
-    if (turnHistN == 0) { Log.println(F("No full pedal turn yet - keep pedalling.")); return; }
+    if (turnHistN == 0) {
+      Log.println(F("No full pedal turn yet - keep pedalling."));
+      Log.println(F("N,noturn"));
+      return;
+    }
     float mean[3];
     turnHistMean(mean);
+    if (calStep > 0 && dist3(mean, calRaw[calStep - 1]) < TURN_MOVE_UT) {
+      Log.println(F("Not captured: the lever hasn't moved from the previous point."));
+      Log.println(F("N,notmoved"));
+      return;
+    }
     calStorePoint(mean);
+    return;
+  }
+  if (calStep > 0 && dist3(fieldUT, calRaw[calStep - 1]) < AUTO_MIN_MOVE_UT) {
+    Log.println(F("Not captured: the lever hasn't moved from the previous point."));
+    Log.println(F("N,notmoved"));
     return;
   }
   capSum[0] = capSum[1] = capSum[2] = 0;
@@ -1095,9 +1208,9 @@ static void processSample(const Sample& smp) {
 
   // Crank learning (calibration, first stage) and turn detection.
   if (calState == CAL_LEARN) {
-    memcpy(learnBuf[learnCount], raw, sizeof(learnBuf[0]));
-    stabPct = (uint8_t)((uint32_t)++learnCount * 100 / LEARN_SAMPLES);
-    if (learnCount >= LEARN_SAMPLES) calLearnDone();
+    if (learnCount < LEARN_MAX_SAMPLES) memcpy(learnBuf[learnCount++], raw, sizeof(learnBuf[0]));
+    if (learnCount >= LEARN_FIRST_PROBE && (learnCount - LEARN_FIRST_PROBE) % LEARN_PROBE_EVERY == 0)
+      calLearnProbe();
   } else if (crank.ok) {
     float avg[3];
     uint32_t per = 0;
@@ -1140,7 +1253,9 @@ static void processSample(const Sample& smp) {
 // =========================================================================
 static void updatePower() {
   float cad;
-  if (crank.ok) {
+  if (calState == CAL_LEARN) {
+    cad = learnLast.rpm;                        // provisional, from the turns seen so far
+  } else if (crank.ok) {
     cad = selfCadence();
   } else {
     bool valid; uint32_t lastEvt;
@@ -1151,7 +1266,7 @@ static void updatePower() {
   }
   cadenceRpm = cad;
 
-  if (!calValid || cad < 1.0f) { powerW = 0; return; }
+  if (!calValid || cad < 1.0f || calState == CAL_LEARN) { powerW = 0; return; }
 
   // Continuous resistance (not the rounded gear) drives power, as on the
   // Keiser console and in KBikeBLE, so half-gear lever positions are honoured.
@@ -1201,7 +1316,8 @@ static void sendPowerMeasurement() {
 }
 
 static void printHelp() {
-  Log.println(F("Commands: c=calibrate  n=capture point  u=undo  x=abort"));
+  Log.println(F("Commands: c=calibrate  n=capture point / confirm cadence  u=undo  x=abort"));
+  Log.println(F("          l=learn the crank again (at the cadence check or point 1)"));
   Log.println(F("          a=auto-capture on/off  d=live data on/off"));
   Log.println(F("          r=fast raw data (USB)  p=show calibration  h=help"));
   Log.println(F("          g/m/e/y=diagnostics record/mark/stop/send  k=calibration data"));
@@ -1386,7 +1502,7 @@ static void setupCentral() {
 // User input: button + serial
 // =========================================================================
 static void handleShortPress() {
-  if (calState == CAL_WAITING) calCapture();
+  if (calState == CAL_WAITING || calState == CAL_CONFIRM) calCapture();
 }
 
 static void handleLongPress() {
@@ -1423,6 +1539,7 @@ static void handleCommand(int ch) {
   switch (tolower(ch)) {
     case 'c': if (calState == CAL_IDLE) calStart(); break;
     case 'n': calCapture(); break;
+    case 'l': calRelearn(); break;
     case 'u': calUndo(); break;
     case 'x': if (calState != CAL_IDLE) calAbort(F("cancelled by user")); break;
     case 'a':
@@ -1457,7 +1574,7 @@ static void pollCommands() {
 static void updateLed() {
   uint32_t now = millis();
   bool on;
-  if (calState != CAL_IDLE)  on = (calState == CAL_WAITING);
+  if (calState != CAL_IDLE)  on = (calState == CAL_WAITING || calState == CAL_CONFIRM);
   else if (saturated)        on = (now / 100) % 2;
   else if (!calValid)        on = (now / 500) % 2;
   else                       on = false;
@@ -1498,9 +1615,10 @@ static void printStatus() {
   if (dumpPos >= 0)                      flags[n++] = 'Y';
   if (pedalling())                       flags[n++] = 'R';
   flags[n] = '\0';
-  Log.printf("S,%d,%.1f,%.0f,%.1f,%d,%d,%d,%.1f,%s,%u,%c\n",
+  Log.printf("S,%d,%.1f,%.0f,%.1f,%d,%d,%d,%.1f,%s,%u,%c,%u\n",
              calValid ? stableGear : 0, resistance, powerW, cadenceRpm,
-             (int)calState, calStep, stabPct, offPath, flags, recCount, cadenceSource());
+             (int)calState, calStep, stabPct, offPath, flags, recCount, cadenceSource(),
+             calState == CAL_LEARN ? learnLast.turns : 0);
 }
 
 // =========================================================================

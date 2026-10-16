@@ -4,49 +4,56 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#0a0c0f" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
 <style>
 :root {
-  --bg: #0a0c0f;
-  --surface: #151a21;
-  --surface2: #1f262f;
-  --line: #2c3540;
-  --text: #f3f5f8;
-  --muted: #9ba6b5;
-  --accent: #4db2ff;
-  --accent-ink: #00121f;
-  --accent-bg: #0f2a40;
-  --ok: #3ddc84;
-  --ok-bg: #0e2d1c;
-  --warn: #ffb020;
-  --warn-bg: #3a2a07;
-  --bad: #ff5a5f;
-  --bad-bg: #3a1214;
+  /* Apple system colours (dark) */
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface2: #2c2c2e;
+  --line: #38383a;
+  --text: #ffffff;
+  --muted: #98989d;
+  --accent: #0a84ff;
+  --accent-ink: #ffffff;
+  --accent-bg: #0a2540;
+  --ok: #30d158;
+  --ok-ink: #04210f;
+  --ok-bg: #0f2a17;
+  --warn: #ffd60a;
+  --warn-bg: #332b00;
+  --bad: #ff453a;
+  --bad-ink: #1a0000;
+  --bad-bg: #3a1210;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --pad-l: max(16px, env(safe-area-inset-left));
-  --pad-r: max(16px, env(safe-area-inset-right));
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --content: 680px;   /* content column on tablets and desktops; bars stay full width */
+  --pad-l: max(16px, env(safe-area-inset-left), calc((100vw - var(--content)) / 2));
+  --pad-r: max(16px, env(safe-area-inset-right), calc((100vw - var(--content)) / 2));
   --radius: 14px;
+  --gap: 14px;
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f4f6f9;
+    --bg: #f2f2f7;
     --surface: #ffffff;
-    --surface2: #e8ecf1;
-    --line: #cbd3dd;
-    --text: #0b0f14;
-    --muted: #4c5866;
-    --accent: #0063c2;
+    --surface2: #e5e5ea;
+    --line: #d1d1d6;
+    --text: #000000;
+    --muted: #5c5c60;
+    --accent: #0062cc;
     --accent-ink: #ffffff;
     --accent-bg: #dcebfa;
-    --ok: #0f7d38;
+    --ok: #248a3d;
+    --ok-ink: #ffffff;
     --ok-bg: #dcf3e4;
     --warn: #9a5600;
     --warn-bg: #fdecc8;
-    --bad: #b01c22;
+    --bad: #b0000d;
+    --bad-ink: #ffffff;
     --bad-bg: #fbdcdc;
   }
 }
@@ -96,7 +103,7 @@ header h1 { font-size: 1.1rem; margin: 0; font-weight: 700; letter-spacing: .01e
 .dot.off { background: var(--bad); }
 .hdr-btn {
   flex: none; min-height: 48px; padding: 0 14px; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--surface2); font-size: .9rem; font-weight: 600;
+  border: 1px solid transparent; background: var(--surface2); font-size: .9rem; font-weight: 600;
 }
 
 /* ---------- main ---------- */
@@ -112,7 +119,7 @@ main {
 .view { display: none; padding: 14px var(--pad-r) 18px var(--pad-l); flex: 1; min-height: 0; flex-direction: column; gap: 14px; }
 .view.active { display: flex; }
 
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.card { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 16px; }
 .card h2 { margin: 0 0 6px; font-size: 1.2rem; }
 .card p { margin: 6px 0; }
 .muted { color: var(--muted); }
@@ -121,13 +128,19 @@ main {
 .btn {
   display: flex; align-items: center; justify-content: center; text-align: center;
   min-height: 56px; padding: 10px 18px; border-radius: 14px;
-  border: 1px solid var(--line); background: var(--surface2);
-  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em;
+  border: 1px solid transparent; background: var(--surface2);
+  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15;
+  min-width: 0; overflow-wrap: anywhere;
+  transition: transform .08s ease-out, filter .12s, background-color .15s, border-color .15s, color .15s;
 }
+.btn:not(:disabled):active, .hdr-btn:not(:disabled):active, .x-btn:active { transform: scale(.97); filter: brightness(.92); }
+@media (hover: hover) { .btn:not(:disabled):hover, .hdr-btn:not(:disabled):hover { filter: brightness(1.08); } }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.danger { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
-.btn.big { min-height: 72px; font-size: 1.35rem; width: 100%; }
+.btn.big { min-height: 72px; font-size: 1.35rem; }
+.btn.big, .btn.wide { width: 100%; }
 .btn.armed { background: var(--bad); color: #fff; border-color: var(--bad); }
+.btn-stack { display: flex; flex-direction: column; gap: 10px; margin-top: var(--gap); }
 
 /* connection card */
 #connCard { margin: 14px var(--pad-r) 0 var(--pad-l); display: none; }
@@ -141,7 +154,7 @@ main {
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   min-height: 40px; padding: 6px 14px; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--surface);
+  border: 1px solid transparent; background: var(--surface);
   font-size: .95rem; font-weight: 700; color: var(--muted);
 }
 .chip .k { font-family: var(--mono); font-size: .8rem; }
@@ -152,27 +165,43 @@ main {
 
 .gear-wrap {
   flex: 1 0 auto;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 8px 12px 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 8px 0;
 }
-.gear-label { font-size: 1rem; font-weight: 800; letter-spacing: .25em; color: var(--muted); }
+/* The gear sits in a ring (same motif as the calibration circle): blue while riding,
+   grey when stopped or not calibrated, amber while holding the last good gear. */
+.gear-ring {
+  --ring: min(68vw, 40vh, 340px);
+  width: var(--ring); height: var(--ring); border-radius: 50%;
+  border: 8px solid var(--accent); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: border-color .3s;
+}
+.gear-ring:has(.gear.dim) { border-color: var(--surface2); }
+.gear-ring:has(.gear.hold) { border-color: var(--warn); }
+.gear-label { font-size: .85rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
 .gear {
-  font-size: min(62vw, 40vh);
+  font-size: calc(var(--ring) * .5);
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.04em;
-  margin: 2px 0 4px;
+  letter-spacing: -.03em;
+  margin-top: 2px;
 }
 .gear.dim { color: var(--muted); }
 .gear.hold { color: var(--warn); }
-.gear-note { font-size: 1.05rem; font-weight: 600; text-align: center; min-height: 1.4em; }
-.gear-note.warn { color: var(--warn); }
-.gear-note.bad { color: var(--bad); }
-#goCal { margin-top: 10px; }
+/* status pill under the ring */
+.gear-note {
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 36px; padding: 6px 16px; border-radius: 18px; background: var(--surface);
+  font-size: .95rem; font-weight: 600;
+}
+.gear-note:empty { visibility: hidden; }
+.gear-note.warn { color: var(--warn); background: var(--warn-bg); }
+.gear-note.bad { color: var(--bad); background: var(--bad-bg); }
 
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 12px; text-align: center; min-width: 0; }
+.tile { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 10px 8px 12px; text-align: center; min-width: 0; }
 .tile .v { font-size: clamp(1.9rem, 9.5vw, 3.2rem); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.05; overflow: hidden; text-overflow: clip; white-space: nowrap; }
 .tile .u { font-size: .85rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
 .stale .v, .stale.gear { opacity: .35; }
@@ -183,7 +212,7 @@ main {
 .switch-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   min-height: 64px; padding: 8px 16px; width: 100%;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); border: 1px solid transparent; border-radius: var(--radius);
   text-align: left;
 }
 .switch-row .t { font-weight: 700; }
@@ -209,28 +238,84 @@ main {
   padding: 14px 16px;
 }
 .prompt b { color: var(--accent); }
-.segs { display: grid; grid-template-columns: repeat(25, minmax(0, 1fr)); gap: 3px; }
-.seg { height: 14px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--line); }
-.seg.done { background: var(--ok); border-color: var(--ok); }
-.seg.cur { background: var(--accent); border-color: var(--accent); }
-
-.meter { display: flex; align-items: center; gap: 16px; }
-.ring { width: 140px; height: 140px; flex: none; position: relative; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.ring .track { stroke: var(--surface2); }
-.ring .fill { stroke: var(--accent); transition: stroke-dashoffset .22s linear, stroke .2s; }
-.ring.full .fill { stroke: var(--ok); }
-.ring.cap .fill { stroke: var(--warn); }
-.ring .pct {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem; font-weight: 800; font-variant-numeric: tabular-nums;
+/* Active calibration: one big circle for the current point, the 25 points as dots
+   around it, one instruction underneath. Grey = waiting for the lever to move,
+   blue = holding (counting turns / held steady), green = captured. */
+#calActive { display: flex; flex-direction: column; align-items: stretch; gap: var(--gap); }
+/* cadence slider: a thin 40-110 rpm line whose 60-80 stretch is green; the dot carries the rpm.
+   Only out-of-range or stopped gets words underneath. */
+.cadg { width: 100%; max-width: 340px; align-self: center; padding: 18px 22px 0; }
+.cadg-track { position: relative; height: 4px; border-radius: 2px; background: var(--surface2); }
+.cadg-win { position: absolute; top: 0; height: 100%; left: 28.57%; width: 28.57%; border-radius: 2px; background: var(--ok); }
+.cadg-dot {
+  position: absolute; top: 50%; left: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ok); color: var(--ok-ink); font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 3px var(--bg), 0 2px 8px rgba(0, 0, 0, .35);
+  transition: left .5s cubic-bezier(.22, 1, .36, 1), background-color .25s, color .25s;
 }
-.meter-text .t { font-size: 1.25rem; font-weight: 800; }
-.meter-text .s { color: var(--muted); font-size: .92rem; margin-top: 4px; }
-
-.cal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cadg-dot.bad { background: var(--bad); color: var(--bad-ink); }
+.cadg-dot.idle { background: var(--surface2); color: var(--muted); }
+.cadg-ticks { position: relative; height: 14px; margin-top: 16px; font-size: .72rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cadg-ticks span { position: absolute; top: 0; transform: translateX(-50%); }
+.cadg-cap { text-align: center; font-size: .9rem; font-weight: 600; margin-top: 2px; min-height: 1.3em; }
+.cadg-cap.bad { color: var(--bad); }
+.cadg-cap.warn { color: var(--warn); }
+.stage {
+  --stage: min(300px, 80vw, 40vh);
+  position: relative; width: var(--stage); height: var(--stage); align-self: center; flex: none;
+}
+.stage .pt {
+  position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: var(--line); transition: background-color .3s, transform .3s;
+}
+.stage .pt.done { background: var(--ok); }
+.stage .pt.cur { transform: scale(1.4); background: var(--muted); }
+.stage .pt.cur.blue { background: var(--accent); }
+.stage .pt.cur.green { background: var(--ok); }
+.disc {
+  position: absolute; inset: 10.67%;   /* 236 of 300 */
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.disc.pop { transform: scale(1.06); }
+.disc > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.disc .face { fill: var(--surface); stroke: var(--line); stroke-width: 3; transition: fill .3s, stroke .3s; }
+.disc .arc { fill: none; stroke: var(--surface2); stroke-width: 8; stroke-linecap: round; transition: stroke .25s; }
+.disc .arc.on { stroke: var(--accent); }
+.disc .ringf { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
+.disc.blue .face { fill: var(--accent); stroke: var(--accent); }
+.disc.blue .arc.on { stroke: var(--accent); }
+.disc.green .face { fill: var(--ok); stroke: var(--ok); }
+.disc.green .arc, .disc.green .arc.on { stroke: var(--ok); }
+.disc.amber .face { stroke: var(--warn); }
+.disc.learn .face { stroke: var(--surface); }
+.disc-in {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  container-type: inline-size;
+}
+.disc-in .lbl { font-size: .8rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
+.disc-in .big { font-size: 88px; font-size: 39cqw; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.disc.blue .lbl { color: var(--accent-ink); opacity: .85; }
+.disc.blue .big { color: var(--accent-ink); }
+.disc-in .turns { font-size: .95rem; font-weight: 600; color: var(--muted); margin-top: 10px; font-variant-numeric: tabular-nums; }
+.disc-in .chk { width: 36%; height: 36%; }
+.disc-in .chk path { stroke: var(--ok-ink); }
+.disc-in .crank { width: 27%; height: 27%; color: var(--accent); animation: crank-spin 1.2s linear infinite; }
+.cal-say { text-align: center; padding: 0 8px; min-height: 84px; }
+.cal-say .h { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+.cal-say .s { font-size: 1.05rem; color: var(--muted); margin-top: 8px; line-height: 1.3; }
+#calCount { text-align: center; color: var(--muted); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.cal-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .cal-btns .capture { grid-column: 1 / -1; min-height: 84px; font-size: 1.6rem; }
+/* auto-capture on: CAPTURE is a small secondary "Capture now" */
+.cal-btns .capture.lite { min-height: 56px; font-size: 1.05rem; background: var(--surface2); border-color: transparent; color: var(--text); }
 .cal-btns .btn { min-height: 64px; }
+#calActive.nopoint .cal-btns .btn.danger { grid-column: 1 / -1; }
+@keyframes crank-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .disc-in .crank { animation: none; }
+  .btn, .disc, .disc .ringf, .bar > i, .cadg-dot { transition: none; }
+}
 
 .plist { max-height: 260px; overflow-y: auto; border-top: 1px solid var(--line); margin-top: 8px; }
 .prow {
@@ -258,7 +343,7 @@ ol.steps li { margin: 4px 0; }
 #view-console { gap: 10px; }
 .log {
   flex: 1; min-height: 180px; overflow-y: auto; overflow-x: hidden;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); border: 1px solid transparent; border-radius: var(--radius);
   padding: 8px 10px; font-family: var(--mono); font-size: .82rem; line-height: 1.4;
   overflow-wrap: anywhere; white-space: pre-wrap;
 }
@@ -283,7 +368,7 @@ nav {
   flex: none;
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--surface); border-top: 1px solid var(--line);
-  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 0 max(env(safe-area-inset-right), calc(var(--pad-r) - 16px)) env(safe-area-inset-bottom) max(env(safe-area-inset-left), calc(var(--pad-l) - 16px));
 }
 nav button {
   min-height: 64px; border: 0; background: transparent; color: var(--muted); padding: 0 2px;
@@ -325,7 +410,12 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 .bar > i { display: block; height: 100%; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform .15s linear; }
 .dump-text { font-size: 1.1rem; font-weight: 700; margin: 10px 0 6px; }
 .btn.secondary { background: var(--surface); }
-.linkbtn { background: none; border: 0; color: var(--accent); font-weight: 700; min-height: 48px; padding: 0 4px; text-decoration: underline; }
+/* Inline text link: sits on the text line; the ::before pad keeps a 48px tap target without breaking line spacing. */
+.linkbtn {
+  position: relative; background: none; border: 0; padding: 0 2px; line-height: inherit; vertical-align: baseline;
+  color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px;
+}
+.linkbtn::before { content: ""; position: absolute; left: -6px; right: -6px; top: 50%; height: 48px; transform: translateY(-50%); }
 
 /* ---------- saved runs ---------- */
 .rec-item { border-top: 1px solid var(--line); padding: 12px 0 4px; }
@@ -343,7 +433,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 }
 #copySheet .sheet {
   width: 100%; max-width: 640px; background: var(--surface); border-top-left-radius: 18px; border-top-right-radius: 18px;
-  padding: 16px var(--pad-r) calc(16px + env(safe-area-inset-bottom)) var(--pad-l);
+  padding: 16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   display: flex; flex-direction: column; gap: 10px; max-height: 85vh;
 }
 #copySheet textarea {
@@ -352,14 +442,16 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 }
 
 @media (orientation: landscape) and (max-height: 540px) {
+  :root { --content: 100vw; }   /* phone on its side: use the full width */
   #view-ride.active { display: grid; grid-template-columns: 1.1fr 1fr; grid-template-rows: auto 1fr; }
   #view-ride .chips { grid-column: 1 / -1; }
   #view-ride .tiles { grid-template-columns: 1fr; align-content: center; }
   #view-ride .tiles { gap: 6px; }
   #view-ride .tile { padding: 4px 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   #view-ride .tile .v { font-size: 1.9rem; }
-  #view-ride .gear-wrap { padding: 4px 8px; }
-  .gear { font-size: min(36vh, 30vw); }
+  #view-ride .gear-wrap { padding: 4px 8px; gap: 8px; }
+  .gear-ring { --ring: min(58vh, 34vw); border-width: 6px; }
+  .gear-note { min-height: 30px; padding: 4px 12px; }
   header { min-height: calc(52px + env(safe-area-inset-top)); }
   nav button { min-height: 56px; }
 }
@@ -392,8 +484,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       <span class="chip warn" id="chipY" hidden><span class="k">Y</span>Sending recording</span>
     </div>
     <div class="gear-wrap">
-      <div class="gear-label">GEAR</div>
-      <div class="gear dim" id="gear">--</div>
+      <div class="gear-ring">
+        <div class="gear-label">GEAR</div>
+        <div class="gear dim" id="gear">--</div>
+      </div>
       <div class="gear-note" id="gearNote">Waiting for data</div>
       <button class="btn primary" id="goCal" type="button" hidden>Go to Calibrate</button>
     </div>
@@ -423,40 +517,61 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div id="calIntroV3" hidden>
           <p class="muted">Calibration is done <b>while pedalling</b>. Keep pedalling the whole time; the console shows the gear while you pedal.</p>
           <ol class="steps muted small">
-            <li>First the bridge learns your crank: pedal steadily for about 10 seconds. It beeps twice quickly when done.</li>
+            <li>First the bridge learns your crank: pedal steadily at 60–80 rpm for 5 to 15 seconds. It beeps twice when done. Check the rpm matches the console.</li>
             <li>Point 1: gear lever all the way down.</li>
             <li>Points 2 to 24: move the lever up until the console first shows the next gear, then hold it there.</li>
             <li>Point 25: gear lever all the way up.</li>
           </ol>
           <p class="muted small">With auto-capture on, each point is taken once 3 pedal turns in a row agree. Otherwise tap CAPTURE.</p>
         </div>
-        <button class="btn primary big" id="calStart" type="button" style="margin-top:12px">Start calibration</button>
-        <button class="btn secondary" id="saveStored" type="button" style="margin-top:10px; width:100%">Save stored calibration</button>
+        <div class="btn-stack">
+          <button class="btn primary big" id="calStart" type="button">Start calibration</button>
+          <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
+        </div>
         <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:8px 0 0"></p>
-        <p class="small muted" style="margin:8px 0 0">Every finished calibration is saved on this phone automatically. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>
+        <p class="small muted" style="margin:12px 0 0">Every finished calibration is saved on this phone automatically. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>
       </div>
     </div>
 
     <div id="calActive" hidden>
-      <div class="cal-head">
-        <div class="cal-point" id="calPoint" aria-live="polite">Point 1 of 25</div>
-        <div class="cal-count" id="calCount">0 captured</div>
+      <div class="cadg" id="cadG" role="img" aria-label="Cadence" hidden>
+        <div class="cadg-track"><i class="cadg-win"></i><b class="cadg-dot idle" id="cadDot">--</b></div>
+        <div class="cadg-ticks" aria-hidden="true"><span style="left:28.57%">60</span><span style="left:57.14%">80</span></div>
+        <div class="cadg-cap" id="cadCap"></div>
       </div>
-      <div class="segs" id="segs" aria-hidden="true"></div>
-      <div class="small" id="calWait" role="status" hidden style="color:var(--warn);font-weight:600">Waiting for the bridge…</div>
-      <div class="prompt" id="calPrompt" aria-live="polite"></div>
-      <div class="meter">
-        <div class="ring" id="ring">
-          <svg viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="12"></circle>
-            <circle class="fill" id="ringFill" cx="60" cy="60" r="52" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+      <div class="small" id="calWait" role="status" hidden style="color:var(--warn);font-weight:600;text-align:center">Waiting for the bridge…</div>
+      <div class="stage" id="stage">
+        <div id="calDots" aria-hidden="true"></div>
+        <div class="disc" id="disc">
+          <svg viewBox="0 0 236 236" aria-hidden="true">
+            <circle class="face" cx="118" cy="118" r="100"></circle>
+            <circle class="arc" id="arc0" cx="118" cy="118" r="112" stroke-dasharray="216.57 487.15" transform="rotate(-85.4 118 118)"></circle>
+            <circle class="arc" id="arc1" cx="118" cy="118" r="112" stroke-dasharray="216.57 487.15" transform="rotate(34.6 118 118)"></circle>
+            <circle class="arc" id="arc2" cx="118" cy="118" r="112" stroke-dasharray="216.57 487.15" transform="rotate(154.6 118 118)"></circle>
+            <circle class="arc" id="ringTrack" cx="118" cy="118" r="112"></circle>
+            <circle class="ringf" id="ringFill" cx="118" cy="118" r="112" stroke-dasharray="703.72" stroke-dashoffset="703.72" transform="rotate(-90 118 118)"></circle>
           </svg>
-          <div class="pct" id="ringPct">0</div>
+          <div class="disc-in">
+            <div id="discNum"><div class="lbl" id="discLbl">GEAR</div><div class="big" id="discBig">1</div></div>
+            <svg class="chk" id="discCheck" viewBox="0 0 84 84" aria-hidden="true" hidden><path d="M20 44 L36 59 L65 27" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <svg class="crank" id="discCrank" viewBox="0 0 48 48" aria-hidden="true" hidden>
+              <circle cx="24" cy="24" r="14" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="4.4 3"></circle>
+              <path d="M24 24 V7" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+              <rect x="15" y="2" width="18" height="6" rx="3" fill="currentColor"></rect>
+              <circle cx="24" cy="24" r="4" fill="currentColor"></circle>
+            </svg>
+            <div class="turns" id="discTurns" hidden></div>
+          </div>
         </div>
-        <div class="meter-text">
-          <div class="t" id="meterTitle">Hold steady</div>
-          <div class="s" id="meterSub"></div>
-        </div>
+      </div>
+      <div class="cal-say" aria-live="polite">
+        <div class="h" id="calHead"></div>
+        <div class="s" id="calSub"></div>
+      </div>
+      <div id="calCount">0 of 25</div>
+      <div class="btn-stack" id="confirmBtns" hidden style="margin-top:0">
+        <button class="btn primary big" id="btnConfirm" type="button">Yes, it matches</button>
+        <button class="btn secondary wide" id="btnRelearn" type="button">Learn again</button>
       </div>
       <div class="cal-btns">
         <button class="btn primary capture" id="btnCapture" type="button">CAPTURE</button>
@@ -466,7 +581,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     </div>
 
     <button class="switch-row" id="autoToggle" type="button" role="switch" aria-checked="mixed">
-      <span><span class="t">Auto-capture</span><br><span class="s" id="autoSub">Waiting for status</span></span>
+      <span class="t">Auto-capture</span>
       <span class="switch" aria-hidden="true"></span>
     </button>
 
@@ -487,11 +602,13 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <p class="muted small">A guided recording of the raw magnetometer field while you move the lever, turn the crank and pedal. The bridge records 25 samples a second; afterwards the page downloads the recording and saves it on this phone. Needs firmware v2 with recording.</p>
         <ol class="dsteps" id="diagStepList"></ol>
         <p class="small muted" id="diagTotal" style="margin:8px 0 0"></p>
-        <button class="switch-row" id="leanToggle" type="button" role="switch" aria-checked="true" style="margin-top:12px">
-          <span><span class="t">Include the lean step</span><br><span class="s">Leaning on the bars, sitting up, leaning back</span></span>
-          <span class="switch" aria-hidden="true"></span>
-        </button>
-        <button class="btn primary big" id="diagStart" type="button" style="margin-top:12px">Start diagnostic run</button>
+        <div class="btn-stack">
+          <button class="switch-row" id="leanToggle" type="button" role="switch" aria-checked="true">
+            <span><span class="t">Include the lean step</span><br><span class="s">Leaning on the bars, sitting up, leaning back</span></span>
+            <span class="switch" aria-hidden="true"></span>
+          </button>
+          <button class="btn primary big" id="diagStart" type="button">Start diagnostic run</button>
+        </div>
       </div>
     </div>
 
@@ -516,7 +633,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="bar"><i id="dBar"></i></div>
         <div class="small muted" id="dDumpSub" style="margin-top:6px"></div>
       </div>
-      <button class="btn danger" id="dCancel" type="button" style="width:100%">CANCEL</button>
+      <button class="btn danger wide" id="dCancel" type="button">CANCEL</button>
     </div>
 
     <div class="card" id="savedCard">
@@ -592,7 +709,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var DEMO_OLDFW = params.get('oldfw') === '1';     // demo: act like firmware without k/g/m/e/y
   var FAST = params.get('fast') === '1' ? 5 : 1;    // divide diagnostic step times by 5
   var DEMO_V3 = params.get('v3') === '1';
-  var DEMO_STALL = params.get('stall') === '1';     // demo: status lines stall for 3 s every ~12 s           // demo: simulate firmware v3 (calibration while pedalling)
+  var DEMO_STALL = params.get('stall') === '1';     // demo: status lines stall for 3 s every ~12 s
+  var DEMO_CAD = num(params.get('cad')) || 72;      // demo v3: cadence while calibrating, rpm
+  var DEMO_LEARNFAIL = params.get('learnfail') === '1';   // demo v3: the first crank learning fails
 
   var DIAG_STEPS = [
     { label: 'Hands off — lever down', text: "Push the lever all the way down. Don't touch the bike.", secs: 8 },
@@ -610,11 +729,17 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var MAX_MARKERS = 32;
   var D_RAW_SHOWN = 10;
   var T_RAW_SHOWN = 10;
-  var CAL3_PROMPT = 'Pedal steadily for about 10 seconds so the bridge can learn your crank';
+  var LEARN_DONE_MS = 1400; // after crank learning: keep the finished (green) bar on screen this long
+  var CAPTURE_FLASH_MS = 1000; // [v3] after each captured point: show the ring green at 3/3 this long
 
   function $(id) { return document.getElementById(id); }
   // Only touch the DOM when visibility really changes (no needless re-layout on every status line).
-  function setHidden(id, v) { var el = $(id); v = !!v; if (el.hidden !== v) el.hidden = v; }
+  // SVG elements have no .hidden property, so they get the attribute ([hidden] hides any element).
+  function setHidden(id, v) {
+    var el = $(id); v = !!v;
+    if (el instanceof HTMLElement) { if (el.hidden !== v) el.hidden = v; }
+    else if (el.hasAttribute('hidden') !== v) { if (v) el.setAttribute('hidden', ''); else el.removeAttribute('hidden'); }
+  }
 
   // ===================================================================
   // App state
@@ -704,7 +829,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   // ===================================================================
   // Line parser
   // ===================================================================
-  var MACHINE_RE = /^([SCKAUQGMYD]),/;
+  var MACHINE_RE = /^([SCKAUQGMYDLN]),/;
 
   function handleLine(raw) {
     var line = raw;
@@ -752,6 +877,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'G': ok = onG(parts); break;
         case 'M': ok = onM(parts); break;
         case 'Y': ok = onY(parts); break;
+        case 'L': ok = onL(parts); break;
+        case 'N': ok = onN(parts); break;
       }
     } catch (e) { console.warn('parse error', line, e); ok = false; }
     if (state.showRaw || !ok) logLine(ok ? line : line + '   (malformed, ignored)', ok ? 'raw' : 'rawbad');
@@ -762,11 +889,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (p.length < 9) return false;
     var gear = int(p[1]), cal = int(p[5]);
     if (!fin(gear) || gear < 0 || gear > 99) return false;
-    if (!fin(cal) || cal < 0 || cal > 3) return false;
+    if (!fin(cal) || cal < 0 || cal > 4) return false;
     // [v3] 12th field src: B board / W pod / - none. Its presence marks v3 firmware.
     var srcRaw = p.length >= 12 ? p[11].trim() : '';
     var src = srcRaw === 'B' || srcRaw === 'W' || srcRaw === '-' ? srcRaw : '';
-    if (cal === 3 && !src) return false;   // cal=3 only exists on v3
+    if (cal >= 3 && !src) return false;   // cal=3 only exists on v3, cal=4 on v3.1
     var flagStr = (p[9] || '').trim();
     var flags = {};
     for (var i = 0; i < flagStr.length; i++) flags[flagStr.charAt(i)] = true;
@@ -785,6 +912,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       flagStr: flagStr,
       rec: int(p[10]),     // optional 11th field: samples recorded so far
       src: src,            // [v3] '' on v2
+      lturns: int(p[12]),  // [v3.1] turns seen while learning the crank; NaN on earlier firmware
       pedalling: src ? (src !== '-' && !!flags.R) : true
     };
     var prevCal = state.s ? state.s.cal : 0;
@@ -800,8 +928,15 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       // Ended: K or A normally arrives just before this. If neither does, keep what was captured.
       setTimeout(function () { if (!state.calEnded) savePartialCal('ended without a result'); }, 1500);
     }
-    if (prevCal === 3 && (cal === 1 || cal === 2)) {
-      toast('Crank learned. Start the 25 points.');
+    if (cal === 3 && prevCal !== 3) state.learnFailed = false;   // (re)learning the crank
+    if (prevCal === 3 && cal === 4) {
+      // [v3.1] crank learned: the board waits for the rider to check the cadence
+      try { if (navigator.vibrate) navigator.vibrate([60, 60, 60]); } catch (e) {}
+    }
+    if (prevCal === 3 && (cal === 1 || cal === 2) && !state.learnFailed) {
+      // v3 before the cadence check: straight on to the points
+      state.learnDoneAt = Date.now();   // renderCal shows a green "Crank learned" briefly
+      setTimeout(render, LEARN_DONE_MS + 50);
       try { if (navigator.vibrate) navigator.vibrate([60, 60, 60]); } catch (e) {}
     }
     render();
@@ -816,9 +951,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var pt = { point: point, x: num(p[2]), y: num(p[3]), z: num(p[4]) };
     state.points = state.points.filter(function (q) { return q.point < point; });
     state.points.push(pt);
+    state.capturedAt = Date.now(); state.capturedPoint = point;   // renderCal: green 3/3 flash
+    setTimeout(render, CAPTURE_FLASH_MS + 50);
     try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
     renderPoints();
-    flashCapture();
+    render();
     return true;
   }
 
@@ -870,11 +1007,35 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     return true;
   }
 
+  // [v3.1] L,<ok>,<turns>,<rpm>,<depth>,<reason>: crank learning result
+  function onL(p) {
+    if (p.length < 2 || (p[1] !== '0' && p[1] !== '1')) return false;
+    var ok = p[1] === '1', reason = p.slice(5).join(',').trim();
+    state.learnFailed = !ok;
+    logLine(ok ? 'Crank learned: ' + (p[2] || '?') + ' turns at ' + (p[3] || '?') + ' rpm, dip ' + (p[4] || '?') + ' µT'
+      : 'Crank not found (' + (reason || 'no reason given') + '). Continuing with the hold-still method.', 'sys');
+    if (!ok) toast('Crank not found: ' + (reason || 'no reason given'));
+    render();
+    return true;
+  }
+
+  // [v3.1] N,<reason>: a manual capture was refused
+  function onN(p) {
+    var r = (p[1] || '').trim();
+    if (r === 'notmoved') toast('Not saved: move the lever to the next gear first');
+    else if (r === 'noturn') toast('Keep pedalling: no full turn yet');
+    else return false;
+    return true;
+  }
+
   function onCalStarted() {
     state.points = [];
     state.result = null;
     state.calEnded = false;
     state.partialSaved = -1;
+    state.learnFailed = false;
+    state.capturedAt = 0;
+    state.learnDoneAt = 0;
     setHidden('storedMsg', true);
     renderPoints();
     renderResult();
@@ -2006,19 +2167,23 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     if (stale) { note.className = 'gear-note warn'; note.textContent = 'Waiting for the bridge…'; }
   }
 
-  function promptHtml(step, v3) {
-    if (v3) {
-      if (step <= 0) return 'Keep pedalling. Push the gear lever ALL THE WAY DOWN';
-      if (step >= 24) return 'Keep pedalling. Push the gear lever ALL THE WAY UP';
-      return 'Keep pedalling. Move the lever up until the console FIRST shows gear <b>' + (step + 1) + '</b>, then hold it there';
-    }
-    if (step <= 0) return 'Push the gear lever ALL THE WAY DOWN';
-    if (step >= 24) return 'Push the gear lever ALL THE WAY UP';
-    return 'Move the lever up until the console FIRST shows gear <b>' + (step + 1) + '</b>, then stop pedalling';
-  }
+  var RING_C = 2 * Math.PI * 112;
+  var CAD_LO = 60, CAD_HI = 80;   // cadence asked for while calibrating (crank mode)
 
-  var RING_C = 2 * Math.PI * 52;
-  var lastStepRendered = -1;
+  // The 25 points as dots on a circle around the disc (positions in % of the stage).
+  function buildCalDots() {
+    var box = $('calDots');
+    if (box.children.length === TOTAL_POINTS) return;
+    box.innerHTML = '';
+    for (var i = 0; i < TOTAL_POINTS; i++) {
+      var a = (-90 + i * 360 / TOTAL_POINTS) * Math.PI / 180;
+      var d = document.createElement('i');
+      d.className = 'pt';
+      d.style.left = (50 + 46.67 * Math.cos(a)).toFixed(2) + '%';
+      d.style.top = (50 + 46.67 * Math.sin(a)).toFixed(2) + '%';
+      box.appendChild(d);
+    }
+  }
 
   function renderCal() {
     var s = state.s, connected = state.conn === 'connected';
@@ -2035,72 +2200,147 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
     // auto-capture toggle reflects the A flag
     var at = $('autoToggle');
-    if (s) {
-      at.setAttribute('aria-checked', s.flags.A ? 'true' : 'false');
-      $('autoSub').textContent = s.flags.A ? (v3 ? 'On: captures after 3 agreeing pedal turns' : 'On: captures after ~2 s held steady') : 'Off: tap CAPTURE for each point';
-    } else {
-      at.setAttribute('aria-checked', 'mixed');
-      $('autoSub').textContent = connected ? 'Waiting for status' : 'Not connected';
-    }
+    at.setAttribute('aria-checked', s ? (s.flags.A ? 'true' : 'false') : 'mixed');
     at.disabled = !connected;
 
     setHidden('pointsCard', state.points.length === 0 && !active);
+    if (!active) return;
 
-    if (!active) { lastStepRendered = -1; return; }
-
-    var step = s.step;
-    var learning = s.cal === 3;
-    $('calPoint').textContent = learning ? 'Learning your crank' : 'Point ' + (step + 1) + ' of ' + TOTAL_POINTS;
-    $('calCount').textContent = learning ? 'stage 1 of 2' : step + ' captured';
-    // prompt key: changes with step, v3 and the learning stage
-    var pkey = (learning ? 'L' : step) + (v3 ? 'v3' : 'v2');
-    if (pkey !== lastStepRendered) {
-      $('calPrompt').innerHTML = learning
-        ? '<div style="font-size:1.7rem">Learning your crank — pedal steadily</div><div class="small" style="font-weight:600;margin-top:6px;line-height:1.35">' + CAL3_PROMPT + '</div>'
-        : promptHtml(step, v3);
-      lastStepRendered = pkey;
-    }
-    if (learning) step = 0;
-    var segs = $('segs');
-    if (segs.children.length !== TOTAL_POINTS) {
-      segs.innerHTML = '';
-      for (var i = 0; i < TOTAL_POINTS; i++) { var d = document.createElement('div'); d.className = 'seg'; segs.appendChild(d); }
-    }
-    for (var j = 0; j < TOTAL_POINTS; j++) {
-      segs.children[j].className = 'seg' + (j < step ? ' done' : (j === step && !learning ? ' cur' : ''));
-    }
-
+    buildCalDots();
+    var now = Date.now(), auto = !!s.flags.A;
+    var learning = s.cal === 3, confirming = s.cal === 4;
+    // Crank mode: v3 firmware that found the crank (gear per pedal turn, keep pedalling).
+    // After a failed crank learning it falls back to the v2 hold-still method.
+    var crankMode = v3 && !state.learnFailed;
+    var step = learning || confirming ? 0 : s.step;
     var stab = Math.round(s.stab);
-    var ring = $('ring');
-    $('ringFill').setAttribute('stroke-dashoffset', String(RING_C * (1 - stab / 100)));
-    ring.classList.toggle('full', stab >= 100 && s.cal !== 2);
-    ring.classList.toggle('cap', s.cal === 2);
-    var title, sub, pct = String(stab);
-    if (learning) {
-      title = 'Learning your crank';
-      sub = s.pedalling ? 'Pedal steadily. About 10 seconds.' : 'Start pedalling steadily.';
-    } else if (v3) {
-      // [v3] stab = agreeing pedal turns: 0/33/67/100 -> 0..3
-      var turns = Math.max(0, Math.min(3, Math.round(stab / 100 * 3)));
-      pct = turns + '/3';
-      if (s.cal === 2) { title = 'Capturing...'; sub = 'Keep pedalling, keep the lever still.'; }
-      else if (!s.pedalling) { title = 'Keep pedalling'; sub = 'Turns are only counted while you pedal.'; }
-      else {
-        title = 'Turns agreeing: ' + turns + ' of 3';
-        sub = turns >= 3 ? (s.flags.A ? 'About to capture.' : 'Tap CAPTURE to record this point.')
-          : (s.flags.A ? 'Auto-capture at 3 of 3. Hold the lever still.' : 'Tap CAPTURE when ready.');
-      }
-    } else if (s.cal === 2) { title = 'Capturing...'; sub = 'Averaging. Keep the lever still.'; }
-    else if (stab >= 100 && !s.flags.A) { title = 'Steady'; sub = 'Tap CAPTURE to record this point.'; }
-    else if (stab >= 100) { title = 'Steady'; sub = 'About to capture.'; }
-    else if (stab > 0) { title = 'Hold steady'; sub = s.flags.A ? 'Auto-capture when the ring fills.' : 'Tap CAPTURE when ready.'; }
-    else { title = 'Set the lever'; sub = 'Then stop moving it.'; }
-    $('ringPct').textContent = pct;
-    $('meterTitle').textContent = title;
-    $('meterSub').textContent = sub;
+    var turns = Math.max(0, Math.min(3, Math.round(stab / 100 * 3)));
+    var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < CAPTURE_FLASH_MS;
+    var justLearned = !learning && !confirming && step === 0 && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
+    var stopped = crankMode && !learning && !confirming && !s.pedalling && s.cal === 1;
 
-    $('btnCapture').disabled = !connected || s.cal === 2 || learning;
-    $('btnUndo').disabled = !connected || step === 0 || learning;
+    // disc look: learn | confirm | grey | blue | green | amber
+    var look, head, sub;
+    if (learning) {
+      look = 'learn';
+      head = crankMode ? 'Pedal at ' + CAD_LO + '–' + CAD_HI + ' rpm' : 'Pedal steadily';
+      sub = 'Steady, and keep the lever still';
+    } else if (confirming) {
+      look = 'confirm';
+      head = 'Matches the console?';
+      sub = 'Compare with the rpm on the Keiser';
+    } else if (flash || justLearned) {
+      look = 'green';
+      head = justLearned ? 'Crank learned' : 'Got it';
+      sub = justLearned ? 'Now the 25 lever positions' : pointLabel(state.capturedPoint) + ' saved';
+    } else if (stopped) {
+      look = 'amber';
+      head = 'Keep pedalling';
+      sub = 'The gear is read on every pedal turn';
+    } else if (s.cal === 2 || stab > 0) {
+      look = 'blue';
+      if (crankMode) {
+        head = 'Hold it there';
+        sub = s.cal === 2 ? 'Saving…' : turns >= 3 && !auto ? 'Tap CAPTURE to save' : 'Turn ' + Math.max(1, turns) + ' of 3';
+      } else {
+        head = 'Hold still';
+        sub = s.cal === 2 ? 'Saving…' : auto ? 'Saves when the ring fills' : 'Tap CAPTURE when ready';
+      }
+    } else {
+      look = 'grey';
+      var n = step + 1;
+      if (step === 0) { head = 'Lever all the way down'; sub = crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
+      else { head = 'Shift up to ' + n; sub = 'Stop as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
+    }
+    $('calHead').textContent = head;
+    $('calSub').textContent = sub;
+
+    // disc
+    $('disc').className = 'disc' + (look === 'blue' ? ' blue' : look === 'green' ? ' green' : look === 'amber' ? ' amber' : look === 'learn' ? ' learn' : '') +
+      (flash && look === 'green' ? ' pop' : '');
+    var showNum = look !== 'learn' && look !== 'green';
+    setHidden('discNum', !showNum);
+    setHidden('discCheck', look !== 'green');
+    setHidden('discCrank', look !== 'learn');
+    setHidden('discTurns', look !== 'learn');
+    if (showNum) {
+      if (confirming) {
+        $('discLbl').textContent = 'RPM';
+        $('discBig').textContent = fin(s.cad) && s.cad > 0 ? String(Math.round(s.cad)) : '--';
+      } else {
+        $('discLbl').textContent = step === 0 ? 'BOTTOM' : step >= TOTAL_POINTS - 1 ? 'TOP' : 'GEAR';
+        $('discBig').textContent = String(step === 0 ? 1 : Math.min(24, step + 1));
+      }
+    }
+    if (look === 'learn') {
+      $('discTurns').textContent = fin(s.lturns) ? Math.min(s.lturns, 6) + ' of 6 turns' : stab + '%';
+    }
+    // Three arcs (agreeing turns) in crank mode; a continuous ring for learning and the v2 hold timer.
+    var useRing = look === 'learn' || (!crankMode && (look === 'blue' || look === 'grey'));
+    var ringPct = s.cal === 2 ? 100 : stab;
+    for (var k = 0; k < 3; k++) {
+      setHidden('arc' + k, useRing);
+      $('arc' + k).setAttribute('class', 'arc' + (look === 'green' || (look === 'blue' && (s.cal === 2 || k < turns)) ? ' on' : ''));
+    }
+    setHidden('ringTrack', !useRing);
+    setHidden('ringFill', !useRing);
+    if (useRing) $('ringFill').setAttribute('stroke-dashoffset', String(RING_C * (1 - ringPct / 100)));
+
+    // the 25 dots
+    var dots = $('calDots').children;
+    var doneCount = flash ? state.capturedPoint : step;
+    for (var j = 0; j < TOTAL_POINTS; j++) {
+      var cls = 'pt';
+      if (!learning && !confirming) {
+        if (j < doneCount) cls += ' done';
+        else if (j === step && !flash) cls += ' cur' + (look === 'blue' ? ' blue' : '');
+      }
+      dots[j].className = cls;
+    }
+
+    // cadence slider (crank mode only: the v2 method needs the flywheel still)
+    setHidden('cadG', !crankMode);
+    if (crankMode) {
+      var rpm = fin(s.cad) ? Math.round(s.cad) : 0, dotCls = '', cap, capCls = '';
+      if (stopped || rpm <= 0) {
+        dotCls = 'idle';
+        cap = stopped ? 'Not pedalling' : '';
+        capCls = stopped ? 'warn' : '';
+      } else if (rpm < CAD_LO || rpm > CAD_HI) {
+        dotCls = 'bad'; capCls = 'bad';
+        cap = rpm < CAD_LO ? 'Speed up' : 'Ease off';
+      } else cap = '';
+      var dot = $('cadDot');
+      dot.className = 'cadg-dot' + (dotCls ? ' ' + dotCls : '');
+      dot.textContent = dotCls === 'idle' ? '--' : String(rpm);
+      dot.style.left = (dotCls === 'idle' ? 0 : Math.max(0, Math.min(100, (rpm - 40) / 70 * 100))).toFixed(1) + '%';
+      $('cadCap').textContent = cap;
+      $('cadCap').className = 'cadg-cap' + (capCls ? ' ' + capCls : '');
+      $('cadG').setAttribute('aria-label', dotCls === 'idle' ? (cap || 'Cadence: waiting for pedal turns') : 'Cadence ' + rpm + ' rpm, target ' + CAD_LO + ' to ' + CAD_HI);
+    }
+
+    // buttons
+    var noPoint = learning || confirming;
+    $('calActive').classList.toggle('nopoint', noPoint);
+    setHidden('calCount', noPoint);
+    $('calCount').textContent = step + ' of ' + TOTAL_POINTS;
+    var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0;
+    setHidden('confirmBtns', !(confirming || relearnHere));
+    setHidden('btnConfirm', !confirming);
+    $('btnRelearn').textContent = confirming ? 'Learn again' : 'Try learning the crank again';
+    $('btnConfirm').disabled = !connected;
+    $('btnRelearn').disabled = !connected;
+    setHidden('btnCapture', noPoint);
+    setHidden('btnUndo', noPoint);
+    // Auto-capture on: a small secondary "Capture now", usable once 2 of 3 turns agree
+    // (or the hold timer is two-thirds done). Off: the big CAPTURE button.
+    var cap = $('btnCapture');
+    cap.classList.toggle('lite', auto);
+    cap.classList.toggle('primary', !auto);
+    cap.textContent = auto ? 'Capture now' : 'CAPTURE';
+    cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped;
+    $('btnUndo').disabled = !connected || step === 0 || s.cal !== 1;
     $('btnCancel').disabled = !connected;
   }
 
@@ -2179,12 +2419,6 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     card.innerHTML = html;
   }
 
-  function flashCapture() {
-    var ring = $('ring');
-    ring.style.transform = 'scale(1.08)';
-    setTimeout(function () { ring.style.transform = ''; }, 180);
-  }
-
   // ===================================================================
   // Console log
   // ===================================================================
@@ -2257,6 +2491,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   });
   $('btnCapture').addEventListener('click', function () { send('n'); });
   $('btnUndo').addEventListener('click', function () { send('u'); });
+  $('btnConfirm').addEventListener('click', function () { send('n'); });
+  $('btnRelearn').addEventListener('click', function () { send('l'); });
   $('autoToggle').addEventListener('click', function () { send('a'); });
 
   var cancelArmedUntil = 0, cancelTimer = 0;
@@ -2345,6 +2581,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var t = 0, gear = 7, cad = 0, timer = 0;
     // [v3] turn detection from the crank magnet
     var turnAcc = 0, turnMs = 0, agree = 0, tStream = false, pedal = true;
+    var lturns = 0, learnFails = DEMO_LEARNFAIL ? 1 : 0;   // [v3.1] turn-based crank learning
     var pauseUntil = 0;   // status lines held back until this time (simulated Bluetooth stall)
     this.pauseStatus = function (ms) { pauseUntil = Date.now() + ms; };
 
@@ -2479,13 +2716,24 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       if (DEMO_V3 && cal !== 0) {
         // [v3] calibration while pedalling: learn the crank (cal=3), then 3 agreeing turns per point
         pedal = true;
-        cad = 75 + jitter(2);
+        cad = DEMO_CAD + jitter(2);
         if (cal === 3) {
-          stab = Math.min(100, stab + 2.5 + jitter(0.4));   // ~10 s
-          if (stab >= 100) {
-            cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
-            out('Crank learned: dip depth 4.8 uT. Start the 25 points.');
+          // [v3.1] learning ends once 6 regular turns are seen (onTurn counts them)
+          stab = Math.min(95, Math.round(lturns * 100 / 6));
+          if (lturns >= 6) {
+            if (learnFails > 0) {
+              learnFails--;
+              out('L,0,6,' + Math.round(cad) + ',6.1,dip too shallow');
+              out('Crank magnet not detected well enough. Send l to try again.');
+              cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+            } else {
+              out('L,1,6,' + Math.round(cad) + ',58.0,ok');
+              out('Crank learned. Check that the cadence matches the Keiser console.');
+              cal = 4; stab = 100;
+            }
           }
+        } else if (cal === 4) {
+          stab = 100;                                   // waiting for n (matches) or l (learn again)
         } else if (cal === 2) {
           if (--capT <= 0) capturePoint();
         } else if (phase === 'move') {
@@ -2493,7 +2741,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           if (++phaseT >= 6) { phase = 'settle'; phaseT = 0; }
         }
         var tgt = step <= 0 ? 1 : step >= 24 ? 24 : step + 1;
-        if (cal !== 3) gear = tgt;
+        if (cal < 3) gear = tgt;
         res = gearToRes(gear) + (phase === 'move' && cal === 1 ? jitter(1.5) : jitter(0.1));
         watts = Math.round(cad * (0.4 + res * 0.045));
         off = phase === 'move' && cal === 1 ? 3 + Math.random() * 8 : 0.2 + Math.random() * 0.5;
@@ -2554,9 +2802,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
       if (DEMO_STALL && t % 48 === 0) pauseUntil = Date.now() + 3000;
       if (stream && !dumping && Date.now() >= pauseUntil) {   // status lines pause during a transfer or a stall
-        out(['S', calValid ? gear : 0, res.toFixed(1), Math.max(0, watts), cad.toFixed(1),
+        var cadOut = DEMO_V3 && cal === 3 && lturns === 0 ? 0 : cad;   // no rpm until the first turns
+        out(['S', calValid ? gear : 0, res.toFixed(1), Math.max(0, watts), cadOut.toFixed(1),
           cal, cal ? step : 0, Math.round(stab), off.toFixed(1), flags, samples.length]
-          .concat(DEMO_V3 ? [pedal ? 'B' : '-'] : []).join(','));
+          .concat(DEMO_V3 ? [pedal ? 'B' : '-', cal === 3 ? lturns : 0] : []).join(','));
       }
       if (debug && t % 4 === 0) {
         var p = PATH[Math.max(0, Math.min(24, gear - 1))];
@@ -2575,6 +2824,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         out(['T', turnMs, period, (p[0] + jitter(0.2)).toFixed(1), (p[1] + jitter(0.2)).toFixed(1), (p[2] + jitter(0.2)).toFixed(1),
           calValid ? gear : 0, gearToRes(gear).toFixed(1)].join(','));
       }
+      if (cal === 3) lturns++;
       if (cal === 1 && phase === 'settle') {
         agree = Math.min(3, agree + 1);
         stab = [0, 33, 67, 100][agree];
@@ -2605,8 +2855,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'c':
           if (cal !== 0) { out('Already calibrating. x = abort.'); break; }
           if (DEMO_V3) {
-            cal = 3; step = 0; stab = 0; agree = 0;
-            out('Calibration started. Pedal steadily so the bridge can learn your crank.');
+            cal = 3; step = 0; stab = 0; agree = 0; lturns = 0;
+            out('Calibration started. Pedal steadily at 60-80 rpm so the bridge can learn your crank.');
             break;
           }
           cal = 1; step = 0; stab = 0; phase = 'move'; phaseT = 0;
@@ -2615,7 +2865,22 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         case 'n':
           if (cal === 0) { out('Not calibrating. c = start.'); break; }
           if (cal === 3) { out('Still learning the crank. Keep pedalling.'); break; }
-          if (cal === 1) { beginCapture(); out('Capturing point ' + (step + 1) + '...'); }
+          if (cal === 4) {
+            cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+            out('Cadence confirmed: keep pedalling through all 25 points.');
+            break;
+          }
+          if (cal === 1) {
+            // [v3.1] manual captures get the same checks as auto-capture
+            if (step > 0 && phase === 'move') { out('Not captured: the lever has not moved from the previous point.'); out('N,notmoved'); break; }
+            if (DEMO_V3 && agree === 0) { out('No full pedal turn yet - keep pedalling.'); out('N,noturn'); break; }
+            beginCapture(); out('Capturing point ' + (step + 1) + '...');
+          }
+          break;
+        case 'l':
+          if (!DEMO_V3 || !(cal === 4 || (cal === 1 && step === 0))) break;
+          cal = 3; step = 0; stab = 0; agree = 0; lturns = 0;
+          out('Learning the crank again.');
           break;
         case 'u':
           if (cal === 0) { out('Not calibrating.'); break; }
