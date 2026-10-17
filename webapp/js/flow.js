@@ -106,7 +106,11 @@ function renderFlow(active, placing, saved) {
   setHidden('calPlace', !placing);
   if (placing) renderPlace();
   setHidden('upSaved', !saved);
-  $('upContinue').disabled = state.conn !== 'connected';
+  // a silent link at the checkpoint: say so (the circle's "Waiting for the bridge" note isn't on screen here)
+  var cpWait = saved && state.conn === 'connected' && Date.now() - state.sAt > WAIT_NOTE_MS;
+  $('upContinue').disabled = state.conn !== 'connected' || cpWait;
+  var cpText = cpWait ? 'Waiting for the bridge…' : 'Continue down';
+  if ($('upContinue').textContent !== cpText) $('upContinue').textContent = cpText;
   // resume offers on the start screen
   // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&

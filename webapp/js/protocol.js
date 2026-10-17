@@ -125,7 +125,7 @@ function onS(p) {
   // glues two lines together ("S,1,2.5,0,0.0,0,0,0,S,1,..."): field 10 is then a number, not
   // the flags, and the gear flashed "Not calibrated" for one line.
   if (state.v33) { if (!v33line || !PASS33_RE.test(passRaw)) return false; }
-  else if (state.v32) { if (n !== 14 || !PASS_RE.test(passRaw)) return false; }
+  else if (state.v32) { if (!v33line && (n !== 14 || !PASS_RE.test(passRaw))) return false; }   // (v3.3 lines still upgrade it)
   else if (state.v31) { if (n !== 13 && n !== 14 && !v33line) return false; }
   else if (state.v3) { if ((n < 12 || n > 14) && !v33line) return false; }
   if (state.v3 || n >= 12) {
@@ -163,6 +163,8 @@ function onS(p) {
   var prevCal = state.s ? state.s.cal : 0;
   var prevPass = state.s ? state.s.pass : '';
   var prevFlow = state.s ? state.s.flow : 0;
+  var dropCal = state.dropS ? state.dropS.cal : 0;   // first status line after a drop: the run that was on then
+  state.dropS = null; state.dropV = null;
   state.s = s;
   state.sAt = Date.now();
   // Firmware level, latched until disconnect, only from lines of the exact length.
@@ -222,9 +224,10 @@ function onS(p) {
     // however it started (the page, the bridge's button, #D, a reconnect): show it, full screen
     if (state.view !== 'cal') showView('cal');
   }
-  if (prevCal !== 0 && cal === 0) {
-    // Ended: K or A normally arrives just before this. If neither does, keep what was captured.
-    setTimeout(function () { if (!state.calEnded) savePartialCal('ended without a result'); }, 1500);
+  if ((prevCal !== 0 || dropCal !== 0) && cal === 0) {   // (also when it ended while the link was down)
+    // Ended: K or A normally arrives just before this. If neither does, keep what was captured
+    // (unless the board is calibrating again by then: one stray idle line isn't an end).
+    setTimeout(function () { if (!state.calEnded && (!state.s || state.s.cal === 0)) savePartialCal('ended without a result'); }, 1500);
     // [v3.2] a redo that ended without E/K/A (e.g. cancelled): stop waiting for it
     var ed0 = state.edit;
     if (ed0 && ed0.kind === 'R' && ed0.started) {
@@ -302,7 +305,15 @@ function onCDown(p) {
 }
 
 function isRedoing() {
-  return !!(state.s && (state.s.pass === 'ru' || state.s.pass === 'rd')) || !!(state.edit && state.edit.kind === 'R' && state.edit.started);
+  var s = state.s || state.dropS;   // (right after a reconnect: the redo that was going on)
+  return !!(s && (s.pass === 'ru' || s.pass === 'rd')) || !!(state.edit && state.edit.kind === 'R' && state.edit.started);
+}
+// [v3.2] down points come 23, 22, ... : one missing in between was lost on the way
+function downPointsMissing() {
+  var d = state.downPoints;
+  if (!d.length) return false;
+  var low = Math.min.apply(null, d.map(function (q) { return q.point; }));
+  return d.length < (TOTAL_POINTS - 2) - low + 1;
 }
 
 // [v3.2] the board started a #R redo: one point of the saved calibration, by pedalling
@@ -336,7 +347,10 @@ function onK(p) {
   // [v3.2] after an edit (#R / #G) the board saves again and sends K
   var ed = state.edit && state.edit.okd ? state.edit : null;
   if (ed) { clearTimeout(ed.timer); state.edit = null; r.edit = editLabel(ed); }
-  r.down = state.v32 && !state.learnFailed ? state.downPoints.length : -1;   // no down pass with the hold-still method
+  // (right after a reconnect, before any status line, the firmware level is the one from before the drop)
+  var v32 = state.v32 || !!(state.dropV && state.dropV.v32), v33 = state.v33 || !!(state.dropV && state.dropV.v33);
+  var sNow = state.s || state.dropS;
+  r.down = v32 && !state.learnFailed ? state.downPoints.length : -1;   // no down pass with the hold-still method
   state.result = r;
   state.resultHidden = false;
   state.calEnded = true;
@@ -350,7 +364,7 @@ function onK(p) {
   }
   try { if (navigator.vibrate) navigator.vibrate(r.ok ? [60, 60, 60] : [300]); } catch (e) {}
   // [v3.3] which step just saved: the up pass (checkpoint) or the down pass (then fixes, then the gear check)
-  var flowAt = state.v33 && state.s ? state.s.flow : 0;
+  var flowAt = v33 && sNow ? sNow.flow : 0;
   // (with the hold-still method, after the crank wasn't found, there is no checkpoint or down pass)
   if (r.ok && !r.edit && flowAt === 4 && !state.learnFailed) {
     r.down = -1;             // the down pass hasn't started yet: nothing to say about it
@@ -358,7 +372,7 @@ function onK(p) {
     state.fixHold = true;    // flagged gears wait until the down pass is done (or Later)
     setFlowRecord({ downDone: false, checkDone: false });
     try { if (navigator.vibrate) navigator.vibrate([60, 60, 60, 60, 120]); } catch (e) {}
-  } else if (r.ok && !r.edit && state.v33 && state.learnFailed) {
+  } else if (r.ok && !r.edit && v33 && state.learnFailed) {
     setFlowRecord({ downDone: true, checkDone: false });   // hold-still method: no down pass to come back for
   } else if (r.ok && !r.edit && flowAt === 5) {
     state.upSaved = false;
@@ -366,7 +380,9 @@ function onK(p) {
     var finished = state.downPoints.some(function (q) { return q.point === 2; });
     setFlowRecord({ downDone: finished, checkDone: false });
   }
-  if (r.edit && state.points.length < TOTAL_POINTS || (state.v33 && !r.edit && r.ok && state.points.length < TOTAL_POINTS)) {
+  // (also when a down point was lost on the way: the bridge has it, the page doesn't)
+  if (r.edit && state.points.length < TOTAL_POINTS ||
+      (v33 && !r.edit && r.ok && (state.points.length < TOTAL_POINTS || downPointsMissing()))) {
     // Edited (or finished the down pass of) a calibration this page didn't watch being made, e.g.
     // after a reload or with #D: read the stored one back once the F list is in, instead of
     // saving a partial copy.
@@ -378,7 +394,7 @@ function onK(p) {
     } catch (e) { console.warn('save failed', e); }
   }
   // [v3.2] the F list follows K; if even its F,end is lost (an empty list is just that line), finish it anyway
-  if (r.ok && state.v32) {
+  if (r.ok && v32) {
     clearTimeout(state.fTimer);
     state.fTimer = setTimeout(function () {
       if (state.result !== r || state.qFromEdit || state.q) return;

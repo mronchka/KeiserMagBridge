@@ -213,6 +213,10 @@ function setConn(c, msg, isErr) {
       // A calibration in progress: keep its points as an incomplete record (once).
       // Not after it was saved (the v3.3 checkpoint, the down pass, a redo): calEnded is set then.
       if (state.s && state.s.cal !== 0 && !state.calEnded) savePartialCal('connection lost');
+      // Until the first status line after reconnecting, C / E / K lines still belong to the run
+      // that was going on (a redo's C and K can come before any S line).
+      state.dropS = state.s;
+      state.dropV = { v32: state.v32, v33: state.v33 };
       state.s = null;
       state.v3 = false;          // re-detected from the next S lines
       state.v31 = false;
@@ -225,7 +229,8 @@ function setConn(c, msg, isErr) {
       state.calSeen = false; state.uncalSince = 0;
       state.behind = null; state.fList = null; state.overshoot = null; state.stallSince = 0;
       state.fixAfter = ''; state.qFromEdit = false; state.qJustEnded = false;
-      if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }   // a redo still running is picked up again from its S lines
+      // a redo the bridge already started carries on (its E / K may come after reconnecting); any other edit is dropped
+      if (state.edit) { clearTimeout(state.edit.timer); if (!state.edit.started) state.edit = null; }
       state.lastTurn = null;
       renderTurnInfo();
       keepAwake(false);

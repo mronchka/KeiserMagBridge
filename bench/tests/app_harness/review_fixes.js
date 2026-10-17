@@ -116,6 +116,63 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     check('reconnect at the checkpoint, then Later: still no "incomplete" copy', app.recs().length === 1, app.titles().join(' / '));
     check('Later sends x once', app.cmds().filter((c) => c === 'x').length === 1, JSON.stringify(app.cmds()));
   }
+  // ---------------------------------------------------------------- reconnects and lost lines (tester B)
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass(['u,20']);
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,20,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    await app.advance(1);   // the guided redo of gear 20 is sent
+    await app.f('E,ok,redo');
+    await app.f(S({ cal: 1, flow: 4, step: 19, pass: 'ru', flags: 'VRB' }));
+    app.M3.setConn('disconnected');
+    app.connect();
+    await app.f('C,20,61.0,1.0,2.0');      // the redo's capture, save and K arrive before any status line
+    await app.f('E,ok,saved');
+    await app.f('K,1,120.0,3.00,6,saved');
+    check('reconnect mid-redo, C/K before the first S: the other points are kept',
+      st.points.length === 25 && st.downPoints.length === 22, 'up ' + st.points.length + ' down ' + st.downPoints.length);
+  }
+  {
+    const app = mk();
+    await app.upPass();
+    app.$('upContinue').click();
+    for (let p = 23; p >= 2; p--) {
+      await app.f(S({ cal: 1, flow: 5, step: p - 1, pass: 'd' }));
+      if (p !== 12) await app.f('C,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0');   // C,down,12 lost
+    }
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    check('a down point lost on the way: the page reads the calibration back (k)', app.cmds().indexOf('k') >= 0, JSON.stringify(app.cmds().slice(-3)));
+  }
+  {
+    const app = mk();
+    await app.f('S,1,20.0,100,70.0,0,0,0,1.0,VAR,0,B,0,-');   // one clean 14-field line first
+    await app.f(S({ cal: 1, flow: 2, pass: 'u' }));
+    check('a 14-field line first does not lock out v3.3 status lines', app.M3.state.v33 && app.M3.state.s.cal === 1);
+  }
+  {
+    const app = mk();
+    await app.f(S({}));
+    for (let p = 1; p <= 10; p++) { await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' })); await app.f('C,' + p + ',' + p + '.0,1.0,2.0'); }
+    await app.f(S({}));                                          // one stray idle line
+    await app.f(S({ cal: 1, flow: 4, step: 10, pass: 'u' }));
+    await app.advance(3);
+    check('one stray idle status line mid-run saves no "incomplete" copy', app.recs().length === 0, app.titles().join(' / '));
+  }
+  {
+    const app = mk();
+    await app.upPass();
+    await app.advance(4);                                        // the link goes quiet at the checkpoint
+    check('silence at the Saved checkpoint: Continue down says it is waiting', app.$('upContinue').disabled &&
+      /Waiting/.test(app.$('upContinue').textContent), app.$('upContinue').textContent);
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    check('...and comes back with the next status line', !app.$('upContinue').disabled && app.$('upContinue').textContent === 'Continue down');
+  }
   // ---------------------------------------------------------------- Bluetooth link
   {
     const app = mk();
