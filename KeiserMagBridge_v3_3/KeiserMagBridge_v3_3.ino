@@ -470,9 +470,9 @@ struct Suspect { char pass; uint8_t point; const char* why; float guess[3]; };
 struct ChkViol { uint8_t h, i; float sc; };   // an order violation (calCheck)
 struct LineIn { char buf[64]; uint8_t n; bool active; bool overflow; uint32_t lastMs; };   // one per input: USB, phone
 
-static const uint16_t SAMPLE_QUEUE_LEN = 128;   // 2.5 s of readings at 50 Hz
+static const uint16_t SAMPLE_QUEUE_LEN = 256;   // 5 s of readings at 50 Hz (a flash save takes up to ~2.6 s)
 static QueueHandle_t  sampleQueue = nullptr;
-static volatile uint32_t sampleDrops = 0;       // queue was full (loop stalled > 2.5 s)
+static volatile uint32_t sampleDrops = 0;       // queue was full (loop stalled > 5 s)
 
 // =========================================================================
 // Globals
@@ -3321,7 +3321,7 @@ static void processSample(const Sample& smp) {
     static uint32_t seenDrops = 0;
     if (sampleDrops != seenDrops) {             // readings were lost: don't time a turn across the gap
       seenDrops = sampleDrops;
-      crHaveBoundary = false;
+      if (!injecting) crHaveBoundary = false;   // ('#I': the lost readings are the sensor's, unused)
     }
     int r = crankSample(smp.ms, raw, avg, &per);
     if (r) onTurnBoundary(r, avg, per, smp.ms);
@@ -3807,6 +3807,7 @@ static void handleLine(char* line) {
     smp.sat = fabsf(smp.raw[0]) > SATURATION_UT || fabsf(smp.raw[1]) > SATURATION_UT ||
               fabsf(smp.raw[2]) > SATURATION_UT;
     processSample(smp);
+    injLastMs = millis();                         // idle counts from here: a capture's saves take seconds
   } else {
     Log.println(F("E,fail,unknown command"));
   }
