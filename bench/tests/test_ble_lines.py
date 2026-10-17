@@ -11,7 +11,7 @@ Models, from the Adafruit nRF52 core 1.7.0 sources:
     where the TXD characteristic's max len is Bluefruit.getMaxMtu(PERIPH),
     which is BLE_GATT_ATT_MTU_DEFAULT = 23 unless configPrphBandwidth()/
     configPrphConn() is called before Bluefruit.begin() (the sketch does not);
-  - the page's line assembly (webapp/index.html onBytes/handleLine):
+  - the page's line assembly (webapp/js/protocol.js onBytes/handleLine):
     concatenate, split on '\n', drop the buffer past 2048 bytes.
 Compares the v3.1 sketch with the v3 20-byte buffer and with the fix
 (send the line in <= 20-byte pieces).
