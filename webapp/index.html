@@ -512,7 +512,8 @@ main {
 .rck p { margin: 0; }
 .rck-step { font-size: .85rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
 .rck-task { font-size: 1.25rem; font-weight: 700; line-height: 1.35; }
-.rck .gear-ring { --ring: min(46vw, 26vh, 210px); border-width: 6px; align-self: center; }
+.rck .gear-ring { --ring: max(120px, min(46vw, 22vh, 200px)); border-width: 6px; align-self: center; }
+.rck-cad { padding: 12px 14px 0; }
 .rck-q { font-size: 1.3rem; font-weight: 700; line-height: 1.35; text-align: center; }
 .rck-note { text-align: center; color: var(--warn); font-weight: 600; font-size: .95rem; min-height: 1.4em; }
 .rck .cal-btns .btn { min-height: 52px; font-size: 1rem; }
@@ -813,6 +814,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       <div class="rck" id="rckRun" hidden>
         <div class="rck-step" id="rckStep">Check 1 of 4</div>
         <div class="rck-task" id="rckTask"></div>
+        <div class="cadg rck-cad" id="rckCad" role="img" aria-label="Cadence">
+          <div class="cadbar" aria-hidden="true"><i class="win" id="rckCadWin"></i><b class="cadg-dot idle" id="rckCadMk"><span id="rckCadDot">--</span></b></div>
+          <div class="cadticks" aria-hidden="true"><span id="rckCadT1"></span><span id="rckCadT2"></span></div>
+        </div>
         <div class="gear-ring" role="img" id="rckRing" aria-label="Bridge gear">
           <div class="gear-label">BRIDGE</div>
           <div class="gear dim" id="rckGear">--</div>
@@ -820,7 +825,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="rck-note" id="rckNote" role="status"></div>
         <div id="rckAsk" class="rck">
           <div class="rck-q" id="rckQ"></div>
-          <div class="cal-btns">
+          <div class="cal-btns" id="rckBtns">
             <button class="btn primary" id="rckYes" type="button">Yes</button>
             <button class="btn" id="rckNo" type="button">No</button>
           </div>
@@ -1161,6 +1166,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     { gear: 12, pace: 'fast', label: 'Middle gear, faster', task: 'Stay in that gear and pedal faster.' },
     { gear: 19, pace: 'steady', label: 'High gear', task: 'Shift to about gear 19 and pedal steadily.' }
   ];
+  // A check asks "Does the console show gear N?" only once the bridge's gear is within
+  // CHECK_NEAR of the wanted gear and has stayed the same for CHECK_STEADY_MS while pedalling
+  // (the 'fast' check also wants the pace up by CHECK_FASTER rpm). If the bridge never reads
+  // near the wanted gear, it asks anyway after CHECK_ANYWAY_MS in any steady gear.
+  var CHECK_NEAR = 2, CHECK_STEADY_MS = 3000, CHECK_ANYWAY_MS = 20000, CHECK_FASTER = 8;
 
   function $(id) { return document.getElementById(id); }
   // Only touch the DOM when visibility really changes (no needless re-layout on every status line).
@@ -1462,6 +1472,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       else if (state.v33 && s.flow === 5) { state.calEnded = true; state.upSaved = false; state.fixHold = true; }
       else if (s.step > 0 && state.points.length) state.calEnded = false;
       else onCalStarted();
+      // however it started (the page, the bridge's button, #D, a reconnect): show it, full screen
+      if (state.view !== 'cal') showView('cal');
     }
     if (prevCal !== 0 && cal === 0) {
       // Ended: K or A normally arrives just before this. If neither does, keep what was captured.
@@ -4051,13 +4063,50 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     $('rckRing').setAttribute('aria-label', live ? 'Bridge gear ' + g : 'Bridge gear not known');
     $('rckNote').textContent = !connected ? 'Not connected' : stale ? 'Waiting for the bridge…' : !live ? 'Not calibrated'
       : !pedalling ? 'Keep pedalling: the gear updates on each pedal turn' : '';
+    // cadence line: the green window is the pace this check wants (faster: above the last check's pace)
+    var crpm = s && fin(s.cad) ? Math.round(s.cad) : 0;
+    var lastRpm = c.results.length ? c.results[c.results.length - 1].rpm : 0;
+    var cw = cadWindow(st.gear);
+    var clo = st.pace === 'fast' && lastRpm ? Math.min(CAD_HI - 5, lastRpm + CHECK_FASTER) : cw[0];
+    var chi = st.pace === 'fast' && lastRpm ? CAD_HI : cw[1];
+    var cidle = !pedalling || crpm <= 0;
+    var ccls = cidle ? ' idle' : crpm < CAD_LO || crpm > CAD_HI ? ' bad' : crpm < clo || crpm > chi ? ' mid' : '';
+    var csc = function (v) { return Math.max(0, Math.min(100, (v - 20) / (130 - 20) * 100)); };
+    $('rckCadWin').style.left = csc(clo).toFixed(1) + '%';
+    $('rckCadWin').style.width = (csc(chi) - csc(clo)).toFixed(1) + '%';
+    $('rckCadMk').style.left = (cidle ? 0 : csc(crpm)).toFixed(1) + '%';
+    $('rckCadMk').className = 'cadg-dot' + ccls;
+    $('rckCadDot').textContent = cidle ? '--' : String(crpm);
+    $('rckCadT1').style.left = csc(clo).toFixed(1) + '%';
+    $('rckCadT2').style.left = csc(chi).toFixed(1) + '%';
+    if ($('rckCadT1').textContent !== String(clo)) $('rckCadT1').textContent = String(clo);
+    if ($('rckCadT2').textContent !== String(chi)) $('rckCadT2').textContent = String(chi);
+    $('rckCad').setAttribute('aria-label', cidle ? 'Cadence: not pedalling' : 'Cadence ' + crpm + ' rpm, aim for ' + clo + ' to ' + chi);
     setHidden('rckAsk', c.picking);
     setHidden('rckPick', !c.picking);
     if (!c.picking) {
-      var q = live ? 'Does the Keiser console show gear ' + g + '?' : 'Waiting for the bridge’s gear…';
+      // wait until the rider is at about the wanted gear, steady (and faster, for the 'fast' check)
+      var now = Date.now();
+      if (!c.stepAt) c.stepAt = now;
+      if (live && pedalling) {
+        if (g !== c.seenGear) { c.seenGear = g; c.steadySince = now; }
+      } else { c.seenGear = 0; c.steadySince = 0; }
+      var rpm = s && fin(s.cad) ? Math.round(s.cad) : 0;
+      var prevRpm = st.pace === 'fast' && c.results.length ? c.results[c.results.length - 1].rpm : 0;
+      var near = live && Math.abs(g - st.gear) <= CHECK_NEAR;
+      var paceOk = st.pace !== 'fast' || !prevRpm || rpm >= prevRpm + CHECK_FASTER;
+      var steady = !!c.steadySince && now - c.steadySince >= CHECK_STEADY_MS;
+      var ready = live && pedalling && steady && ((near && paceOk) || now - c.stepAt >= CHECK_ANYWAY_MS);
+      c.askGear = ready ? g : 0;
+      var q = !live ? 'Waiting for the bridge’s gear…'
+        : ready ? 'Does the Keiser console show gear ' + g + '?'
+        : (!near || (g !== st.gear && !steady)) && now - c.stepAt < CHECK_ANYWAY_MS ? 'Shift until the console shows about gear ' + st.gear + '.'
+        : !paceOk ? 'A little faster: ' + rpm + ' rpm now, ' + (prevRpm + CHECK_FASTER) + ' or more.'
+        : 'Hold it there…';
       if ($('rckQ').textContent !== q) $('rckQ').textContent = q;
-      $('rckYes').disabled = !live;
-      $('rckNo').disabled = !live;
+      $('rckBtns').style.visibility = ready ? '' : 'hidden';
+      $('rckYes').disabled = !ready;
+      $('rckNo').disabled = !ready;
     } else {
       $('rckVal').textContent = String(c.val);
       $('rckMinus').disabled = c.val <= 1;
@@ -4069,12 +4118,13 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var c = state.check;
     if (!c || c.phase !== 'run') return;
     var st = RIDE_CHECKS[c.idx];
-    var app = c.picking ? c.app : rideGear();
+    var app = c.picking ? c.app : (c.askGear || rideGear());
     var rpm = state.s && fin(state.s.cad) ? Math.round(state.s.cad) : 0;
     c.results.push({ label: st.label, target: st.gear, pace: st.pace, app: app, console: consoleGear, rpm: rpm });
     // [v3.3] the bridge echoes it to USB (J line) so the results land in the bike log
     if (state.v33 && state.conn === 'connected') sendCmd('#J,check,' + app + ',' + consoleGear + ',' + rpm);
     c.picking = false;
+    c.stepAt = 0; c.seenGear = 0; c.steadySince = 0; c.askGear = 0;   // the next check waits afresh
     if (c.idx + 1 < RIDE_CHECKS.length) c.idx++;
     else finishCheck();
     renderRideCheck();
@@ -4322,11 +4372,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     try { $('rideCheck').scrollIntoView({ block: 'start' }); } catch (e) {}
   });
   $('rckSkip').addEventListener('click', function () { state.check = null; state.checkDone = true; render(); });
-  $('rckYes').addEventListener('click', function () { checkAnswer(rideGear()); });
+  $('rckYes').addEventListener('click', function () { var c = state.check; if (c && c.askGear) checkAnswer(c.askGear); });
   $('rckNo').addEventListener('click', function () {
     var c = state.check;
-    if (!c) return;
-    c.app = rideGear();
+    if (!c || !c.askGear) return;
+    c.app = c.askGear;
     c.val = c.app > 0 ? c.app : 12;
     c.picking = true;
     renderRideCheck();
@@ -4610,13 +4660,17 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         watts = Math.round(cad * (0.4 + res * 0.045));
         off = phase === 'move' && cal === 1 ? 3 + Math.random() * 8 : 0.2 + Math.random() * 0.5;
       } else if (DEMO_V3) {
-        // [v3] riding, with a short stop every ~40 s
-        pedal = (t % 160) < 136;
-        if (t % 12 === 0 && pedal) {
+        // [v3] riding, with a short stop every ~40 s. During the gear check (step 6) the rider
+        // shifts toward the wanted gear, a gear every 1.5 s, holds it, and pedals faster when asked.
+        var want = state.check && state.check.phase === 'run' && !state.check.picking ? RIDE_CHECKS[state.check.idx] : null;
+        pedal = want ? true : (t % 160) < 136;
+        if (want) {
+          if (t % 6 === 0 && gear !== want.gear) gear += want.gear > gear ? 1 : -1;
+        } else if (t % 12 === 0 && pedal) {
           gear += Math.random() < 0.5 ? -1 : 1;
           gear = Math.max(1, Math.min(24, gear));
         }
-        cad = pedal ? 78 + 5 * Math.sin(t / 22) + jitter(1.5) : 0;
+        cad = pedal ? (want && want.pace === 'fast' ? 94 : 78) + 5 * Math.sin(t / 22) + jitter(1.5) : 0;
         res = gearToRes(gear) + jitter(0.3);
         watts = pedal ? Math.round(cad * (0.4 + res * 0.045)) : 0;
         off = 0.3 + Math.random() * 0.9;
@@ -5142,7 +5196,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 
   // Expose a tiny hook for debugging in a desktop console.
   // (bench/tests/app_harness drives the parser with real board lines through it: setConn + window.__m3Write)
-  window.M3Bridge = { state: state, diag: diag, handleLine: handleLine, send: send, sendCmd: sendCmd, renderSaved: renderSaved, addRecord: addRecord, onBytes: onBytes, setConn: setConn, render: render, demoConnect: demoConnect, openPlace: openPlace, startGearCheck: startGearCheck, sim: function () { return sim; } };
+  window.M3Bridge = { state: state, diag: diag, handleLine: handleLine, send: send, sendCmd: sendCmd, renderSaved: renderSaved, addRecord: addRecord, onBytes: onBytes, setConn: setConn, render: render, demoConnect: demoConnect, openPlace: openPlace, startGearCheck: startGearCheck, checkAnswer: checkAnswer, sim: function () { return sim; } };
 })();
 </script>
 </body>

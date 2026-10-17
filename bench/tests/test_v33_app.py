@@ -98,7 +98,8 @@ const { loadApp, readLog } = require(process.argv[2]);
     if (/^S,/.test(text)) {
       const f = text.split(',');
       rec.push({ t: t, step: +(f[14] || 0), flags: f[9], cal: +f[5], crumb: crumb(), head: txt('calHead'),
-                 disc: $('disc') ? $('disc').className : '' });
+                 disc: $('disc') ? $('disc').className : '', focus: !!app.M3.state.calFocus, view: app.M3.state.view,
+                 undo: !$('topUndo').hidden, pass: f[13] || '', point: +f[6] });
       const s = app.M3.state.s;
       if (s && s.pass === 'd' && s.cal !== 0) {
         const dots = $('calDots') ? $('calDots').children : [];
@@ -173,6 +174,13 @@ def page_checks(label, f, res):
              f"E2 {label}: breadcrumb follows the board's step ({len(good)}/{len(inflow)} S lines) {bad[:3]}")
     steps = sorted({r["step"] for r in inflow})
     ck.info(f"E2 {label}: steps seen {steps}")
+    # the focused calibration screen: no tab bar while the board calibrates; Undo in the top bar on the points
+    calib = [r for r in rec if r["cal"] not in (0, 7)]
+    foc = [r for r in calib if r["focus"] and r["view"] == "cal"]
+    ck.check(calib and len(foc) >= 0.97 * len(calib), f"E2 {label}: focused screen while calibrating ({len(foc)}/{len(calib)} S lines)")
+    pts = [r for r in calib if r["cal"] == 1 and r["pass"] in ("u", "d") and r["point"] > 0]
+    und = [r for r in pts if r["undo"]]
+    ck.check(not pts or len(und) >= 0.9 * len(pts), f"E2 {label}: Undo in the top bar on the gear points ({len(und)}/{len(pts)})")
     paused = [r for r in rec if "O" in r["flags"] and r["cal"] != 0]
     if paused:
         shown = [r for r in paused if re.search(r"Paused", r["head"])]
