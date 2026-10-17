@@ -61,6 +61,21 @@ for i, sc in enumerate(scripts):
     open(p, "w", encoding="utf-8").write(sc)
     rc, out, err = node(["--check", p])
     ck.check(rc == 0, f"E0 webapp/index.html <script> #{i + 1} ({len(sc) // 1024} KB) parses" + (f": {err.strip()[:300]}" if rc else ""))
+WEB = os.path.join(ROOT, "webapp")
+page_js = sorted(os.path.relpath(os.path.join(d, f), WEB).replace(os.sep, "/")
+                 for d, _, fs in os.walk(os.path.join(WEB, "js")) for f in fs if f.endswith(".js"))
+for rel in page_js:
+    rc, out, err = node(["--check", os.path.join(WEB, rel)])
+    ck.check(rc == 0, f"E0 webapp/{rel} parses" + (f": {err.strip()[:300]}" if rc else ""))
+# The loader lists every file (the demo simulator separately), and every asset URL carries this build.
+loader = next((s for s in scripts if "var APP_FILES = [" in s), "")
+listed = re.findall(r"'(js/[^']+\.js)'", loader)
+ck.check(sorted(listed) == page_js, f"E0 index.html loads every webapp/js file once ({len(listed)} listed, {len(page_js)} on disk)"
+         + ("" if sorted(listed) == page_js else f": listed {listed}, on disk {page_js}"))
+build = re.search(r"var APP_BUILD = '([^']+)'", html)
+vers = re.findall(r"""(?:href|src)="[^"]+\?v=([^"]+)\"""", html)
+ck.check(bool(build) and len(vers) >= 1 and all(v == build.group(1) for v in vers),
+         f"E0 asset URLs in index.html carry ?v=APP_BUILD ({build.group(1) if build else 'no APP_BUILD'}: {vers})")
 for js in sorted(os.listdir(HARN)):
     if js.endswith(".js"):
         rc, out, err = node(["--check", os.path.join(HARN, js)])

@@ -1,4 +1,4 @@
-// Runs webapp/index.html's main script in node with a tiny DOM stub and a virtual clock,
+// Runs the phone page's scripts (webapp/index.html and the webapp/js files it loads) in node with a tiny DOM stub and a virtual clock,
 // so real board lines can be fed through the page's own parser (handleLine).
 //
 //   const app = loadApp({ search: '' });        // '' = Bluetooth mode, '?demo=1&v3=1' = simulator
@@ -13,12 +13,27 @@ const vm = require('vm');
 
 const PAGE = path.join(__dirname, '..', '..', '..', 'webapp', 'index.html');
 
-function loadApp(opts) {
-  opts = opts || {};
-  const html = fs.readFileSync(opts.page || PAGE, 'utf8');
-  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  let main = scripts[scripts.length - 1];
-  // Older pages (e.g. `git show f371c10:webapp/index.html`) lack the test hooks: patch them in.
+// The page's code as [{ file, code }] in the order the browser runs it.
+//  - Current page: the inline scripts in <head> (APP_BUILD, theme), then the files index.html's loader
+//    lists in APP_FILES (with DEMO_FILE just before the last one when ?demo=1), each read from webapp/.
+//  - Older single-file pages (e.g. `git show f371c10:webapp/index.html` saved to a file): the last
+//    inline <script>, with the test hooks patched in when they are missing.
+function pageScripts(html, pagePath, search) {
+  const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const loader = inline.find((s) => /var APP_FILES = \[/.test(s));
+  if (loader) {
+    const list = (re) => [...(re.exec(loader) || ['', ''])[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    const files = list(/var APP_FILES = \[([^\]]*)\]/);
+    const demoFile = list(/var DEMO_FILE = ('[^']+')/)[0];
+    let demo = false;
+    try { demo = new URLSearchParams(search || '').get('demo') === '1'; } catch (e) { /* no demo */ }
+    if (demo && demoFile) files.splice(files.length - 1, 0, demoFile);
+    const dir = path.dirname(pagePath);
+    return inline.filter((s) => s !== loader).map((code, i) => ({ file: 'index.html<script #' + (i + 1) + '>', code }))
+      .concat(files.map((f) => ({ file: 'webapp/' + f, code: fs.readFileSync(path.join(dir, f), 'utf8') })));
+  }
+  let main = inline[inline.length - 1];
+  // Older pages lack the test hooks: patch them in.
   if (main.indexOf('__m3Write') < 0) {
     main = main.replace('function writeChar(c) {',
       "function writeChar(c) {\n    if (typeof window.__m3Write === 'function') { window.__m3Write(c); return Promise.resolve(); }");
@@ -26,6 +41,14 @@ function loadApp(opts) {
   if (!/setConn: setConn/.test(main)) {
     main = main.replace(/\}\)\(\);\s*$/, 'window.M3Bridge.setConn = setConn; window.M3Bridge.render = render;\n})();');
   }
+  return [{ file: 'index.html<script>', code: main }];
+}
+
+function loadApp(opts) {
+  opts = opts || {};
+  const pagePath = opts.page || PAGE;
+  const html = fs.readFileSync(pagePath, 'utf8');
+  const scripts = pageScripts(html, pagePath, opts.search);
 
   // ---------- virtual clock ----------
   let now = 1.8e12;
@@ -126,7 +149,7 @@ function loadApp(opts) {
     static now() { return now; }
   };
   const ctx = vm.createContext(win);
-  vm.runInContext(main, ctx, { filename: 'index.html<script>' });
+  for (const sc of scripts) vm.runInContext(sc.code, ctx, { filename: sc.file });
   const M3 = win.M3Bridge;
   return {
     M3, writes, errors, store,
