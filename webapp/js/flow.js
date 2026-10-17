@@ -44,6 +44,8 @@ function onFlowStatus(s, prevCal, prevFlow) {
   // It survives a drop, and 'v' only toggles it: carry on with step 1, or switch it off.
   if (state.placeCheck) {
     state.placeCheck = false;
+    // the board's USB log notes which phone page is connected (older pages never send this)
+    if (state.conn === 'connected') sendCmd('#J,page,' + APP_BUILD);
     if (s.cal === 0 && s.flow === 1 && !state.place) {
       if (state.placeWas) state.place = { x: null };
       else send('v', true);

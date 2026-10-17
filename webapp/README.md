@@ -92,6 +92,8 @@ Calibrations and diagnostic recordings are kept in this browser's storage on the
 
 Files are CSV with a few `#` comment lines at the top (record type, time, summary, and for recordings the table of step markers), then a header row:
 
+Every file saved by this version of the page has a `# page_build: <APP_BUILD>` line (the page's build, e.g. `v3.3-2026-10-17`), so runs saved by the new split-file page can be told apart from older ones, which have no such line. The page also sends `#J,page,<APP_BUILD>` once per connection to a v3.3 bridge, so the bridge's USB log shows which page was connected (`J,page,...`).
+
 - `keiser-cal-YYYY-MM-DD-HHMM.csv`: `point,label,x_uT,y_uT,z_uT,dist_prev_uT` (25 rows, Bottom, Gear 2 to Gear 24, Top). A stored calibration read from v3 firmware also has a `# crank:` comment line (crank direction, dip depth and polarity). With v3.2 there are three more columns, `down_x_uT,down_y_uT,down_z_uT`: the reading for that gear edge coming down (point N = where the console first shows gear N−1 coming down; empty when not measured, always empty for points 1, 24 and 25), and a `# down_points:` line. A calibration changed with Redo or Use best guess is saved again with an `# edit:` line, and the gear check adds `# gear_check` lines.
 - `keiser-diag-YYYY-MM-DD-HHMM.csv`: `i,t_ms,step,x_uT,y_uT,z_uT,revs`, one row per 40 ms sample. `step` is the step that was running; `revs` is the cadence pod's crank count, empty when no pod was connected.
 

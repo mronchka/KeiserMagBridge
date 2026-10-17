@@ -87,6 +87,7 @@ function addRecord(meta, csv) {
   while (records.some(function (r) { return r.filename === name; })) name = base + '-' + (n++) + '.csv';
   meta.filename = name;
   meta.size = csv.length;
+  meta.build = APP_BUILD;   // also in the saved list's index (older pages' records have none)
   meta.persisted = false;
   memCsv[meta.id] = csv;
   records.unshift(meta);
@@ -147,6 +148,7 @@ function saveCalRecord(source, info, pointsIn) {
     '# record: calibration',
     '# source: ' + (stored ? 'stored (read back from the bridge with k)' : 'calibration run'),
     '# timestamp: ' + d.toISOString(),
+    '# page_build: ' + APP_BUILD,   // which phone page saved it (pages before v3.3-2026-10-17 have no such line)
     '# result: ' + result,
     '# span_uT: ' + (fin(info.span) ? info.span.toFixed(1) : ''),
     '# minstep_uT: ' + (fin(info.minstep) ? info.minstep.toFixed(1) : ''),
@@ -229,6 +231,7 @@ function saveDiagRecord(dump) {
     '# Keiser M3 Bridge diagnostic recording',
     '# record: diagnostic',
     '# timestamp: ' + d.toISOString(),
+    '# page_build: ' + APP_BUILD,
     '# samples: ' + n,
     '# period_ms: ' + dump.period,
     '# duration_ms: ' + (n ? t[n - 1] : 0),

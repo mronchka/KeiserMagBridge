@@ -96,6 +96,11 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     app.store['m3bridge.flow'] = '1';
     await app.upPass();
     check('storage: a corrupt flow record does not stop the calibration being saved', app.titles().indexOf('Calibration saved') >= 0, app.titles().join(' / '));
+    const rec = app.win.records[0], build = app.win.APP_BUILD;
+    check('saved runs say which page build saved them (CSV line and index)',
+      (app.win.getCsv(rec.id) || '').indexOf('# page_build: ' + build + '\n') >= 0 && rec.build === build, build);
+    check('the board\'s USB log is told the page build once per connection',
+      app.cmds().filter((c) => c === '#J,page,' + build).length === 1, JSON.stringify(app.cmds().filter((c) => /^#J/.test(c))));
   }
   // ---------------------------------------------------------------- incomplete copies
   {
