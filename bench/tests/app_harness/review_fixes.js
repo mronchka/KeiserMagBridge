@@ -102,6 +102,38 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     check('the board\'s USB log is told the page build once per connection',
       app.cmds().filter((c) => c === '#J,page,' + build).length === 1, JSON.stringify(app.cmds().filter((c) => /^#J/.test(c))));
   }
+  {
+    // round 2: the live page and the preview share mronchka.github.io's storage
+    const a = mk(), b = mk();
+    b.store = a.store; b.win.localStorage = a.win.localStorage;   // same origin
+    addDiag(a, 1, 1000);
+    addDiag(b, 2, 1000);
+    check('two pages on one origin keep each other\'s saved runs', index(a).indexOf('r1') >= 0 && index(a).indexOf('r2') >= 0, 'index ' + index(a));
+  }
+  {
+    // round 2: a calibration with no record of its own (its readback came incomplete) never gets the
+    // gear check written into an older calibration's record
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    while (st.check && st.check.phase === 'run') app.M3.checkAnswer(5);
+    const older = app.win.records[0].id, olderCsv = app.win.getCsv(older);
+    st.points = st.points.slice(0, 20);                          // as after a reload: the page didn't see the up pass
+    await app.f(S({ cal: 1, flow: 5, step: 22, pass: 'd' }));
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    for (let p = 1; p <= 25; p++) if (p !== 13) await app.f('Q,' + p + ',' + p + '.0,1.0,2.0', 0.02);
+    await app.f('Q,end,120.0,3.00,6', 0.02);
+    await app.f('F,end,0');
+    await app.f(S({}));
+    if (!st.check || st.check.phase !== 'run') app.win.startGearCheck();
+    while (st.check.phase === 'run') app.M3.checkAnswer(9);
+    check('an incomplete readback: the gear check does not overwrite the older calibration\'s lines', app.win.getCsv(older) === olderCsv);
+  }
   // ---------------------------------------------------------------- incomplete copies
   {
     const app = mk();

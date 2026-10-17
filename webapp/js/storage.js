@@ -20,7 +20,28 @@ function loadRecords() {
     records.forEach(function (r) { r.persisted = true; });
   } catch (e) { records = []; }
 }
+// Another page on this origin (the published page and a preview, or a second tab) may have saved
+// runs since this one loaded: keep those whose data is still there (minus what this page removed).
+var removedIds = {};
+function adoptOtherPagesRecords() {
+  var stored;
+  try { stored = JSON.parse(localStorage.getItem(STORE_IDX)); } catch (e) { stored = null; }
+  if (!Array.isArray(stored)) return;
+  var known = {};
+  records.forEach(function (r) { known[r.id] = true; });
+  var added = false;
+  stored.forEach(function (r) {
+    if (!r || !r.id || !r.filename || known[r.id] || removedIds[r.id]) return;
+    var has = false;
+    try { has = localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) {}
+    if (!has) return;
+    r.persisted = true;
+    records.push(r); added = true;
+  });
+  if (added) records.sort(function (a, b) { return a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0; });   // newest first
+}
 function saveIndex() {
+  adoptOtherPagesRecords();
   try {
     localStorage.setItem(STORE_IDX, JSON.stringify(records.filter(function (r) { return r.persisted; })));
     return true;
@@ -39,20 +60,26 @@ function oldestPersisted(except) {
   return null;
 }
 function removeRecord(r) {
+  removedIds[r.id] = true;
   try { localStorage.removeItem(STORE_PREFIX + r.id); } catch (e) {}
   delete memCsv[r.id];
   records = records.filter(function (x) { return x !== r; });
 }
 // Write a record's CSV, removing the oldest other saved runs while storage is full (each one
 // removed is added to dropped). True once written.
+// (Once the runs removed have freed what it needs and it still fails, the space is taken by
+// something else: stop removing runs.)
 function storeCsv(rec, csv, dropped) {
+  var need = csv.length - (rec.persisted ? rec.storedSize || rec.size || 0 : 0), freed = 0;
   for (var attempt = 0; attempt < 50; attempt++) {
     try {
       localStorage.setItem(STORE_PREFIX + rec.id, csv);
+      rec.storedSize = csv.length;
       return true;
     } catch (e) {
-      var o = oldestPersisted(rec);
+      var o = freed < need ? oldestPersisted(rec) : null;
       if (!o) return false;
+      freed += o.size || 0;
       removeRecord(o); dropped.push(o);
     }
   }
@@ -202,14 +229,16 @@ function appendRecordComments(id, comments, summaryAdd, replace) {
   lines.splice.apply(lines, [at, 0].concat(comments.map(function (c) { return '# ' + ascii(c); })));
   csv = lines.join('\n');
   memCsv[id] = csv;
-  rec.size = csv.length;
+  var oldSummary = rec.summary, oldSize = rec.size;
   if (summaryAdd) rec.summary += ' · ' + summaryAdd;
   if (rec.persisted) {
     // If even removing older runs doesn't make room, the stored copy (without these lines) stays
-    // listed and the new lines are kept for this session only.
+    // listed as it is stored, and the new lines are kept for this session only.
     var dropped = [];
     var ok = storeCsv(rec, csv, dropped);
+    if (ok) rec.size = csv.length; else { rec.summary = oldSummary; rec.size = oldSize; }
     saveIndex();
+    if (!ok) { rec.summary += summaryAdd ? ' · ' + summaryAdd : ''; rec.size = csv.length; }   // (this session shows them)
     noteDropped(dropped);
     if (!ok) {
       logLine('Could not add these lines to ' + rec.filename + ' on this device. Export it before closing the page.', 'bad');
@@ -328,17 +357,22 @@ function showCopySheet(text, title) {
 }
 
 // The saved calibration record the gear check adds its lines to (also after a reload, via the flow record).
-function noteCalRecord(id) {
+function noteCalRecord(id, v33) {
   if (!id) return;
   state.calRecordId = id;
-  if (state.v33) setFlowRecord({ recordId: id });
+  if (v33) setFlowRecord({ recordId: id });
+}
+// A new calibration starts: nothing more goes into the last one's record.
+function forgetCalRecord() {
+  state.calRecordId = null;
+  if (flowRecord()) setFlowRecord({ recordId: null });
 }
 function calRecordId() {
-  var fr = flowRecord();
-  var ids = [state.result && state.result.type === 'K' && state.result.ok ? state.result.recordId : null,
-    state.calRecordId, fr && fr.recordId];
-  for (var i = 0; i < ids.length; i++) if (ids[i] && findRecord(ids[i])) return ids[i];
-  return null;
+  // this session's calibration result decides (no record of its own: none, never an older one);
+  // only with no result (after a reload) the remembered one
+  var r = state.result, id = r && r.type === 'K' && r.ok ? r.recordId || null
+    : state.calRecordId || (flowRecord() || {}).recordId || null;
+  return id && findRecord(id) ? id : null;
 }
 
 // Remember on this phone what is left of the last calibration (resume offers on the start screen).

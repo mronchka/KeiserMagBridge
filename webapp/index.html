@@ -187,6 +187,13 @@
     <div class="card result" id="resultCard" hidden></div>
 
     <div id="calIdle">
+      <!-- [v3.3] pick up where the last calibration stopped (first, above the walkthrough) -->
+      <div class="card resume" id="calResume" hidden>
+        <h2 style="margin:0">Pick up where you stopped</h2>
+        <p class="small muted" style="margin:0" id="resumeText"></p>
+        <button class="btn primary wide" id="resumeDown" type="button">Continue down through the gears</button>
+        <button class="btn text" id="resumeCheck" type="button">Check a few gears</button>
+      </div>
       <!-- One step at a time, Apple-style: a picture, a title, one sentence. Steps come from
            CAL_INTRO (crank mode on v3 firmware, hold-still on v2); the last page starts. -->
       <div class="onb" id="onb" aria-roledescription="walkthrough">
@@ -228,13 +235,6 @@
         </div>
       </div>
       <div class="onb-more">
-        <!-- [v3.3] pick up where the last calibration stopped -->
-        <div class="card resume" id="calResume" hidden>
-          <h2 style="margin:0">Pick up where you stopped</h2>
-          <p class="small muted" style="margin:0" id="resumeText"></p>
-          <button class="btn primary wide" id="resumeDown" type="button">Continue down through the gears</button>
-          <button class="btn text" id="resumeCheck" type="button">Check a few gears</button>
-        </div>
         <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
         <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:0"></p>
         <p class="small muted" style="margin:0;text-align:center">Every finished calibration is saved on this phone. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>

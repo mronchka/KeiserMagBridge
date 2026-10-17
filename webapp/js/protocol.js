@@ -391,7 +391,7 @@ function onK(p) {
   } else {
     try {
       r.recordId = saveCalRecord('run', { ok: r.ok, span: r.span, minstep: r.minstep, minAt: r.minAt, msg: r.msg, edit: r.edit, down: state.v32 ? state.downPoints : null }, state.points);
-      if (r.ok) noteCalRecord(r.recordId);
+      if (r.ok) noteCalRecord(r.recordId, v33);
     } catch (e) { console.warn('save failed', e); }
   }
   // [v3.2] the F list follows K; if even its F,end is lost (an empty list is just that line), finish it anyway
@@ -663,6 +663,7 @@ function onCalStarted() {
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
   state.result = null; state.resultHidden = false; state.noAutoCheck = false;
+  forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
   state.learnFailed = false;
@@ -728,7 +729,7 @@ function onQ(p) {
       id = saveCalRecord('run', info, q.points);
       kr.recordId = id;
       kr.down = q.down.length;
-      noteCalRecord(id);
+      noteCalRecord(id, state.v33);
       renderResult();
     } else id = saveCalRecord('stored', info, q.points);
     var rec = findRecord(id);

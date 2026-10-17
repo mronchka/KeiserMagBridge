@@ -210,7 +210,9 @@ main {
   padding: 8px 0;
 }
 /* "Not calibrated" + Go to Calibrate under the ring: the ring makes room so the tiles stay above the tab bar */
-.gear-wrap:has(#goCal:not([hidden])) .gear-ring { --ring: min(68vw, calc(40vh - 72px), 340px); }
+@media not ((orientation: landscape) and (max-height: 540px)) {
+  .gear-wrap:has(#goCal:not([hidden])) .gear-ring { --ring: max(150px, min(68vw, calc(40vh - 72px), 340px)); }
+}
 /* The gear sits in a ring (same motif as the calibration circle): blue while riding,
    grey when stopped or not calibrated, amber while holding the last good gear. */
 .gear-ring {
@@ -305,7 +307,7 @@ main {
 .stage {
   /* as big as the phone allows once everything else is on screen (iPhone 16: 230-300 px) */
   /* (a bottom safe-area inset above the 12 px padding comes off too) */
-  --stage: max(120px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
+  --stage: max(120px, min(300px, 78vw, calc(100vh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
     - max(0px, env(safe-area-inset-bottom, 0px) - 12px))));
   position: relative; width: var(--stage); height: var(--stage); align-self: center; flex: none;
 }
@@ -417,7 +419,7 @@ main {
 .place { display: flex; flex-direction: column; gap: 10px; }
 .place h2 { margin: 0; font-size: 1.6rem; letter-spacing: -.01em; line-height: 1.15; }
 .place .lead { margin: 4px 0 0; color: var(--muted); font-size: .94rem; line-height: 1.35; }
-.gauge { position: relative; width: max(150px, min(260px, 66vw, calc((100dvh - 520px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); align-self: center; }
+.gauge { position: relative; width: max(150px, min(260px, 66vw, calc((100vh - 520px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); align-self: center; }
 .gauge svg { display: block; width: 100%; height: auto; overflow: visible; }
 .gauge .trk { fill: none; stroke: var(--surface2); stroke-width: 16; stroke-linecap: round; }
 .gauge .zn { fill: none; stroke-width: 4; stroke-linecap: butt; opacity: .9; }
@@ -429,7 +431,14 @@ main {
 .meters { background: var(--surface); border-radius: var(--radius); padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
 @media (max-height: 760px) { .meter-s { display: none; } }
 /* iPhone: the screen-lock tip shows too, so the gauge gives up the room */
-.place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
+.place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100vh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
+/* the same with the dynamic viewport height where there is one (iOS 15.4+): 100vh can include hidden browser bars */
+@supports (height: 100dvh) {
+  .stage { --stage: max(120px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
+    - max(0px, env(safe-area-inset-bottom, 0px) - 12px)))); }
+  .gauge { width: max(150px, min(260px, 66vw, calc((100dvh - 520px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
+  .place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
+}
 .meter-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .meter-h .k { font-weight: 700; }
 .meter-h .v { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -517,7 +526,6 @@ main {
 .rck-row .k .sub { display: block; font-weight: 700; font-size: .9rem; color: var(--warn); font-variant-numeric: tabular-nums; }
 /* calibration walkthrough (idle screen) */
 #calIdle { display: flex; flex-direction: column; gap: 28px; }
-#calIdle > #calResume { order: -1; }   /* what is left of the last calibration comes before the walkthrough */
 .onb { padding-top: 0; }
 .onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }
 .onb-art { position: relative; width: 100%; height: min(220px, 26vh); display: grid; place-items: center; }
