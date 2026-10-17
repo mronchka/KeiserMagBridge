@@ -32,7 +32,9 @@ Web Bluetooth only works on secure pages: `https://`, or `http://localhost` on a
    - Points 2 to 24: move the lever up until the console first shows the next gear, then stop pedalling.
    - Point 25: push the gear lever all the way up.
 
-   With **Auto-capture** on, each point is taken once the ring fills (about 2 seconds held steady). Turn it off to use **CAPTURE** yourself. **UNDO** goes back one point. **CANCEL** needs a second tap to confirm.
+   With **Auto-capture** on, each point is taken once the ring fills (about 2 seconds held steady). Turn it off (on the Calibrate tab, before you start) to use **CAPTURE** yourself.
+
+   While a calibration step is on, the screen is focused: the tab bar and the connection controls step aside and the top bar reads **✕ Calibrate Undo**. **Undo** goes back one point. **✕** cancels (a second tap confirms); on step 1, the Saved checkpoint and the gear check it goes back, does "Later" or skips the rest. Everything for the current step fits on an iPhone 16 screen without scrolling: the circle gives up room when a notice, the hold-still banner or "Finish without the down pass" is showing.
    At the end you get a result card with the path span and the smallest step between gears. A smallest step under 1.5 µT is flagged as marginal.
    **Firmware v3: calibrate while pedalling.** v3 works out the gear from each full pedal turn (it sees the crank magnet), so calibration is done while you pedal and the Calibrate tab changes to match (the page detects v3 by itself):
    - The screen shows one big circle for the current position, with the 25 positions as dots around it. Grey means move the lever; blue means hold it there (the three segments around the circle fill one per matching pedal turn); green with a tick means saved. A dot at the top shows your cadence. Any steady pace works, so it stays green; it turns red only below 30 rpm or above 120 rpm, where pedal turns can be missed or counted twice.

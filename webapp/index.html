@@ -43,8 +43,8 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --content: 680px;   /* content column on tablets and desktops; bars stay full width */
-  --pad-l: max(16px, env(safe-area-inset-left), calc((100vw - var(--content)) / 2));
-  --pad-r: max(16px, env(safe-area-inset-right), calc((100vw - var(--content)) / 2));
+  --pad-l: max(20px, env(safe-area-inset-left), calc((100vw - var(--content)) / 2));
+  --pad-r: max(20px, env(safe-area-inset-right), calc((100vw - var(--content)) / 2));
   --radius: 14px;
   --gap: 14px;
 }
@@ -79,8 +79,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.45;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -116,15 +116,50 @@ header h1 { font-size: 1.1rem; margin: 0; font-weight: 700; letter-spacing: .01e
 .dot.busy { background: var(--warn); }
 .dot.off { background: var(--bad); }
 .hdr-btn {
-  flex: none; min-height: 48px; padding: 0 12px; border-radius: 12px;
+  flex: none; min-height: 44px; padding: 0 14px; border-radius: 999px;
   border: 1px solid transparent; background: var(--surface2); font-size: .9rem; font-weight: 600;
 }
 /* light/dark switch: shows the mode it switches to */
-.theme-btn { width: 48px; padding: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+.theme-btn { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
 .theme-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .theme-btn .i-sun circle { fill: currentColor; stroke: none; }
 .theme-btn .i-moon path { fill: currentColor; stroke: none; }
 :root[data-theme="light"] .theme-btn .i-sun, :root:not([data-theme="light"]) .theme-btn .i-moon { display: none; }
+
+/* Calibrating (body.calfocus): the tab bar and the connection controls step aside; the top bar
+   reads  (x)  Calibrate  Undo  and everything for the current step fits on the screen. */
+.top-x, .top-title, .top-undo { display: none; }
+body.calfocus header > h1, body.calfocus .conn-pill, body.calfocus .theme-btn, body.calfocus #hdrBtn { display: none; }
+body.calfocus header { min-height: calc(52px + env(safe-area-inset-top)); border-bottom-color: transparent; background: var(--bg); }
+body.calfocus .top-title { display: block; flex: 1; text-align: center; font-size: 1rem; font-weight: 600; }
+body.calfocus .top-x {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+  min-width: 44px; height: 44px; padding: 0; border: 0; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.top-x svg { width: 16px; height: 16px; flex: none; }
+.top-x .lbl { display: none; font-size: .9rem; font-weight: 600; white-space: nowrap; }
+body.calfocus .top-x.armed { background: var(--bad); color: var(--bad-ink); padding: 0 16px 0 14px; }
+.top-x.armed .lbl { display: inline; }
+body.calfocus .top-x.armed ~ .top-title { visibility: hidden; }
+body.calfocus .top-undo {
+  display: inline-flex; align-items: center; justify-content: flex-end; flex: none; min-width: 64px; height: 44px; padding: 0 4px;
+  border: 0; background: transparent; color: var(--accent); font-size: 1rem; font-weight: 500;
+}
+body.calfocus .top-undo[hidden] { display: inline-flex !important; visibility: hidden; }
+body.calfocus nav, body.calfocus #autoToggle, body.calfocus #pointsCard { display: none !important; }
+body.calfocus .view { padding-top: 6px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 10px; }
+body.calfocus #calActive { gap: 10px; flex: 1; }
+body.calfocus #calActive .cal-btns { margin-top: auto; }
+/* the down pass adds "Finish without the down pass": the circle makes room for it */
+/* whatever else is showing, the circle gives up that much room (so the buttons stay on screen) */
+#calActive:has(#btnSkipDown:not([hidden])) { --sx1: 40px; }
+#calActive:has(#holdBanner:not([hidden])) { --sx2: 62px; }
+#calActive:has(#behindHint:not([hidden])) { --sx3: 56px; }
+#calActive:has(#redoBanner:not([hidden])) { --sx4: 56px; }
+body.calfocus .place-btns, body.calfocus #upSaved .btn-stack { margin-top: auto; }
+.place-btns { display: flex; flex-direction: column; gap: 2px; }
+body.calfocus .place { flex: 1; }
+body.calfocus #placeBack { display: none; }   /* the top bar's (x) goes back */
 
 /* ---------- main ---------- */
 main {
@@ -147,17 +182,20 @@ main {
 
 .btn {
   display: flex; align-items: center; justify-content: center; text-align: center;
-  min-height: 56px; padding: 10px 18px; border-radius: 14px;
+  min-height: 50px; padding: 8px 22px; border-radius: 999px;
   border: 1px solid transparent; background: var(--surface2);
-  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; line-height: 1.3;
+  font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.25;
   min-width: 0; overflow-wrap: anywhere;
   transition: transform .08s ease-out, filter .12s, background-color .15s, border-color .15s, color .15s;
 }
 .btn:not(:disabled):active, .hdr-btn:not(:disabled):active, .x-btn:active { transform: scale(.97); filter: brightness(.92); }
 @media (hover: hover) { .btn:not(:disabled):hover, .hdr-btn:not(:disabled):hover { filter: brightness(1.08); } }
-.btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-ink); }
+/* the main action: a white pill with black text (black with white in light mode) */
+.btn.primary { background: var(--text); border-color: var(--text); color: var(--bg); }
 .btn.danger { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
-.btn.big { min-height: 72px; font-size: 1.35rem; }
+.btn.big { min-height: 56px; font-size: 1rem; }
+/* a second choice under the main one: plain blue text, no box */
+.btn.text { background: transparent; border-color: transparent; color: var(--accent); font-weight: 500; min-height: 44px; width: 100%; }
 .btn.big, .btn.wide { width: 100%; }
 .btn.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
 .btn-stack { display: flex; flex-direction: column; gap: 10px; margin-top: var(--gap); }
@@ -264,22 +302,24 @@ main {
 #calActive { display: flex; flex-direction: column; align-items: stretch; gap: var(--gap); }
 /* cadence dot: one dot carrying the rpm, green at any workable pace, red when too slow
    or too fast for turn detection. Only out-of-range or stopped gets words underneath. */
-.cadg { align-self: center; display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+.cadg { align-self: stretch; display: flex; flex-direction: column; padding: 18px 30px 0; }
 .cadg-dot {
-  width: 52px; height: 52px; border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
-  background: var(--ok); color: var(--ok-ink); font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
-  transition: background-color .25s, color .25s;
+  position: absolute; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  background: var(--ok); color: var(--ok-ink); font-size: .72rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 3px var(--bg), 0 2px 8px rgba(0, 0, 0, .35);
+  transition: left .5s cubic-bezier(.22, 1, .36, 1), background-color .25s, color .25s;
 }
-.cadg-dot small { font-size: .7rem; font-weight: 600; margin-top: 1px; opacity: .85; }
 .cadg-dot.bad { background: var(--bad); color: var(--bad-ink); }
 .cadg-dot.idle { background: var(--surface2); color: var(--muted); }
-.cadg-cap { text-align: center; font-size: .9rem; font-weight: 600; margin-top: 2px; min-height: 1.3em; }
+.cadg-cap { text-align: center; font-size: .88rem; font-weight: 600; margin-top: 2px; min-height: 1.3em; }
+.cadticks { position: relative; height: 14px; margin-top: 14px; font-size: .68rem; font-weight: 600; color: var(--muted); }
+.cadticks span { position: absolute; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
 .cadg-cap.bad { color: var(--bad); }
 .cadg-cap.warn { color: var(--warn); }
 .stage {
-  --stage: min(300px, 80vw, 40vh);
+  /* as big as the phone allows once everything else is on screen (iPhone 16: 230-300 px) */
+  --stage: max(170px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px))));
   position: relative; width: var(--stage); height: var(--stage); align-self: center; flex: none;
 }
 .stage .pt {
@@ -319,15 +359,17 @@ main {
 .disc-in .chk { width: 36%; height: 36%; }
 .disc-in .chk path { stroke: var(--ok-ink); }
 .disc-in .crank { width: 27%; height: 27%; color: var(--accent); animation: crank-spin 1.2s linear infinite; }
-.cal-say { text-align: center; padding: 0 8px; min-height: 84px; }
-.cal-say .h { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
-.cal-say .s { font-size: 1.05rem; color: var(--muted); margin-top: 8px; line-height: 1.45; }
-#calCount { text-align: center; color: var(--muted); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.cal-say { text-align: center; padding: 0 12px; min-height: 64px; }
+.cal-say .h { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+.cal-say .s { font-size: 1rem; color: var(--muted); margin-top: 6px; line-height: 1.3; }
+#calCount { text-align: center; color: var(--muted); font-size: .88rem; font-variant-numeric: tabular-nums; }
 .cal-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.cal-btns .capture { grid-column: 1 / -1; min-height: 84px; font-size: 1.6rem; }
+.cal-btns .capture { grid-column: 1 / -1; min-height: 56px; font-size: 1rem; }
 /* auto-capture on: CAPTURE is a small secondary "Capture now" */
-.cal-btns .capture.lite { min-height: 56px; font-size: 1.05rem; background: var(--surface2); border-color: transparent; color: var(--text); }
-.cal-btns .btn { min-height: 64px; }
+.cal-btns .capture.lite { min-height: 50px; font-size: 1rem; background: var(--surface2); border-color: transparent; color: var(--text); }
+.cal-btns .btn { min-height: 52px; }
+/* Undo and Cancel live in the top bar while calibrating (topUndo / topX mirror them) */
+.cal-btns #btnUndo, .cal-btns #btnCancel { display: none; }
 #calActive.nopoint .cal-btns .btn.danger { grid-column: 1 / -1; }
 /* [v3.1] point check (cal=5): the board thinks the lever was still moving */
 #calActive.checking .cal-btns .btn.danger { grid-column: 1 / -1; }
@@ -342,18 +384,18 @@ main {
 }
 .qcheck .qb { font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
 .qcheck .qd { font-size: .9rem; color: var(--muted); }
-.qcheck .btn { min-height: 72px; font-size: 1.3rem; width: 100%; }
+.qcheck .btn { min-height: 52px; font-size: 1rem; width: 100%; }
 .btn.warnfill { background: var(--warn-fill); border-color: var(--warn-fill); color: var(--warn-ink); }
 .redo-banner {
   border: 2px solid var(--warn); background: var(--warn-bg); border-radius: 14px;
-  padding: 12px 14px; font-size: 1.1rem; font-weight: 700; line-height: 1.4;
+  padding: 8px 14px; font-size: .95rem; font-weight: 600; line-height: 1.35;
 }
 .redo-banner b { color: var(--warn); }
 .hold-banner {
-  background: var(--warn-fill); color: var(--warn-ink); border-radius: 14px; padding: 12px 14px; text-align: center;
+  background: var(--warn-fill); color: var(--warn-ink); border-radius: 14px; padding: 8px 14px; text-align: center;
 }
-.hold-banner .hb-t { font-size: 1.25rem; font-weight: 800; line-height: 1.3; }
-.hold-banner .hb-s { font-size: .95rem; font-weight: 600; margin-top: 4px; }
+.hold-banner .hb-t { font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+.hold-banner .hb-s { font-size: .85rem; font-weight: 600; margin-top: 2px; }
 /* [v3.2] down pass: a dot measured on the way down turns a settled blue (normal size);
    the point being measured (down pass or redo) gets a ring as well as the usual highlight. */
 .stage .pt.down { background: var(--accent); }
@@ -361,10 +403,10 @@ main {
 /* [v3.2] N,behind: the agreeing turns sit behind the previous point */
 .behind-hint {
   border: 2px solid var(--warn); background: var(--warn-bg); border-radius: 14px;
-  padding: 10px 14px; font-size: 1rem; font-weight: 600; line-height: 1.4; text-align: center;
+  padding: 8px 14px; font-size: .92rem; font-weight: 600; line-height: 1.35; text-align: center;
 }
 .behind-hint b { color: var(--warn); }
-.cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 56px; font-size: 1rem; }
+.cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 44px; font-size: 1rem; background: transparent; color: var(--accent); font-weight: 500; }
 #calActive.redoing .cal-btns .btn.danger { grid-column: 1 / -1; }
 /* [v3.3] one flow of numbered steps: "Step 3 of 6 · Sweep the lever" and 6 small segments */
 .crumbs { display: flex; flex-direction: column; gap: 8px; }
@@ -378,44 +420,46 @@ main {
 .disc.paused .face { fill: var(--surface); stroke: var(--surface2); }
 .disc.paused .big { color: var(--muted); }
 .disc.back .face { stroke: var(--text); stroke-width: 4; }
-.stop-note { text-align: center; color: var(--muted); font-size: .95rem; line-height: 1.4; padding: 0 12px; }
+.stop-note { text-align: center; color: var(--muted); font-size: .88rem; line-height: 1.35; padding: 0 16px; }
 /* [v3.3] cadence guide: green window for the gear you're in, marker for your rpm */
-.cadbar { position: relative; width: 150px; height: 8px; border-radius: 4px; background: var(--surface2); margin-top: 8px; }
-.cadbar .win { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--ok); opacity: .55; }
-.cadbar .mk { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--text); border: 2px solid var(--bg); }
+.cadbar { position: relative; height: 4px; border-radius: 2px; background: var(--surface2); }
+.cadbar .win { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--ok); transition: left .5s, width .5s; }
 .cadg-dot.mid { background: var(--surface2); color: var(--text); }
 /* [v3.3] step 1: placement meters */
-.place { display: flex; flex-direction: column; gap: 16px; }
-.place h2 { margin: 0; font-size: 1.6rem; letter-spacing: -.01em; }
-.place .lead { margin: 0; color: var(--muted); font-size: 1.05rem; line-height: 1.45; }
-.gauge { position: relative; width: min(280px, 76vw); align-self: center; }
+.place { display: flex; flex-direction: column; gap: 10px; }
+.place h2 { margin: 0; font-size: 1.6rem; letter-spacing: -.01em; line-height: 1.15; }
+.place .lead { margin: 4px 0 0; color: var(--muted); font-size: .94rem; line-height: 1.35; }
+.gauge { position: relative; width: max(150px, min(260px, 66vw, calc((100dvh - 480px) * 1.41))); align-self: center; }
 .gauge svg { display: block; width: 100%; height: auto; overflow: visible; }
 .gauge .trk { fill: none; stroke: var(--surface2); stroke-width: 16; stroke-linecap: round; }
 .gauge .zn { fill: none; stroke-width: 4; stroke-linecap: butt; opacity: .9; }
 .gauge .val { fill: none; stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset .35s ease-out, stroke .3s; }
 .gauge-in { position: absolute; left: 0; right: 0; top: 34%; text-align: center; }
-.gauge-in .big { font-size: 3.4rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.gauge-in .big { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .gauge-in .unit { font-size: 1rem; font-weight: 600; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
 .gauge-in .lbl { font-size: .9rem; font-weight: 600; color: var(--muted); margin-top: 4px; }
-.meter { background: var(--surface); border-radius: var(--radius); padding: 14px 16px; }
+.meters { background: var(--surface); border-radius: var(--radius); padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+@media (max-height: 760px) { .meter-s { display: none; } }
+/* iPhone: the screen-lock tip shows too, so the gauge gives up the room */
+.place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 545px) * 1.41))); }
 .meter-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .meter-h .k { font-weight: 700; }
 .meter-h .v { font-weight: 700; font-variant-numeric: tabular-nums; }
 .meter-h .z { font-size: .85rem; font-weight: 700; margin-left: 8px; }
-.capsule { position: relative; height: 14px; border-radius: 7px; background: var(--surface2); margin-top: 10px; overflow: hidden; }
+.capsule { position: relative; height: 10px; border-radius: 5px; background: var(--surface2); margin-top: 8px; overflow: hidden; }
 .capsule > i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform-origin: left center; transform: scaleX(0); transition: transform .35s ease-out, background-color .3s; }
 .capsule > b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bg); opacity: .8; }
 .zone-weak { color: var(--warn); } .zone-good, .zone-great { color: var(--ok); }
 .fill-weak { background: var(--warn); stroke: var(--warn); } .fill-good { background: var(--ok); stroke: var(--ok); } .fill-great { background: var(--ok); stroke: var(--ok); }
 .fill-none { background: var(--surface2); stroke: var(--surface2); }
-.meter-s { font-size: .85rem; color: var(--muted); margin-top: 6px; }
-.verdict { border-radius: var(--radius); padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); background: var(--surface); }
+.meter-s { font-size: .8rem; color: var(--muted); margin-top: 4px; line-height: 1.3; }
+.verdict { border-radius: var(--radius); padding: 10px 14px; display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); background: var(--surface); }
 .verdict .vi { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--surface2); color: var(--muted); }
 .verdict.good { border-color: var(--ok); background: var(--ok-bg); } .verdict.good .vi { background: var(--ok); color: var(--ok-ink); }
 .verdict.weak { border-color: var(--warn); background: var(--warn-bg); } .verdict.weak .vi { background: var(--warn-fill); color: var(--warn-ink); }
-.verdict .vt { font-weight: 800; font-size: 1.15rem; line-height: 1.3; }
-.verdict .vs { color: var(--muted); font-size: .95rem; margin-top: 2px; line-height: 1.4; }
-.tip { border-radius: var(--radius); padding: 12px 16px; background: var(--accent-bg); border: 1px solid var(--accent); font-size: .95rem; line-height: 1.45; }
+.verdict .vt { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+.verdict .vs { color: var(--muted); font-size: .88rem; margin-top: 2px; line-height: 1.35; }
+.tip { border-radius: var(--radius); padding: 8px 14px; background: var(--accent-bg); border: 1px solid var(--accent); font-size: .82rem; line-height: 1.35; }
 /* [v3.3] checkpoint card and resume offers; stale-page banner */
 .saved-card { border-color: var(--ok); background: var(--ok-bg); }
 .resume { display: flex; flex-direction: column; gap: 10px; }
@@ -448,7 +492,7 @@ main {
 .result .stat .v { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .result .stat .u { font-size: .85rem; color: var(--muted); font-weight: 700; }
 .result .marginal { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); font-weight: 600; }
-.x-btn { min-width: 48px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 1.2rem; font-weight: 700; }
+.x-btn { min-width: 44px; min-height: 44px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 1.2rem; font-weight: 700; }
 .result .downinfo { margin-top: 10px; font-size: .95rem; }
 /* [v3.2] review card: points the bridge's check flagged after saving (F lines) */
 .review { border-color: var(--warn); }
@@ -471,9 +515,9 @@ main {
 .rck .gear-ring { --ring: min(46vw, 26vh, 210px); border-width: 6px; align-self: center; }
 .rck-q { font-size: 1.3rem; font-weight: 700; line-height: 1.35; text-align: center; }
 .rck-note { text-align: center; color: var(--warn); font-weight: 600; font-size: .95rem; min-height: 1.4em; }
-.rck .cal-btns .btn { min-height: 64px; font-size: 1.2rem; }
+.rck .cal-btns .btn { min-height: 52px; font-size: 1rem; }
 .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; }
-.stepper .btn { width: 64px; min-height: 56px; padding: 0; font-size: 1.7rem; }
+.stepper .btn { width: 56px; min-height: 56px; padding: 0; font-size: 1.7rem; }
 .stepper output { font-size: 2.6rem; font-weight: 800; min-width: 2.2ch; text-align: center; font-variant-numeric: tabular-nums; }
 .rck-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
 .rck-row .k { font-weight: 700; }
@@ -482,13 +526,14 @@ main {
 .rck-row .btn { min-height: 48px; padding: 4px 14px; font-size: .95rem; flex: none; }
 /* calibration walkthrough (idle screen) */
 #calIdle { display: flex; flex-direction: column; gap: 28px; }
+.onb { padding-top: 0; }
 .onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }
-.onb-art { position: relative; width: 100%; height: min(230px, 30vh); display: grid; place-items: center; }
+.onb-art { position: relative; width: 100%; height: min(220px, 26vh); display: grid; place-items: center; }
 .onb-art .art { grid-area: 1 / 1; display: grid; place-items: center; opacity: 0; transform: translateX(24px); transition: opacity .3s, transform .35s cubic-bezier(.22, 1, .36, 1); pointer-events: none; }
 .onb-art .art.before { transform: translateX(-24px); }
 .onb-art .art.on { opacity: 1; transform: none; }   /* after .before so the current page sits centred */
 .art-disc {
-  --d: min(190px, 26vh);
+  --d: min(190px, 23vh);
   width: var(--d); height: var(--d); border-radius: 50%; background: var(--surface); border: 8px solid var(--surface2);
   padding: 14px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -509,16 +554,16 @@ main {
 .art-mini svg { width: 46%; height: 46%; }
 .art-mini svg path { stroke: var(--ok-ink); }
 .art-arrow { font-size: 1.8rem; color: var(--muted); }
-.art-ring { position: relative; width: min(220px, 30vh); height: min(220px, 30vh); display: grid; place-items: center; }
+.art-ring { position: relative; width: min(220px, 26vh); height: min(220px, 26vh); display: grid; place-items: center; }
 .art-ring i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--line); }
 .art-ring i.done { background: var(--ok); }
-.onb-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; margin: 18px 0 0; line-height: 1.15; }
-.onb-text { font-size: 1.05rem; color: var(--muted); margin: 10px 0 0; line-height: 1.4; max-width: 30em; min-height: 4.2em; }
-.onb-dots { display: flex; gap: 8px; margin: 18px 0 0; }
+.onb-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -.01em; margin: 14px 0 0; line-height: 1.15; }
+.onb-text { font-size: 1rem; color: var(--muted); margin: 8px 0 0; line-height: 1.35; max-width: 30em; min-height: 4.05em; }
+.onb-dots { display: flex; gap: 8px; margin: 14px 0 0; }
 .onb-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: background-color .25s, width .25s; }
 .onb-dots i.on { background: var(--text); width: 22px; border-radius: 4px; }
-.onb-btns { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 22px; }
-.linkbtn.onb-back { min-height: 44px; color: var(--muted); text-decoration: none; font-weight: 600; }
+.onb-btns { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 16px; }
+.linkbtn.onb-back { min-height: 44px; color: var(--accent); text-decoration: none; font-weight: 500; }
 .linkbtn.onb-back[hidden] { display: block !important; visibility: hidden; }
 .onb-more { display: flex; flex-direction: column; gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .onb-art .art, .onb-dots i { transition: none; } .art-crank { animation: none; } }
@@ -542,7 +587,7 @@ main {
 .qbtns .btn .k { font-family: var(--mono); font-size: .8rem; color: var(--muted); font-weight: 600; }
 .sendrow { display: flex; gap: 8px; }
 .sendrow input {
-  flex: 1; min-width: 0; min-height: 56px; border-radius: 14px; border: 1px solid var(--line);
+  flex: 1; min-width: 0; min-height: 50px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--surface); padding: 0 16px; font-family: var(--mono); font-size: 1.3rem;
 }
 .sendrow .btn { min-width: 96px; }
@@ -610,7 +655,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 .rec-sum { font-size: .92rem; margin: 4px 0 8px; }
 .rec-sum .tag { color: var(--warn); font-weight: 700; }
 .rec-acts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
-.rec-acts .btn { min-height: 56px; padding: 4px; font-size: .92rem; line-height: 1.3; }
+.rec-acts .btn { min-height: 48px; padding: 4px; font-size: .92rem; line-height: 1.3; }
 #copySheet {
   position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.6);
   display: flex; align-items: flex-end; justify-content: center;
@@ -651,6 +696,10 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
   </button>
   <button class="hdr-btn" id="hdrBtn" type="button" hidden>Disconnect</button>
+  <!-- while calibrating: (x) Calibrate Undo -->
+  <button class="top-x" id="topX" type="button" aria-label="Cancel calibration"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span class="lbl">Tap again to cancel</span></button>
+  <div class="top-title" aria-hidden="true">Calibrate</div>
+  <button class="top-undo" id="topUndo" type="button" hidden>Undo</button>
 </header>
 
 <main id="main">
@@ -703,7 +752,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     <div class="place" id="calPlace" hidden>
       <div>
         <h2>Find a good spot</h2>
-        <p class="lead">Pedal, and move the gear lever from the bottom all the way up and back down. The meters show how well the bridge sees the magnets.</p>
+        <p class="lead">Pedal, and sweep the gear lever all the way up and back down. The meters show how well the bridge sees the magnets.</p>
       </div>
       <div class="gauge" role="img" id="gaugeSwing" aria-label="Lever swing">
         <svg viewBox="0 0 240 170" aria-hidden="true">
@@ -715,6 +764,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         </svg>
         <div class="gauge-in"><div class="big"><span id="gNum">--</span><span class="unit">µT</span></div><div class="lbl">Lever swing · <span id="gZone">move the lever</span></div></div>
       </div>
+      <div class="meters">
       <div class="meter" role="group" aria-label="Crank dip">
         <div class="meter-h"><span class="k">Crank dip</span><span><span class="v" id="mDipV">--</span><span class="z" id="mDipZ"></span></span></div>
         <div class="capsule"><i id="mDipF"></i><b id="mDipT1"></b><b id="mDipT2"></b></div>
@@ -725,13 +775,16 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="capsule"><i id="mHeadF"></i><b id="mHeadT1"></b><b id="mHeadT2"></b></div>
         <div class="meter-s">Room left before the sensor saturates.</div>
       </div>
+      </div>
       <div class="verdict" id="placeVerdict" role="status">
         <span class="vi" id="placeVi" aria-hidden="true">…</span>
         <div><div class="vt" id="placeVt">Waiting for readings</div><div class="vs" id="placeVs">Pedal and move the lever.</div></div>
       </div>
-      <div class="tip" id="lockTip" hidden>On iPhone, stop the screen locking while you calibrate: <b>Settings → Display &amp; Brightness → Auto-Lock → Never</b>. Set it back afterwards.</div>
-      <button class="btn primary big" id="placeNext" type="button">Next</button>
-      <button class="btn wide" id="placeBack" type="button">Back</button>
+      <div class="tip" id="lockTip" hidden>Keep the screen on: <b>Settings › Display &amp; Brightness › Auto-Lock › Never</b> while you calibrate.</div>
+      <div class="place-btns">
+        <button class="btn primary big" id="placeNext" type="button">Next</button>
+        <button class="btn text" id="placeBack" type="button">Back</button>
+      </div>
     </div>
 
     <!-- [v3.3] checkpoint after the gears going up -->
@@ -740,7 +793,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       <p>The gears going up are saved and ready to ride. Coming back down makes each gear switch where the console does.</p>
       <div class="btn-stack">
         <button class="btn primary big" id="upContinue" type="button">Continue down</button>
-        <button class="btn wide" id="upLater" type="button">Later</button>
+        <button class="btn text" id="upLater" type="button">Later</button>
       </div>
     </div>
 
@@ -755,7 +808,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <p>Ride for about a minute and compare the bridge's gear with the Keiser console at four gears.</p>
         <p class="small muted">Watts will read a little below the console on purpose: the bridge uses Keiser's measured power scale. So only the gear is checked.</p>
         <button class="btn primary big" id="rckStart" type="button">Start the gear check</button>
-        <button class="btn wide" id="rckSkip" type="button">Skip</button>
+        <button class="btn text" id="rckSkip" type="button">Skip</button>
       </div>
       <div class="rck" id="rckRun" hidden>
         <div class="rck-step" id="rckStep">Check 1 of 4</div>
@@ -781,7 +834,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           </div>
           <button class="btn primary wide" id="rckSave" type="button">Save and go on</button>
         </div>
-        <button class="btn wide" id="rckQuit" type="button">Skip the rest</button>
+        <button class="btn text" id="rckQuit" type="button">Skip the rest</button>
       </div>
       <div class="rck" id="rckDone" hidden>
         <h2 id="rckDoneTitle">Gear check</h2>
@@ -838,7 +891,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
           <h2 style="margin:0">Pick up where you stopped</h2>
           <p class="small muted" style="margin:0" id="resumeText"></p>
           <button class="btn primary wide" id="resumeDown" type="button">Continue down through the gears</button>
-          <button class="btn wide" id="resumeCheck" type="button">Check a few gears</button>
+          <button class="btn text" id="resumeCheck" type="button">Check a few gears</button>
         </div>
         <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
         <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:0"></p>
@@ -852,8 +905,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="hb-s">It will capture by itself once the lever stops.</div>
       </div>
       <div class="cadg" id="cadG" role="img" aria-label="Cadence" hidden>
-        <b class="cadg-dot idle"><span id="cadDot">--</span><small>rpm</small></b>
-        <div class="cadbar" id="cadBar" aria-hidden="true" hidden><i class="win" id="cadWin"></i><i class="mk" id="cadMk"></i></div>
+        <div class="cadbar" id="cadBar" aria-hidden="true"><i class="win" id="cadWin"></i><b class="cadg-dot idle" id="cadMk"><span id="cadDot">--</span></b></div>
+        <div class="cadticks" aria-hidden="true"><span id="cadT1"></span><span id="cadT2"></span></div>
         <div class="cadg-cap" id="cadCap"></div>
       </div>
       <div class="small" id="calWait" role="status" hidden style="color:var(--warn);font-weight:600;text-align:center">Waiting for the bridge…</div>
@@ -895,14 +948,14 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         <div class="s" id="calSub"></div>
       </div>
       <div id="calCount">0 of 25</div>
-      <div class="stop-note" id="stopNote" hidden>You can stop any time: stop pedalling, shift, then pedal again.</div>
+      <div class="stop-note" id="stopNote" hidden>Stop pedalling to shift any time you like.</div>
       <div class="rv-links" id="fixLinks" hidden>
         <button class="linkbtn" id="fixGuess" type="button">Use best guess instead</button>
         <button class="linkbtn" id="fixSkip" type="button">Skip this gear</button>
       </div>
-      <div class="btn-stack" id="confirmBtns" hidden style="margin-top:0">
+      <div class="btn-stack" id="confirmBtns" hidden style="margin-top:0;gap:4px">
         <button class="btn primary big" id="btnConfirm" type="button">Yes, it matches</button>
-        <button class="btn secondary wide" id="btnRelearn" type="button">Learn again</button>
+        <button class="btn text" id="btnRelearn" type="button">Learn again</button>
       </div>
       <div class="cal-btns">
         <button class="btn primary capture" id="btnCapture" type="button">CAPTURE</button>
@@ -3351,7 +3404,11 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     at.disabled = !connected;
 
     setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
-    if (!active) return;
+    // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
+    state.calFocus = active || placing || saved || checkRun;
+    applyCalFocus();
+    $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : 'Skip the rest of the gear check');
+    if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }
 
     buildCalDots();
     var now = Date.now(), auto = !!s.flags.A;
@@ -3589,13 +3646,17 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
         dotCls = 'mid';
         cap = 'Comfortable here: ' + win[0] + '–' + win[1] + ' rpm';
       } else cap = '';
-      setHidden('cadBar', !guide || dotCls === 'idle');
-      if (guide) {
-        var sc = function (v) { return Math.max(0, Math.min(100, (v - 20) / (130 - 20) * 100)); };
-        $('cadWin').style.left = sc(win[0]).toFixed(1) + '%';
-        $('cadWin').style.width = (sc(win[1]) - sc(win[0])).toFixed(1) + '%';
-        $('cadMk').style.left = sc(rpm).toFixed(1) + '%';
-      }
+      // the line runs 20-130 rpm; the green window is the comfortable pace for this gear
+      // (v3.1 has no guide: the workable range); the dot carries the rpm along it
+      var sc = function (v) { return Math.max(0, Math.min(100, (v - 20) / (130 - 20) * 100)); };
+      var wlo = guide ? win[0] : CAD_LO, whi = guide ? win[1] : CAD_HI;
+      $('cadWin').style.left = sc(wlo).toFixed(1) + '%';
+      $('cadWin').style.width = (sc(whi) - sc(wlo)).toFixed(1) + '%';
+      $('cadMk').style.left = (dotCls === 'idle' ? 0 : sc(rpm)).toFixed(1) + '%';
+      $('cadT1').style.left = sc(wlo).toFixed(1) + '%';
+      $('cadT2').style.left = sc(whi).toFixed(1) + '%';
+      if ($('cadT1').textContent !== String(wlo)) $('cadT1').textContent = String(wlo);
+      if ($('cadT2').textContent !== String(whi)) $('cadT2').textContent = String(whi);
       var dot = $('cadDot');
       dot.parentNode.className = 'cadg-dot' + (dotCls ? ' ' + dotCls : '');
       dot.textContent = dotCls === 'idle' ? '--' : String(rpm);
@@ -3638,6 +3699,12 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     // Undo: at the first down point it goes back to up point 24 (the board allows it).
     $('btnUndo').disabled = !connected || s.cal !== 1 || (!down && step === 0);
     $('btnCancel').disabled = !connected;
+    setHidden('topUndo', $('btnUndo').hidden);
+    $('topUndo').disabled = $('btnUndo').disabled;
+  }
+
+  function applyCalFocus() {
+    document.body.classList.toggle('calfocus', !!state.calFocus && state.view === 'cal');
   }
 
   // [v3.1] Hold-still notice (M flag / W line): a non-blocking amber strip; the turns meter stays.
@@ -4111,6 +4178,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     });
     if (v === 'console') { var log = $('log'); logStick = true; log.scrollTop = log.scrollHeight; }
     try { localStorage.setItem('m3bridge.view', v); } catch (e) {}
+    applyCalFocus();
     renderBadge();
   }
 
@@ -4182,8 +4250,9 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
     var b = $('btnCancel');
     b.classList.remove('armed');
     b.textContent = 'CANCEL';
+    $('topX').classList.remove('armed');
   }
-  $('btnCancel').addEventListener('click', function () {
+  function cancelTap() {
     var b = $('btnCancel');
     if (Date.now() < cancelArmedUntil) {
       clearTimeout(cancelTimer);
@@ -4193,10 +4262,20 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
       cancelArmedUntil = Date.now() + 3000;
       b.classList.add('armed');
       b.textContent = 'TAP AGAIN TO CANCEL';
+      $('topX').classList.add('armed');
       clearTimeout(cancelTimer);
       cancelTimer = setTimeout(disarmCancel, 3000);
     }
+  }
+  $('btnCancel').addEventListener('click', cancelTap);
+  // the top bar's (x): cancel while calibrating (tap twice), else leave the step it is on
+  $('topX').addEventListener('click', function () {
+    if (calRunning(state.s)) cancelTap();
+    else if (state.place) $('placeBack').click();
+    else if (state.upSaved) $('upLater').click();
+    else if (state.check && state.check.phase === 'run') $('rckQuit').click();
   });
+  $('topUndo').addEventListener('click', function () { if (!$('btnUndo').disabled) send('u'); });
 
   $('resultCard').addEventListener('click', function (ev) {
     var t = ev.target;
