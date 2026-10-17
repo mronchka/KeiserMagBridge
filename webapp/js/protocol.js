@@ -207,6 +207,8 @@ function onS(p) {
     }
   }
   if (cal === 0) { state.redo = 0; state.downResumeStep = -1; }
+  else if (state.v33 && (s.flow === 5 && cal !== 7 || s.pass === 'ru' || s.pass === 'rd') &&
+           !(state.lastKAt && Date.now() - state.lastKAt < 2000)) state.awaitK = true;   // its K is due (not a line left over from just before K)
   else if (state.downResumePending && s.pass === 'd') { state.downResumePending = false; state.downResumeStep = s.step; }
   if (prevCal === 0 && cal !== 0) {
     // A fresh calibration starts at step 0. A later step after a reconnect is the same run continuing.
@@ -226,6 +228,17 @@ function onS(p) {
     else onCalStarted();
     // however it started (the page, the bridge's button, #D, a reconnect): show it, full screen
     if (state.view !== 'cal') showView('cal');
+  }
+  if ((prevCal !== 0 || dropCal !== 0) && cal === 0 && state.v33 && state.awaitK) {
+    // the down pass or a redo ended, but its K hasn't come (lost, or sent while the link was down)
+    setTimeout(function () {
+      if (!state.awaitK || state.conn !== 'connected' || state.q || (state.s && state.s.cal !== 0)) return;
+      state.awaitK = false;
+      if (!(state.result && state.result.type === 'K' && state.result.ok)) return;
+      logLine('The end of that pass never arrived: reading the calibration back from the bridge.', 'sys');
+      state.qFromEdit = true;
+      requestStoredCal();
+    }, 3000);
   }
   if ((prevCal !== 0 || dropCal !== 0) && cal === 0) {   // (also when it ended while the link was down)
     if (state.v33 && (prevFlow || dropFlow) === 5 && state.fixHold) { state.fixHold = false; state.upSaved = false; }
@@ -359,6 +372,7 @@ function onK(p) {
   state.qRetried = false;
   state.result = r;
   state.resultHidden = false;
+  state.awaitK = false; state.lastKAt = Date.now();
   state.calEnded = true;
   state.wantReadback = false;
   logLine(r.ok
@@ -383,13 +397,14 @@ function onK(p) {
   } else if (r.ok && !r.edit && flowAt === 5) {
     state.upSaved = false;
     state.fixHold = false;
-    if (state.stopSent) state.noAutoCheck = true;   // the rider stopped it (x / Finish without the down pass)
+    if (state.stopSent) { state.noAutoCheck = true; state.fixPaused = true; }   // the rider stopped it (x / Finish without the down pass): flagged gears and step 6 wait
     var finished = state.downPoints.some(function (q) { return q.point === 2; });
     setFlowRecord({ downDone: finished, checkDone: false });
   }
   // (also when a down point was lost on the way: the bridge has it, the page doesn't)
   if (r.edit && state.points.length < TOTAL_POINTS ||
-      (v33 && !r.edit && r.ok && (state.points.length < TOTAL_POINTS || downPointsMissing()))) {
+      (v33 && !r.edit && r.ok && (state.points.length < TOTAL_POINTS || downPointsMissing() ||
+        (flowAt === 5 && !state.stopSent && state.downPoints.length && !state.downPoints.some(function (q) { return q.point === 2; }))))) {
     // Edited (or finished the down pass of) a calibration this page didn't watch being made, e.g.
     // after a reload or with #D: read the stored one back once the F list is in, instead of
     // saving a partial copy.
@@ -427,6 +442,14 @@ function onF(p) {
     clearTimeout(state.fTimer);
     var items = state.fList || [];
     state.fList = null;
+    if (state.q && (state.q.points.length || state.q.down.length)) {
+      // Q lines came but their Q,end was lost: this F list is the readback's, not a new run's
+      logLine('The stored calibration arrived without its end line.', 'bad');
+      clearTimeout(state.q.timer); state.q = null;
+      if (state.qFromEdit && !state.qRetried) { state.qRetried = true; requestStoredCal(); return true; }
+      state.qJustEnded = true;
+      if (!state.qFromEdit) toast('Stored calibration incomplete: try again');
+    }
     if (state.qRetryAfterF) {   // the F list of an incomplete readback: read it again (qFromEdit stays)
       state.qRetryAfterF = false; state.qJustEnded = false;
       requestStoredCal();
@@ -528,6 +551,7 @@ function onE(p) {
 // A,<reason>
 function onA(p) {
   var reason = p.slice(1).join(',').trim();
+  state.awaitK = false;
   if (state.edit && state.edit.kind === 'R' && state.edit.started) {
     // [v3.2] a redo was cancelled: the saved calibration is unchanged
     clearTimeout(state.edit.timer);
@@ -677,7 +701,7 @@ function onCalStarted() {
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
-  state.downResumePending = false; state.qRetried = false;
+  state.downResumePending = false; state.qRetried = false; state.awaitK = false;
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
@@ -750,6 +774,9 @@ function onQ(p) {
       id = saveCalRecord('run', info, q.points);
       kr.recordId = id;
       kr.down = q.down.length;
+      // from now on the page works with the bridge's copy (a later redo is saved from it)
+      state.points = q.points.slice(); state.downPoints = q.down.slice();
+      if (state.v33 && q.down.some(function (x) { return x.point === 2; })) setFlowRecord({ downDone: true });   // the bridge has the whole down pass
       noteCalRecord(id, state.v33);
       renderResult();
     } else id = saveCalRecord('stored', info, q.points);

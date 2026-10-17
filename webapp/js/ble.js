@@ -179,7 +179,7 @@ function disconnect() {
 // Connection UI
 // ===================================================================
 function setConn(c, msg, isErr) {
-  var was = state.conn;
+  var was = state.conn, hadS = !!state.s;   // (state.s is cleared below when the link drops)
   state.conn = c;
   var dot = $('connDot'), txt = $('connText'), card = $('connCard'), btn = $('connectBtn'), cm = $('connMsg'), hb = $('hdrBtn');
   dot.className = 'dot';
@@ -223,7 +223,8 @@ function setConn(c, msg, isErr) {
       if (state.s && state.s.cal !== 0 && !state.calEnded) savePartialCal('connection lost');
       // Until the first status line after reconnecting, C / E / K lines still belong to the run
       // that was going on (a redo's C and K can come before any S line).
-      if (was === 'connected') { state.dropS = state.s; state.dropV = { v32: state.v32, v33: state.v33 }; }
+      // (only with a status line on this link: a second drop before one keeps the first drop's)
+      if (was === 'connected' && hadS) { state.dropS = state.s; state.dropV = { v32: state.v32, v33: state.v33 }; }
       state.s = null;
       state.v3 = false;          // re-detected from the next S lines
       state.v31 = false;
@@ -231,13 +232,14 @@ function setConn(c, msg, isErr) {
       state.v33 = false; state.newerLines = 0; state.bWas = null;
       // [v3.3] the board keeps its placement stream across a drop ('v' toggles it): the first
       // status line after reconnecting decides (onFlowStatus)
-      if (was === 'connected') state.placeWas = !!state.place;
+      if (was === 'connected' && hadS) state.placeWas = !!state.place;
       state.place = null;
       state.calSeen = false; state.uncalSince = 0;
       state.behind = null; state.fList = null; state.overshoot = null; state.stallSince = 0;
       clearTimeout(state.fTimer);           // (a readback still wanted is asked for again after reconnecting)
       state.checkpointAnswered = 0;         // an answer that may not have gone out: ask again
       state.downResumePending = false; state.dPending = 0;
+      if (state.qFromEdit && state.q) state.wantReadback = true;
       state.fixAfter = ''; state.qFromEdit = false; state.qJustEnded = false;
       // a redo the bridge already started carries on (its E / K may come after reconnecting); any other edit is dropped
       if (state.edit) { clearTimeout(state.edit.timer); if (!state.edit.started) state.edit = null; }

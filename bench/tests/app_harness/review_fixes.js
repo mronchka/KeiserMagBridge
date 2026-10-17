@@ -283,6 +283,74 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app2.feed(1, S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
     check('a reload at the checkpoint keeps the up-pass record for the gear check', app2.win.calRecordId() === rid && app2.M3.state.upSaved);
   }
+  // ---------------------------------------------------------------- tester B, round 2
+  const readback = async (app, opts) => {   // the bridge answering k: 25 points, 22 down points, Q,end, an empty F list
+    opts = opts || {};
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + p + '.0,1.0,2.0', 0.02);
+    for (let p = 23; p >= 2; p--) await app.f('Q,down,' + p + ',' + p + '.5,1.0,2.0', 0.02);
+    if (!opts.noEnd) await app.f('Q,end,120.0,3.00,6', 0.02);
+    for (const it of opts.flagged || []) await app.f('F,' + it + ',behind,1.0,2.0,3.0', 0.02);
+    await app.f('F,end,' + (opts.flagged || []).length, 0.02);
+  };
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 3);
+    app.M3.setConn('disconnected'); app.connect();
+    app.M3.setConn('disconnected'); app.connect();                 // a second drop before any status line
+    await app.f('C,down,2,5.0,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    check('two drops in a row: the down pass\'s K is still taken as v3.3 (step 6, down points kept)',
+      st.result.down === 22 && !!st.check && st.check.phase === 'run', 'down ' + st.result.down + ' check ' + (st.check && st.check.phase));
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);                                     // ... and its K is lost
+    await app.f(S({}));
+    await app.advance(4);
+    check('a down pass whose K never arrives: the page reads the calibration back', app.cmds().filter((c) => c === 'k').length === 1, JSON.stringify(app.cmds()));
+    await readback(app);
+    check('...and saves it as the run, with the whole down pass', /# down_points: 22 of 22/.test(app.win.getCsv(st.result.recordId) || ''),
+      app.titles().join(' / '));
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    for (let p = 23; p >= 2; p--) { await app.f(S({ cal: 1, flow: 5, step: p - 1, pass: 'd' })); if (p !== 2) await app.f('C,down,' + p + ',1.0,1.0,2.0'); }
+    await app.f('K,1,120.0,3.00,6,saved');                         // C,down,2 was lost
+    await app.f('F,end,0');
+    check('the last down point lost: read back too', app.cmds().indexOf('k') >= 0, JSON.stringify(app.cmds().slice(-2)));
+    await readback(app);
+    check('...and the page then works with the bridge\'s 22 down points', st.downPoints.length === 22);
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.f(S({}));
+    app.$('saveStored').click();
+    await readback(app, { noEnd: true, flagged: ['u,20'] });       // Q,end lost, the F list arrives
+    await app.f(S({}));
+    await app.advance(2);
+    check('Save stored calibration with Q,end lost starts no redo', !app.cmds().some((c) => /^#R/.test(c)), JSON.stringify(app.cmds()));
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass(['u,20']);
+    app.$('upContinue').click();
+    await app.downPass(23, 12);
+    app.$('btnSkipDown').click(); app.$('btnSkipDown').click();   // Finish without the down pass
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,20,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    await app.advance(2);
+    check('stopping the down pass holds the guided redos too', !app.cmds().some((c) => /^#R/.test(c)) && st.fixPaused, JSON.stringify(app.cmds().slice(-3)));
+  }
   // ---------------------------------------------------------------- Bluetooth link
   {
     const app = mk();
