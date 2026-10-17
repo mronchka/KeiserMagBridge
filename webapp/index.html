@@ -308,7 +308,7 @@ main {
   display: flex; align-items: center; justify-content: center; line-height: 1;
   background: var(--ok); color: var(--ok-ink); font-size: .72rem; font-weight: 700; font-variant-numeric: tabular-nums;
   box-shadow: 0 0 0 3px var(--bg), 0 2px 8px rgba(0, 0, 0, .35);
-  transition: left .5s cubic-bezier(.22, 1, .36, 1), background-color .25s, color .25s;
+  transition: background-color .25s, color .25s;
 }
 .cadg-dot.bad { background: var(--bad); color: var(--bad-ink); }
 .cadg-dot.idle { background: var(--surface2); color: var(--muted); }
@@ -423,7 +423,7 @@ main {
 .stop-note { text-align: center; color: var(--muted); font-size: .88rem; line-height: 1.35; padding: 0 16px; }
 /* [v3.3] cadence guide: green window for the gear you're in, marker for your rpm */
 .cadbar { position: relative; height: 4px; border-radius: 2px; background: var(--surface2); }
-.cadbar .win { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--ok); transition: left .5s, width .5s; }
+.cadbar .win { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--ok); }
 .cadg-dot.mid { background: var(--surface2); color: var(--text); }
 /* [v3.3] step 1: placement meters */
 .place { display: flex; flex-direction: column; gap: 10px; }
