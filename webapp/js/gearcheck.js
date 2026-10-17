@@ -13,11 +13,11 @@ function maybeOfferCheck() {
   if (!r || r.type !== 'K' || !r.ok || reviewItems().length) return;
   // [v3.3] the gear check is step 6 of the flow: it starts by itself (Skip is on screen)
   if (state.v33) { startGearCheck(); return; }
-  state.check = { phase: 'offer', idx: 0, results: [], picking: false, val: 1, app: 0 };
+  state.check = { phase: 'offer', v32: !!state.v32, idx: 0, results: [], picking: false, val: 1, app: 0 };
   renderRideCheck();
 }
 function startGearCheck() {
-  state.check = { phase: 'run', flow: !!state.v33, idx: 0, results: [], picking: false, val: 1, app: 0 };
+  state.check = { phase: 'run', flow: !!state.v33, v32: !!state.v32, idx: 0, results: [], picking: false, val: 1, app: 0 };
   showView('cal');
   render();
 }
@@ -46,10 +46,12 @@ function renderRideCheck() {
     : !pedalling ? 'Keep pedalling: the gear updates on each pedal turn' : '';
   // cadence line: the green window is the pace this check wants (faster: above the last check's pace)
   var crpm = s && fin(s.cad) ? Math.round(s.cad) : 0;
-  var lastRpm = c.results.length ? c.results[c.results.length - 1].rpm : 0;
+  // the 'fast' check: CHECK_FASTER above the last check's pace (kept below CAD_HI so it can be met)
+  var prevRpm = st.pace === 'fast' && c.results.length ? c.results[c.results.length - 1].rpm : 0;
+  var need = prevRpm ? Math.min(CAD_HI - 5, prevRpm + CHECK_FASTER) : 0;
   var cw = cadWindow(st.gear);
-  var clo = st.pace === 'fast' && lastRpm ? Math.min(CAD_HI - 5, lastRpm + CHECK_FASTER) : cw[0];
-  var chi = st.pace === 'fast' && lastRpm ? CAD_HI : cw[1];
+  var clo = need ? need : cw[0];
+  var chi = need ? CAD_HI : cw[1];
   var cidle = !pedalling || crpm <= 0;
   var ccls = cidle ? ' idle' : crpm < CAD_LO || crpm > CAD_HI ? ' bad' : crpm < clo || crpm > chi ? ' mid' : '';
   var csc = function (v) { return Math.max(0, Math.min(100, (v - 20) / (130 - 20) * 100)); };
@@ -67,22 +69,25 @@ function renderRideCheck() {
   setHidden('rckPick', !c.picking);
   if (!c.picking) {
     // wait until the rider is at about the wanted gear, steady (and faster, for the 'fast' check)
+    // "ask anyway" counts only time spent pedalling with a known gear (not a rest or a drop)
     var now = Date.now();
-    if (!c.stepAt) c.stepAt = now;
+    if (c.lastTick && live && pedalling) c.activeMs = (c.activeMs || 0) + Math.min(1000, now - c.lastTick);
+    c.lastTick = now;
+    var anyway = (c.activeMs || 0) >= CHECK_ANYWAY_MS;
     if (live && pedalling) {
       if (g !== c.seenGear) { c.seenGear = g; c.steadySince = now; }
     } else { c.seenGear = 0; c.steadySince = 0; }
     var rpm = s && fin(s.cad) ? Math.round(s.cad) : 0;
-    var prevRpm = st.pace === 'fast' && c.results.length ? c.results[c.results.length - 1].rpm : 0;
     var near = live && Math.abs(g - st.gear) <= CHECK_NEAR;
-    var paceOk = st.pace !== 'fast' || !prevRpm || rpm >= prevRpm + CHECK_FASTER;
+    var paceOk = !need || rpm >= need;
     var steady = !!c.steadySince && now - c.steadySince >= CHECK_STEADY_MS;
-    var ready = live && pedalling && steady && ((near && paceOk) || now - c.stepAt >= CHECK_ANYWAY_MS);
+    var ready = live && pedalling && steady && ((near && paceOk) || anyway);
     c.askGear = ready ? g : 0;
+    if (ready) c.askRpm = rpm;   // the pace when asked (kept while the rider picks the console's gear)
     var q = !live ? 'Waiting for the bridge’s gear…'
       : ready ? 'Does the Keiser console show gear ' + g + '?'
-      : (!near || (g !== st.gear && !steady)) && now - c.stepAt < CHECK_ANYWAY_MS ? 'Shift until the console shows about gear ' + st.gear + '.'
-      : !paceOk ? 'A little faster: ' + rpm + ' rpm now, ' + (prevRpm + CHECK_FASTER) + ' or more.'
+      : (!near || (g !== st.gear && !steady)) && !anyway ? 'Shift until the console shows about gear ' + st.gear + '.'
+      : !paceOk ? 'A little faster: ' + rpm + ' rpm now, ' + need + ' or more.'
       : 'Hold it there…';
     if ($('rckQ').textContent !== q) $('rckQ').textContent = q;
     $('rckBtns').style.visibility = ready ? '' : 'hidden';
@@ -100,12 +105,12 @@ function checkAnswer(consoleGear) {
   if (!c || c.phase !== 'run') return;
   var st = RIDE_CHECKS[c.idx];
   var app = c.picking ? c.app : (c.askGear || rideGear());
-  var rpm = state.s && fin(state.s.cad) ? Math.round(state.s.cad) : 0;
+  var rpm = c.askRpm || (state.s && fin(state.s.cad) ? Math.round(state.s.cad) : 0);
   c.results.push({ label: st.label, target: st.gear, pace: st.pace, app: app, console: consoleGear, rpm: rpm });
   // [v3.3] the bridge echoes it to USB (J line) so the results land in the bike log
   if (state.v33 && state.conn === 'connected') sendCmd('#J,check,' + app + ',' + consoleGear + ',' + rpm);
   c.picking = false;
-  c.stepAt = 0; c.seenGear = 0; c.steadySince = 0; c.askGear = 0;   // the next check waits afresh
+  c.activeMs = 0; c.lastTick = 0; c.seenGear = 0; c.steadySince = 0; c.askGear = 0; c.askRpm = 0;   // the next check waits afresh
   if (c.idx + 1 < RIDE_CHECKS.length) c.idx++;
   else finishCheck();
   renderRideCheck();
@@ -121,7 +126,7 @@ function finishCheck() {
   c.phase = 'done';
   c.picking = false;
   state.checkDone = true;
-  if (state.v33) setFlowRecord({ checkDone: true });
+  if (c.flow) setFlowRecord({ checkDone: true });   // (c.flow, not state.v33: that is cleared by a drop)
   var res = c.results;
   var miss = res.filter(function (r) { return r.app !== r.console; });
   var rid = state.result && state.result.recordId, saved = false;
@@ -132,7 +137,9 @@ function finishCheck() {
       lines.push('gear_check ' + (i + 1) + ': ' + r.label + ' (asked ~' + r.target + ', ' + r.pace + '), bridge=' + r.app +
         ', console=' + r.console + ', rpm=' + (r.rpm || '') + ', ' + (r.app === r.console ? 'match' : 'MISMATCH'));
     });
-    saved = appendRecordComments(rid, lines, 'gear check ' + (res.length - miss.length) + '/' + res.length + ' matched');
+    // a second gear check of the same calibration replaces the first one's lines
+    saved = appendRecordComments(rid, lines, 'gear check ' + (res.length - miss.length) + '/' + res.length + ' matched',
+      { line: 'gear_check', summary: 'gear check ' });
   }
   $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : miss.length ? 'Some gears differ' : 'All gears match';
   var html = '', redone = {};
@@ -140,7 +147,7 @@ function finishCheck() {
     var ok = r.app === r.console;
     html += '<div class="rck-row' + (ok ? '' : ' miss') + '"><span class="k">' + esc(r.label) + '</span><span class="v">' +
       (ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console) + '</span></div>';
-    if (!ok && state.v32) {
+    if (!ok && (c.v32 || state.v32)) {
       var gg = edgeGear(r.app, r.console);
       if (!redone[gg]) {
         redone[gg] = true;
@@ -149,7 +156,7 @@ function finishCheck() {
     }
   });
   if (miss.length) {
-    html += '<p class="small muted" style="margin-top:10px">' + (state.v32
+    html += '<p class="small muted" style="margin-top:10px">' + (c.v32 || state.v32
       ? 'Redo remeasures where the console first shows that gear, going up.'
       : 'If a gear is often off, calibrate again.') + '</p>';
   }

@@ -152,7 +152,7 @@ function loadApp(opts) {
   for (const sc of scripts) vm.runInContext(sc.code, ctx, { filename: sc.file });
   const M3 = win.M3Bridge;
   return {
-    M3, writes, errors, store,
+    M3, writes, errors, store, win,   // win: the page's global object (its top-level vars and functions)
     $: (id) => byId[id],
     t: () => (now - 1.8e12) / 1000,
     connect() { M3.setConn('connected'); },

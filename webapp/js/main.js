@@ -138,7 +138,7 @@ $('fixSkip').addEventListener('click', function () { fixAction('skip'); render()
 $('rckStart').addEventListener('click', function () {
   var c = state.check;
   if (!c) return;
-  c.phase = 'run'; c.idx = 0; c.results = []; c.picking = false;
+  c.phase = 'run'; c.idx = 0; c.results = []; c.picking = false; c.v32 = c.v32 || !!state.v32;
   render();
   try { $('rideCheck').scrollIntoView({ block: 'start' }); } catch (e) {}
 });

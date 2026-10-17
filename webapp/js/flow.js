@@ -40,6 +40,16 @@ function flowNow() {
 
 // Per-status-line flow bookkeeping (v3.3 only).
 function onFlowStatus(s, prevCal, prevFlow) {
+  // The first status line after a (re)connect: is the board's placement stream on (cal 0, flow 1)?
+  // It survives a drop, and 'v' only toggles it: carry on with step 1, or switch it off.
+  if (state.placeCheck) {
+    state.placeCheck = false;
+    if (s.cal === 0 && s.flow === 1 && !state.place) {
+      if (state.placeWas) state.place = { x: null };
+      else send('v', true);
+    }
+    state.placeWas = false;
+  }
   if (s.flow !== 3) state.sweepNexts = s.flow > 3 ? 1 : 0;
   // cal 7: the up pass is saved and the board waits at the checkpoint (n = down now, s/x = later)
   if (s.cal === 7 && !state.upSaved) { state.upSaved = true; state.fixHold = true; }
@@ -115,7 +125,8 @@ function isIOS() {
 function openPlace() {
   if (state.conn !== 'connected') { toast('Not connected'); return; }
   state.place = { x: null };
-  send('v');                     // placement stream on (swing restarts from zero)
+  // placement stream on (swing restarts from zero), unless the board says it already is
+  if (!(state.v33 && state.s && state.s.cal === 0 && state.s.flow === 1)) send('v');
   setHidden('lockTip', !isIOS());
   keepAwake(true);
   render();

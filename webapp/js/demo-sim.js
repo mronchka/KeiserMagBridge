@@ -285,7 +285,7 @@ function Simulator(startCalibrated) {
         cal, cal ? step : 0, Math.round(stab), off.toFixed(1), flags, samples.length]
         .concat(DEMO_V3 ? [pedal ? 'B' : '-', cal === 3 ? lturns : 0] : [])
         .concat(DEMO_V32 ? [cal === 0 ? '-' : passName] : [])
-        .concat(DEMO_V33 ? [cal === 0 ? 0 : flowStep, 6] : []).join(','));
+        .concat(DEMO_V33 ? [cal === 0 ? (xOn ? 1 : 0) : flowStep, 6] : []).join(','));
     }
     if (debug && t % 4 === 0) {
       var p = PATH[Math.max(0, Math.min(24, gear - 1))];

@@ -43,6 +43,38 @@ function removeRecord(r) {
   delete memCsv[r.id];
   records = records.filter(function (x) { return x !== r; });
 }
+// Write a record's CSV, removing the oldest other saved runs while storage is full (each one
+// removed is added to dropped). True once written.
+function storeCsv(rec, csv, dropped) {
+  for (var attempt = 0; attempt < 50; attempt++) {
+    try {
+      localStorage.setItem(STORE_PREFIX + rec.id, csv);
+      return true;
+    } catch (e) {
+      var o = oldestPersisted(rec);
+      if (!o) return false;
+      removeRecord(o); dropped.push(o);
+    }
+  }
+  return false;
+}
+// Write the index the same way (it grows with each record).
+function saveIndexMakingRoom(keep, dropped) {
+  for (var attempt = 0; attempt < 50; attempt++) {
+    if (saveIndex()) return true;
+    var o = oldestPersisted(keep);
+    if (!o) return false;
+    removeRecord(o); dropped.push(o);
+  }
+  return false;
+}
+function noteDropped(dropped) {
+  if (!dropped.length) return;
+  var msg = 'Storage full: removed ' + dropped.length + ' oldest saved run' + (dropped.length > 1 ? 's' : '') +
+    ' (' + dropped.map(function (d) { return d.filename; }).join(', ') + ').';
+  logLine(msg, 'sys');
+  toast('Storage full: removed oldest saved run');
+}
 function storedTotal(except) {
   var t = 0;
   records.forEach(function (r) { if (r.persisted && r !== except) t += r.size || 0; });
@@ -65,30 +97,15 @@ function addRecord(meta, csv) {
       if (!old) break;
       removeRecord(old); dropped.push(old);
     }
-    for (var attempt = 0; attempt < 50; attempt++) {
-      try {
-        localStorage.setItem(STORE_PREFIX + meta.id, csv);
-        meta.persisted = true;
-        break;
-      } catch (e) {
-        var o = oldestPersisted(meta);
-        if (!o) break;
-        removeRecord(o); dropped.push(o);
-      }
-    }
+    meta.persisted = storeCsv(meta, csv, dropped);
   }
-  if (meta.persisted && !saveIndex()) {
+  if (meta.persisted && !saveIndexMakingRoom(meta, dropped)) {
     // index could not be written: undo so storage stays consistent
     try { localStorage.removeItem(STORE_PREFIX + meta.id); } catch (e) {}
     meta.persisted = false;
-    saveIndex();
   }
-  if (dropped.length) {
-    var msg = 'Storage full: removed ' + dropped.length + ' oldest saved run' + (dropped.length > 1 ? 's' : '') +
-      ' (' + dropped.map(function (d) { return d.filename; }).join(', ') + ').';
-    logLine(msg, 'sys');
-    toast('Storage full: removed oldest saved run');
-  }
+  if (dropped.length || !meta.persisted) saveIndex();   // runs removed above must leave the stored index too
+  noteDropped(dropped);
   if (!meta.persisted) {
     logLine('Could not keep ' + meta.filename + ' on this device. Export it before closing the page.', 'bad');
     toast('Not saved on this device. Export it now.');
@@ -169,10 +186,16 @@ function saveCalRecord(source, info, pointsIn) {
 }
 
 // Add '#' comment lines to a saved record, just above its header row (e.g. the gear check).
-function appendRecordComments(id, comments, summaryAdd) {
+// replace {line, summary}: first drop the comment lines starting with '# ' + line and the summary
+// part starting with summary (an earlier run of the same thing).
+function appendRecordComments(id, comments, summaryAdd, replace) {
   var rec = findRecord(id), csv = rec ? getCsv(id) : null;
   if (!rec || csv === null || csv === undefined) return false;
   var lines = csv.split('\n'), at = 0;
+  if (replace) {
+    lines = lines.filter(function (l) { return l.indexOf('# ' + replace.line) !== 0; });
+    rec.summary = rec.summary.split(' · ').filter(function (part) { return part.indexOf(replace.summary) !== 0; }).join(' · ');
+  }
   while (at < lines.length && lines[at].charAt(0) === '#') at++;
   lines.splice.apply(lines, [at, 0].concat(comments.map(function (c) { return '# ' + ascii(c); })));
   csv = lines.join('\n');
@@ -180,8 +203,16 @@ function appendRecordComments(id, comments, summaryAdd) {
   rec.size = csv.length;
   if (summaryAdd) rec.summary += ' · ' + summaryAdd;
   if (rec.persisted) {
-    try { localStorage.setItem(STORE_PREFIX + id, csv); } catch (e) { rec.persisted = false; }
+    // If even removing older runs doesn't make room, the stored copy (without these lines) stays
+    // listed and the new lines are kept for this session only.
+    var dropped = [];
+    var ok = storeCsv(rec, csv, dropped);
     saveIndex();
+    noteDropped(dropped);
+    if (!ok) {
+      logLine('Could not add these lines to ' + rec.filename + ' on this device. Export it before closing the page.', 'bad');
+      toast('Not saved on this device. Export it now.');
+    }
   }
   renderSaved();
   return true;
@@ -295,7 +326,12 @@ function showCopySheet(text, title) {
 
 // Remember on this phone what is left of the last calibration (resume offers on the start screen).
 var FLOW_KEY = 'm3bridge.flow';
-function flowRecord() { try { return JSON.parse(localStorage.getItem(FLOW_KEY)) || null; } catch (e) { return null; } }
+function flowRecord() {
+  try {
+    var r = JSON.parse(localStorage.getItem(FLOW_KEY));
+    return r && typeof r === 'object' && !Array.isArray(r) ? r : null;
+  } catch (e) { return null; }
+}
 function setFlowRecord(patch) {
   var r = flowRecord() || {};
   for (var k in patch) r[k] = patch[k];

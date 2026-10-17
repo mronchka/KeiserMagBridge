@@ -28,6 +28,7 @@ function onBytes(u8) {
 }
 
 function onNotify(ev) {
+  if (state.conn !== 'connected' && state.conn !== 'connecting') return;   // a late notification after a drop
   var dv = ev && ev.target && ev.target.value;
   if (!dv || !dv.buffer) return;
   onBytes(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength));
@@ -207,7 +208,8 @@ function onS(p) {
     // [v3.3] Nor is the down pass started from the checkpoint ('n') or later (#D).
     if (s.pass === 'ru' || s.pass === 'rd') onRedoStarted(s);
     else if (state.v33 && s.flow === 5) { state.calEnded = true; state.upSaved = false; state.fixHold = true; }
-    else if (s.step > 0 && state.points.length) state.calEnded = false;
+    // (at the v3.3 checkpoint, cal 7, the up pass is already saved)
+    else if (s.step > 0 && state.points.length) state.calEnded = cal === 7;
     else onCalStarted();
     // however it started (the page, the bridge's button, #D, a reconnect): show it, full screen
     if (state.view !== 'cal') showView('cal');
@@ -302,7 +304,7 @@ function onRedoStarted(s) {
   state.calEnded = true;            // not a new run: never saved as an incomplete calibration
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
   state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
-  if (state.check && state.check.phase === 'run') state.check.phase = 'done';
+  if (state.check && state.check.phase === 'run') finishCheck();   // keep the answers given so far
   showView('cal');
 }
 
