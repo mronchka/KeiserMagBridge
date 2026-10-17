@@ -343,7 +343,11 @@ function onRedoStarted(s) {
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
   state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
   if (state.check && state.check.phase === 'run') finishCheck();   // keep the answers given so far
-  else if (state.check && state.check.phase === 'done' && state.check.flow) state.check = null;   // (its Redo button)
+  else if (state.check && state.check.phase === 'done' && state.check.flow && pass === 'u') {
+    // a Redo from the gear check's summary: that row says Redone, and the summary comes back after it
+    (state.check.redone = state.check.redone || {})[point] = true;
+    renderCheckSummary();
+  }
   showView('cal');
 }
 

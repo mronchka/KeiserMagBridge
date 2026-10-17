@@ -141,16 +141,29 @@ function finishCheck() {
     saved = appendRecordComments(rid, lines, 'gear check ' + (res.length - miss.length) + '/' + res.length + ' matched',
       { line: 'gear_check', summary: 'gear check ' });
   }
+  renderCheckSummary();
+  var rec = rid ? findRecord(rid) : null;
+  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').'
+    : res.length ? 'Not added to a saved calibration on this phone (the bridge’s USB log has it).' : '';
+}
+
+// The summary: one row per check; a mismatch carries its Redo button in the row (four of them still
+// fit the screen), or "Redone" once its redo was started from here.
+function renderCheckSummary() {
+  var c = state.check;
+  if (!c) return;
+  var res = c.results, done = c.redone || {};
+  var miss = res.filter(function (r) { return r.app !== r.console; });
   $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : miss.length ? 'Some gears differ' : 'All gears match';
   var html = '', redone = {};
-  // one row per check; a mismatch carries its Redo button in the row (four of them still fit the screen)
   res.forEach(function (r) {
     var ok = r.app === r.console, btn = '';
     if (!ok && (c.v32 || state.v32)) {
       var gg = edgeGear(r.app, r.console);
       if (!redone[gg]) {
         redone[gg] = true;
-        btn = '<button class="btn primary" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
+        btn = done[gg] ? '<span class="v">Redone ✓</span>'
+          : '<button class="btn primary" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
       }
     }
     var v = ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console;
@@ -164,7 +177,4 @@ function finishCheck() {
       : 'If a gear is often off, calibrate again.') + '</p>';
   }
   $('rckSum').innerHTML = html;
-  var rec = rid ? findRecord(rid) : null;
-  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').'
-    : res.length ? 'Not added to a saved calibration on this phone (the bridge’s USB log has it).' : '';
 }

@@ -526,6 +526,7 @@ main {
 .rck-row .k .sub { display: block; font-weight: 700; font-size: .9rem; color: var(--warn); font-variant-numeric: tabular-nums; }
 /* calibration walkthrough (idle screen) */
 #calIdle { display: flex; flex-direction: column; gap: 28px; }
+#view-cal:has(#calResume:not([hidden])) #resultCard { order: 1; }   /* "Pick up where you stopped" first */
 .onb { padding-top: 0; }
 .onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }
 .onb-art { position: relative; width: 100%; height: min(220px, 26vh); display: grid; place-items: center; }

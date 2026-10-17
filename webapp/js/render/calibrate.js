@@ -115,7 +115,7 @@ function renderCal() {
 
   setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
-  state.calFocus = active || placing || saved || checkRun || checkDone;
+  state.calFocus = active || placing || saved || ((checkRun || checkDone) && connected);
   applyCalFocus();
   $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : 'Skip the rest of the gear check');
   if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }

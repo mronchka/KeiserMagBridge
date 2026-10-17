@@ -351,6 +351,32 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.advance(2);
     check('stopping the down pass holds the guided redos too', !app.cmds().some((c) => /^#R/.test(c)) && st.fixPaused, JSON.stringify(app.cmds().slice(-3)));
   }
+  // ---------------------------------------------------------------- tester A, round 2
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    app.M3.checkAnswer(6); app.M3.checkAnswer(12); app.M3.checkAnswer(14); app.M3.checkAnswer(19);   // two mismatches
+    app.M3.setConn('disconnected');
+    check('a drop on the gear check summary leaves focus mode (the Reconnect card fits)', !st.calFocus);
+    app.connect();
+    await app.f(S({}));
+    app.win.startEdit('R', 'u', 6);                                // "Redo gear 6" in the summary
+    await app.f('E,ok,redo');
+    await app.f(S({ cal: 1, flow: 6, step: 5, pass: 'ru' }));
+    await app.f('C,6,18.5,1.0,2.0');
+    await app.f('E,ok,saved');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    const sum = app.$('rckSum').innerHTML;
+    check('after a Redo from the gear check summary it comes back: that row Redone, the other still offered',
+      st.check && st.check.phase === 'done' && /Redone/.test(sum) && /data-rck-redo="14"/.test(sum), sum.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 160));
+  }
   // ---------------------------------------------------------------- Bluetooth link
   {
     const app = mk();
