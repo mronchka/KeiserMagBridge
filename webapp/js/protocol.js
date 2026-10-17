@@ -164,6 +164,7 @@ function onS(p) {
   var prevPass = state.s ? state.s.pass : '';
   var prevFlow = state.s ? state.s.flow : 0;
   var dropCal = state.dropS ? state.dropS.cal : 0;   // first status line after a drop: the run that was on then
+  var dropFlow = state.dropS ? state.dropS.flow : 0;
   state.dropS = null; state.dropV = null;
   state.s = s;
   state.sAt = Date.now();
@@ -179,7 +180,7 @@ function onS(p) {
     setTimeout(render, B_CLEAR_MS + 50);
   }
   state.bWas = flags.B && cal !== 0 ? { key: bKey, gear: backGear(s) } : null;
-  if (state.v33) onFlowStatus(s, prevCal, prevFlow);
+  if (state.v33) onFlowStatus(s, prevCal || dropCal, prevFlow);
   // "Not calibrated" debounce (renderRide): keep the last good gear through short runs of
   // uncalibrated lines once calibrated has been seen on this connection.
   if (gear > 0 && flags.V) { state.calSeen = true; state.uncalSince = 0; state.lastGear = gear; }
@@ -215,17 +216,19 @@ function onS(p) {
     else if (state.v33 && s.flow === 5) {
       state.calEnded = true; state.upSaved = false; state.fixHold = true;
       state.fixPaused = false;   // flagged gears get their guided redos once this pass is saved
-      state.noAutoCheck = false;
+      state.noAutoCheck = false; state.stopSent = false;
       state.checkDone = false;   // and step 6 follows, even if a gear check was done in between
       if (state.check && state.check.phase !== 'run') state.check = null;
     }
-    // (at the v3.3 checkpoint, cal 7, the up pass is already saved)
-    else if (s.step > 0 && state.points.length) state.calEnded = cal === 7;
+    // (at the v3.3 checkpoint, cal 7, the up pass is already saved; also after a reload)
+    else if (state.v33 && cal === 7) state.calEnded = true;
+    else if (s.step > 0 && state.points.length) state.calEnded = false;
     else onCalStarted();
     // however it started (the page, the bridge's button, #D, a reconnect): show it, full screen
     if (state.view !== 'cal') showView('cal');
   }
   if ((prevCal !== 0 || dropCal !== 0) && cal === 0) {   // (also when it ended while the link was down)
+    if (state.v33 && (prevFlow || dropFlow) === 5 && state.fixHold) { state.fixHold = false; state.upSaved = false; }
     // Ended: K or A normally arrives just before this. If neither does, keep what was captured
     // (unless the board is calibrating again by then: one stray idle line isn't an end).
     setTimeout(function () { if (!state.calEnded && (!state.s || state.s.cal === 0)) savePartialCal('ended without a result'); }, 1500);
@@ -327,6 +330,7 @@ function onRedoStarted(s) {
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
   state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
   if (state.check && state.check.phase === 'run') finishCheck();   // keep the answers given so far
+  else if (state.check && state.check.phase === 'done' && state.check.flow) state.check = null;   // (its Redo button)
   showView('cal');
 }
 
@@ -349,9 +353,10 @@ function onK(p) {
   var ed = state.edit && state.edit.okd ? state.edit : null;
   if (ed) { clearTimeout(ed.timer); state.edit = null; r.edit = editLabel(ed); }
   // (right after a reconnect, before any status line, the firmware level is the one from before the drop)
-  var v32 = state.v32 || !!(state.dropV && state.dropV.v32), v33 = state.v33 || !!(state.dropV && state.dropV.v33);
+  var v32 = isV32(), v33 = isV33();
   var sNow = state.s || state.dropS;
   r.down = v32 && !state.learnFailed ? state.downPoints.length : -1;   // no down pass with the hold-still method
+  state.qRetried = false;
   state.result = r;
   state.resultHidden = false;
   state.calEnded = true;
@@ -378,6 +383,7 @@ function onK(p) {
   } else if (r.ok && !r.edit && flowAt === 5) {
     state.upSaved = false;
     state.fixHold = false;
+    if (state.stopSent) state.noAutoCheck = true;   // the rider stopped it (x / Finish without the down pass)
     var finished = state.downPoints.some(function (q) { return q.point === 2; });
     setFlowRecord({ downDone: finished, checkDone: false });
   }
@@ -390,7 +396,7 @@ function onK(p) {
     state.wantReadback = true;
   } else {
     try {
-      r.recordId = saveCalRecord('run', { ok: r.ok, span: r.span, minstep: r.minstep, minAt: r.minAt, msg: r.msg, edit: r.edit, down: state.v32 ? state.downPoints : null }, state.points);
+      r.recordId = saveCalRecord('run', { ok: r.ok, span: r.span, minstep: r.minstep, minAt: r.minAt, msg: r.msg, edit: r.edit, down: v32 ? state.downPoints : null }, state.points);
       if (r.ok) noteCalRecord(r.recordId, v33);
     } catch (e) { console.warn('save failed', e); }
   }
@@ -405,7 +411,7 @@ function onK(p) {
     }, 5000);
   }
   // Older firmware sends no F list: offer the gear check straight away.
-  if (r.ok && !state.v32) { state.review = null; maybeOfferCheck(); }
+  if (r.ok && !v32) { state.review = null; maybeOfferCheck(); }
   renderResult();
   renderReview();
   renderBadge();
@@ -421,6 +427,11 @@ function onF(p) {
     clearTimeout(state.fTimer);
     var items = state.fList || [];
     state.fList = null;
+    if (state.qRetryAfterF) {   // the F list of an incomplete readback: read it again (qFromEdit stays)
+      state.qRetryAfterF = false; state.qJustEnded = false;
+      requestStoredCal();
+      return true;
+    }
     if (items.length !== count) logLine('Check list: expected ' + count + ' flagged point' + (count === 1 ? '' : 's') + ', received ' + items.length + '.', 'bad');
     var flagged = items.filter(function (it) { return !state.reviewKept[it.pass + it.point]; });
     // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
@@ -476,7 +487,7 @@ function onE(p) {
   if (kind === 'ok' && /^(redo|down)$/.test(text)) {
     // the bridge accepted #R / #D and starts it; E,ok,saved and K come when it is done
     if (ed) clearTimeout(ed.timer);
-    if (text === 'down') state.downResumePending = true;
+    if (text === 'down') { state.downResumePending = true; state.dPending = 0; }
     logLine(text === 'redo' ? 'Redo started.' : 'Down pass started.', 'sys');
     return true;
   }
@@ -497,11 +508,13 @@ function onE(p) {
     }
     logLine('Edit done' + (text ? ' (' + text + ')' : '') + '.', 'sys');
   } else if (kind === 'fail') {
+    state.dPending = 0;
     if (ed) { clearTimeout(ed.timer); state.edit = null; }
     logLine('Edit refused: ' + (text || 'no reason given'), 'bad');
     if (ed && ed.kind === 'R' && state.fixAfter) {
       redoStopped();   // the rider chose Skip / Use best guess: this is just the redo being cancelled
     } else {
+      if (/down pass already done/.test(text)) setFlowRecord({ downDone: true });
       state.editErr = text || 'no reason given';
       toast('Not changed: ' + state.editErr);
       if (state.fixAfter === '' && reviewItems().length) state.fixPaused = true;   // wait for the rider
@@ -537,6 +550,7 @@ function onA(p) {
   }
   state.result = { type: 'A', reason: reason || 'no reason given' };
   state.resultHidden = false;
+  state.fixHold = false; state.upSaved = false;
   logLine('Calibration aborted: ' + state.result.reason, 'sys');
   state.result.recordId = savePartialCal('aborted: ' + state.result.reason);
   renderResult();
@@ -662,7 +676,8 @@ function onCalStarted() {
   state.check = null;
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
-  state.result = null; state.resultHidden = false; state.noAutoCheck = false;
+  state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
+  state.downResumePending = false; state.qRetried = false;
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
@@ -712,6 +727,12 @@ function onQ(p) {
     state.q = null;
     state.qJustEnded = true;   // [v3.2] the F list that follows belongs to the stored calibration
     if (!q || !q.points.length) return true; // stray end without points
+    if (q.points.length !== TOTAL_POINTS && state.qFromEdit && !state.qRetried) {
+      // the page's own readback (after an edit or #D): read it once more, after this one's F list
+      state.qRetried = true; state.qRetryAfterF = true;
+      logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points): reading it again.', 'sys');
+      return true;
+    }
     if (q.points.length !== TOTAL_POINTS) {
       // a line was lost on the way: don't keep an incomplete copy as if it were the calibration
       logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points). Tap Save stored calibration to read it again.', 'bad');

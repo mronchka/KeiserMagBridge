@@ -42,19 +42,26 @@ $('placeNext').addEventListener('click', function () {
 $('placeBack').addEventListener('click', function () { closePlace(true); render(); });
 // [v3.3] checkpoint after the up pass
 // One answer per checkpoint: a second tap (or a status line still saying cal 7) doesn't send again.
+// (An answer counts for 3 s, or until the link drops: then the board, still at cal 7, is asked again.)
+// #D likewise goes out once until the bridge answers it.
+function sendDownCmd() {
+  if (state.dPending && Date.now() - state.dPending < 5000) return;
+  state.dPending = Date.now();
+  sendCmd('#D');
+}
 $('upContinue').addEventListener('click', function () {
   if (state.checkpointAnswered) return;
-  if (state.s && state.s.cal === 7) { state.checkpointAnswered = true; send('n'); }   // cal 7: the board waits at the checkpoint
-  else sendCmd('#D');
+  if (state.s && state.s.cal === 7) { state.checkpointAnswered = Date.now(); send('n'); }   // cal 7: the board waits at the checkpoint
+  else sendDownCmd();
 });
 $('upLater').addEventListener('click', function () {
-  if (state.s && state.s.cal === 7 && !state.checkpointAnswered) { state.checkpointAnswered = true; send('x'); }   // keeps the up pass saved
+  if (state.s && state.s.cal === 7 && !state.checkpointAnswered) { state.checkpointAnswered = Date.now(); send('x'); }   // keeps the up pass saved
   state.upSaved = false;
   state.fixHold = false;
   if (reviewItems().length) state.fixPaused = true;   // flagged gears wait on their card
   render();
 });
-$('resumeDown').addEventListener('click', function () { sendCmd('#D'); });
+$('resumeDown').addEventListener('click', sendDownCmd);
 $('resumeCheck').addEventListener('click', function () { state.checkDone = false; startGearCheck(); });
 $('staleReload').addEventListener('click', function () { location.reload(); });
 $('btnCapture').addEventListener('click', function () { send('n'); });
@@ -81,6 +88,7 @@ function cancelTap() {
   if (Date.now() < cancelArmedUntil) {
     clearTimeout(cancelTimer);
     disarmCancel();
+    if (state.s && state.s.pass === 'd' && state.s.cal !== 7) state.stopSent = true;   // ends the down pass (K): no auto step 6
     send('x');
   } else {
     cancelArmedUntil = Date.now() + 3000;
@@ -110,7 +118,7 @@ $('resultCard').addEventListener('click', function (ev) {
 
 // [v3.2] down pass: skip the rest and save (s), second tap confirms
 $('btnSkipDown').addEventListener('click', function () {
-  twoTap($('btnSkipDown'), 'Tap again to finish now', function () { send('s'); });
+  twoTap($('btnSkipDown'), 'Tap again to finish now', function () { state.stopSent = true; send('s'); });
 });
 
 // [v3.2] review card

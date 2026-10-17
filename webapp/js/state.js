@@ -177,6 +177,10 @@ var diag = {
 // ===================================================================
 // Defensive number parsing
 // ===================================================================
+// [v3.3] firmware level; right after a reconnect, before the first status line, the one from before the drop
+function isV33() { return state.v33 || (!state.s && !!(state.dropV && state.dropV.v33)); }
+function isV32() { return state.v32 || (!state.s && !!(state.dropV && state.dropV.v32)); }
+
 function num(s) {
   if (s === undefined || s === null) return NaN;
   var t = String(s).trim();

@@ -482,7 +482,7 @@ function renderPointCheck(checking, s) {
 function renderBadge() {
   var b = $('calBadge');
   var calActive = state.s && state.s.cal !== 0;
-  b.hidden = state.view === 'cal' || !(calActive || (state.result && state.result.type) || reviewItems().length);
+  b.hidden = state.view === 'cal' || !(calActive || (state.result && state.result.type && !state.resultHidden) || reviewItems().length);
   var ph = diag.phase;
   setHidden('diagBadge', state.view === 'diag' || ph === 'idle' || ph === 'done' || ph === 'error');
 }
@@ -536,7 +536,7 @@ function renderPoints() {
 
 function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.phase === 'done' && state.check.flow)) ||
-    !!state.upSaved || !!state.resultHidden;
+    !!state.upSaved || !!state.resultHidden || !!state.place;
 }
 
 function renderResult() {

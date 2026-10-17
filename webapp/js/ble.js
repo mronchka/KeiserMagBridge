@@ -112,6 +112,7 @@ function openGatt() {
       reject(new Error('No answer from the bridge. Make sure it is powered and in range, then try again.'));
     }, CONNECT_TIMEOUT_MS);
   });
+  var dev = device;
   var link = device.gatt.connect().then(function (server) {
     current();
     return server.getPrimaryService(NUS_SERVICE);
@@ -127,6 +128,12 @@ function openGatt() {
     txChar.addEventListener('characteristicvaluechanged', onNotify);
     return txChar.startNotifications();
   });
+  // A connect that answers after it was given up (and no newer attempt runs): close that link again.
+  link.catch(function () {
+    if (connectAttempt === attempt + 1 && state.conn !== 'connected' && state.conn !== 'connecting') {
+      try { if (dev.gatt.connected) dev.gatt.disconnect(); } catch (x) {}
+    }
+  });
   return Promise.race([link, timeout]).then(function () {
     clearTimeout(timer);
     current();
@@ -137,7 +144,7 @@ function openGatt() {
   }).catch(function (e) {
     clearTimeout(timer);
     if (attempt === connectAttempt) connectAttempt++;   // a late answer to this attempt is ignored
-    try { if (device && device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch (x) {}
+    try { if (dev.gatt) dev.gatt.disconnect(); } catch (x) {}   // also aborts a connect still pending
     rxChar = null;
     throw e;
   });
@@ -172,6 +179,7 @@ function disconnect() {
 // Connection UI
 // ===================================================================
 function setConn(c, msg, isErr) {
+  var was = state.conn;
   state.conn = c;
   var dot = $('connDot'), txt = $('connText'), card = $('connCard'), btn = $('connectBtn'), cm = $('connMsg'), hb = $('hdrBtn');
   dot.className = 'dot';
@@ -215,8 +223,7 @@ function setConn(c, msg, isErr) {
       if (state.s && state.s.cal !== 0 && !state.calEnded) savePartialCal('connection lost');
       // Until the first status line after reconnecting, C / E / K lines still belong to the run
       // that was going on (a redo's C and K can come before any S line).
-      state.dropS = state.s;
-      state.dropV = { v32: state.v32, v33: state.v33 };
+      if (was === 'connected') { state.dropS = state.s; state.dropV = { v32: state.v32, v33: state.v33 }; }
       state.s = null;
       state.v3 = false;          // re-detected from the next S lines
       state.v31 = false;
@@ -224,10 +231,13 @@ function setConn(c, msg, isErr) {
       state.v33 = false; state.newerLines = 0; state.bWas = null;
       // [v3.3] the board keeps its placement stream across a drop ('v' toggles it): the first
       // status line after reconnecting decides (onFlowStatus)
-      state.placeWas = !!state.place;
+      if (was === 'connected') state.placeWas = !!state.place;
       state.place = null;
       state.calSeen = false; state.uncalSince = 0;
       state.behind = null; state.fList = null; state.overshoot = null; state.stallSince = 0;
+      clearTimeout(state.fTimer);           // (a readback still wanted is asked for again after reconnecting)
+      state.checkpointAnswered = 0;         // an answer that may not have gone out: ask again
+      state.downResumePending = false; state.dPending = 0;
       state.fixAfter = ''; state.qFromEdit = false; state.qJustEnded = false;
       // a redo the bridge already started carries on (its E / K may come after reconnecting); any other edit is dropped
       if (state.edit) { clearTimeout(state.edit.timer); if (!state.edit.started) state.edit = null; }

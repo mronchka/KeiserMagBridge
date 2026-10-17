@@ -46,6 +46,10 @@ function onFlowStatus(s, prevCal, prevFlow) {
     state.placeCheck = false;
     // the board's USB log notes which phone page is connected (older pages never send this)
     if (state.conn === 'connected') sendCmd('#J,page,' + APP_BUILD);
+    if (state.wantReadback && state.result && state.result.ok && s.cal === 0 && state.conn === 'connected') {
+      state.wantReadback = false; state.qFromEdit = true;
+      requestStoredCal();
+    }
     if (s.cal === 0 && s.flow === 1 && !state.place) {
       if (state.placeWas) state.place = { x: null };
       else send('v', true);
@@ -54,7 +58,8 @@ function onFlowStatus(s, prevCal, prevFlow) {
   }
   if (s.flow !== 3) state.sweepNexts = s.flow > 3 ? 1 : 0;
   // cal 7: the up pass is saved and the board waits at the checkpoint (n = down now, s/x = later)
-  if (s.cal !== 7) state.checkpointAnswered = false;
+  if (s.cal !== 7) state.checkpointAnswered = 0;
+  else if (state.checkpointAnswered && Date.now() - state.checkpointAnswered > 3000) state.checkpointAnswered = 0;
   if (s.cal === 7 && !state.upSaved && !state.checkpointAnswered) { state.upSaved = true; state.fixHold = true; }
   if (prevCal === 7 && s.cal === 0) {   // stopped at the checkpoint (Later, or s/x from elsewhere)
     state.upSaved = false; state.fixHold = false;

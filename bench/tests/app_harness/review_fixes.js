@@ -216,7 +216,8 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.upPass();
     app.$('upContinue').click();
     await app.downPass(23, 12);
-    await app.f('A,cancelled by user');                       // (x) twice in the down pass
+    app.$('btnCancel').click(); app.$('btnCancel').click();   // (x) twice in the down pass: the board saves (K), as the firmware does
+    await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
     await app.advance(2);
@@ -226,6 +227,61 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     app.$('resumeCheck').click();
     while (st.check.phase === 'run') app.M3.checkAnswer(5);
     check('the gear check summary keeps the breadcrumb (step 6)', app.win.flowNow() === 6 && app.$('crumbs').hidden === false);
+  }
+  // ---------------------------------------------------------------- review round 2
+  {
+    const app = mk();
+    await app.f(S({}));
+    app.$('calStart').click();
+    await app.f(S({ flow: 1 }));
+    app.M3.setConn('disconnected');
+    app.M3.setConn('connecting'); app.M3.setConn('disconnected', 'Reconnect failed');   // one failed attempt
+    app.connect();
+    await app.f(S({ flow: 1 }));
+    check('a failed reconnect attempt keeps what the drop remembered (step 1 carries on)', !!app.M3.state.place &&
+      app.cmds().filter((c) => c === 'v').length === 1, JSON.stringify(app.cmds()));
+  }
+  {
+    const app = mk();
+    await app.upPass();
+    app.$('upContinue').click();                 // 'n' is lost with the link
+    app.M3.setConn('disconnected');
+    app.connect();
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    app.$('upContinue').click();
+    await app.advance(0.1);
+    check('Continue down after a drop at the checkpoint sends n again', app.cmds().filter((c) => c === 'n').length === 2, JSON.stringify(app.cmds()));
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.f(S({}));
+    app.win.sendCmd('#D');
+    await app.f('E,ok,down');
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');       // a readback is wanted (the page didn't see the up pass)...
+    app.M3.setConn('disconnected');               // ...but the link drops before the F list
+    await app.advance(6);
+    app.connect();
+    await app.f(S({}));
+    check('a readback still wanted when the link dropped is asked for after reconnecting', app.cmds().filter((c) => c === 'k').length === 1 && !st.wantReadback,
+      JSON.stringify(app.cmds()));
+    for (let p = 1; p <= 25; p++) if (p !== 7) await app.f('Q,' + p + ',' + p + '.0,1.0,2.0', 0.02);
+    await app.f('Q,end,120.0,3.00,6', 0.02);
+    await app.f('F,end,0');
+    check('an incomplete readback the page asked for is read once more', app.cmds().filter((c) => c === 'k').length === 2, JSON.stringify(app.cmds()));
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + p + '.0,1.0,2.0', 0.02);
+    await app.f('Q,end,120.0,3.00,6', 0.02);
+    await app.f('F,end,0');
+    check('...and the complete one becomes the run record', !!st.result.recordId && app.titles()[0] === 'Calibration saved', app.titles().join(' / '));
+  }
+  {
+    const app = mk();
+    await app.upPass();
+    const rid = app.win.calRecordId();
+    const app2 = loadApp({ search: '' });         // reload at the checkpoint (same phone storage)
+    Object.assign(app2.store, app.store); app2.win.loadRecords(); app2.connect();
+    await app2.feed(1, S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    check('a reload at the checkpoint keeps the up-pass record for the gear check', app2.win.calRecordId() === rid && app2.M3.state.upSaved);
   }
   // ---------------------------------------------------------------- Bluetooth link
   {
