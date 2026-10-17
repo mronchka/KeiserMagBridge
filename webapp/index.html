@@ -1040,7 +1040,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   var DEMO_DROP = params.get('drop') === '1';       // demo: drop one D line in the first transfer
   var DEMO_OLDFW = params.get('oldfw') === '1';     // demo: act like firmware without k/g/m/e/y
   var FAST = params.get('fast') === '1' ? 5 : 1;    // divide diagnostic step times by 5
-  var DEMO_V3 = params.get('v3') === '1';
+  var DEMO_V3 = params.get('v2') !== '1';           // demo: v3.3 by default; &v2=1 = the old v2 simulator
   var DEMO_STALL = params.get('stall') === '1';     // demo: status lines stall for 3 s every ~12 s
   var DEMO_CAD = num(params.get('cad')) || 72;      // demo v3: cadence while calibrating, rpm
   var DEMO_SUSPECT = params.get('suspect') === '1';     // demo v3: every 4th point gets 1-2 W lines (hold still), then settles

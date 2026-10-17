@@ -97,23 +97,24 @@ Saved data stays on that phone and in that browser only. Export anything you wan
 
 ## Demo mode (no hardware)
 
-Add `?demo=1` to the URL, for example `index.html?demo=1`. A built-in simulator stands in for the bridge, feeding protocol lines through the same parser as Bluetooth. It cycles gear, watts and cadence, and runs a full calibration (ending with span 146.0 µT, smallest step 3.8 µT at gear 6).
+Add `?demo=1` to the URL, for example `index.html?demo=1`. A built-in simulator stands in for the bridge, feeding protocol lines through the same parser as Bluetooth. It acts like firmware v3.3: it cycles gear, watts and cadence, and runs the six-step calibration.
 
 The simulator also answers the stored-calibration request and runs diagnostic recordings with synthetic 25 Hz data.
 
 Extra options, added after `?demo=1`:
 
-- `&v3=1`: simulate firmware v3.3: the six-step flow (placement `X` stream on `v`, the sweep and its `Z` result, steps in the status line, the Saved checkpoint, `#D`, `#J` echoes, pause with flag `O`) on top of everything v3.2 does. `&v32=1` simulates v3.2 instead (cadence from the crank magnet, short pedalling stops, turn-based crank learning and the cadence check, calibration while pedalling with 2 turns plus a check turn, the automatic top point, the down pass with **Finish without the down pass** and undo, the check after saving, `#R` redo and `#G` best guess, the Turns stream, and crank data and down points in the stored calibration). Without it the simulator behaves like v2.
+- v3.3 is the default (`&v3=1` still works): the six-step flow (placement `X` stream on `v`, the sweep and its `Z` result, steps in the status line, the Saved checkpoint, `#D`, `#J` echoes, pause with flag `O`) on top of everything v3.2 does. `&v32=1` simulates v3.2 instead (cadence from the crank magnet, short pedalling stops, turn-based crank learning and the cadence check, calibration while pedalling with 2 turns plus a check turn, the automatic top point, the down pass with **Finish without the down pass** and undo, the check after saving, `#R` redo and `#G` best guess, the Turns stream, and crank data and down points in the stored calibration).
+- `&v2=1`: the old v2 simulator (its calibration ends with span 146.0 µT, smallest step 3.8 µT at gear 6).
 - `&nstuck=1` (v3.3): an `N,stuck` at point 5, to see its hint.
 - `&rest=1` (v3.3): short pedalling breaks while calibrating, to see "Paused — pedal to continue".
 - `&v31=1`: simulate firmware v3.1 instead (3 turns, top point pedalled, no down pass, no `pass` field).
 - `&review=1` (v3.2): after saving, the check flags gear 20 going up (`behind`) and gear 22 coming down (`updown`, if it was measured), to see the guided redos, **Use best guess instead** and **Skip**. A redo shows the "go past it first" line for a few seconds. Also flags them on **Save stored calibration**.
 - `&stubborn=1` (with `&review=1`): gear 20 stays flagged after every redo, to see the card that appears after 2 tries.
 - `&behind=1` (v3.2): point 7 was saved too far up. At point 8 the simulator sends `N,behind`, goes back to point 7 (`U,6`) and holds flag `B` for a few seconds, to see "Keep going: down into gear 6" and then "Now up to where gear 7 first shows".
-- `&cad=NN` (with `&v3=1`): the cadence while calibrating, default 72 rpm. Try `&cad=25` or `&cad=130` to see the cadence dot turn red.
-- `&suspect=1` (with `&v3=1`): every 4th point gets one or two "hold the lever still" notices, then saves by itself.
-- `&stuck=1` (with `&v3=1`): point 6 never settles. After 15 s (3 s with `&fast=1`) the "reading keeps changing" card appears, to try **Redo point 6** and **Capture anyway**.
-- `&learnfail=1` (with `&v3=1`): the first crank learning fails, to see the message and **Try learning the crank again**.
+- `&cad=NN` (v3.3): the cadence while calibrating, default 72 rpm. Try `&cad=25` or `&cad=130` to see the cadence dot turn red.
+- `&suspect=1` (v3.3): every 4th point gets one or two "hold the lever still" notices, then saves by itself.
+- `&stuck=1` (v3.3): point 6 never settles. After 15 s (3 s with `&fast=1`) the "reading keeps changing" card appears, to try **Redo point 6** and **Capture anyway**.
+- `&learnfail=1` (v3.3): the first crank learning fails, to see the message and **Try learning the crank again**.
 - `&uncal=1`: start uncalibrated.
 - `&fast=1`: divide the diagnostic step times by 5 (the whole run takes about 35 s).
 - `&drop=1`: lose one line in the first recording transfer, to see "Transfer incomplete" and Retry.
