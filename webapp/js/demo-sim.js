@@ -184,6 +184,7 @@ function Simulator(startCalibrated) {
             out('L,0,6,' + Math.round(cad) + ',6.1,dip too shallow');
             out('Crank magnet not detected well enough. Send l to try again.');
             cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+            if (DEMO_V33) flowStep = 4;   // the hold-still method: the gear step
           } else {
             out('L,1,6,' + Math.round(cad) + ',58.0,ok');
             out('Crank learned. Check that the cadence matches the Keiser console.');
@@ -490,6 +491,7 @@ function Simulator(startCalibrated) {
     if (!(point >= 2 && point <= (pass === 'd' ? TOTAL_POINTS - 2 : TOTAL_POINTS - 1))) { out('E,fail,bad point'); return; }
     passName = 'r' + pass; step = point - 1; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
     redoInfo = { pass: pass, point: point, bUntil: Date.now() + (FAST > 1 ? 1500 : 3500) };
+    if (DEMO_V33) flowStep = 6;   // a redo shows step 6
     out('E,ok,redo');
     out(pass === 'u'
       ? 'Redo gear ' + point + ': move the lever DOWN below gear ' + point + ', then up to where the console FIRST shows gear ' + point + ', and hold it there.'

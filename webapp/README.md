@@ -134,7 +134,7 @@ Extra options, added after `?demo=1`:
 - `&v31=1`: simulate firmware v3.1 instead (3 turns, top point pedalled, no down pass, no `pass` field).
 - `&review=1` (v3.2): after saving, the check flags gear 20 going up (`behind`) and gear 22 coming down (`updown`, if it was measured), to see the guided redos, **Use best guess instead** and **Skip**. A redo shows the "go past it first" line for a few seconds. Also flags them on **Save stored calibration**.
 - `&stubborn=1` (with `&review=1`): gear 20 stays flagged after every redo, to see the card that appears after 2 tries.
-- `&behind=1` (v3.2): point 7 was saved too far up. At point 8 the simulator sends `N,behind`, goes back to point 7 (`U,6`) and holds flag `B` for a few seconds, to see "Keep going: down into gear 6" and then "Now up to where gear 7 first shows".
+- `&behind=1` (v3.2): point 7 was saved too far up. At point 8 the simulator sends `N,behind`, goes back to point 7 (`U,6`) and holds flag `B` for a few seconds, to see "Gear 7 was saved a little too far up", "Shift down into gear 6" and then "Now up to gear 7".
 - `&cad=NN` (v3.3): the cadence while calibrating, default 72 rpm. Try `&cad=25` or `&cad=130` to see the cadence dot turn red.
 - `&suspect=1` (v3.3): every 4th point gets one or two "hold the lever still" notices, then saves by itself.
 - `&stuck=1` (v3.3): point 6 never settles. After 15 s (3 s with `&fast=1`) the "reading keeps changing" card appears, to try **Redo point 6** and **Capture anyway**.

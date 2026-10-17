@@ -209,6 +209,8 @@ main {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   padding: 8px 0;
 }
+/* "Not calibrated" + Go to Calibrate under the ring: the ring makes room so the tiles stay above the tab bar */
+.gear-wrap:has(#goCal:not([hidden])) .gear-ring { --ring: min(68vw, calc(40vh - 72px), 340px); }
 /* The gear sits in a ring (same motif as the calibration circle): blue while riding,
    grey when stopped or not calibrated, amber while holding the last good gear. */
 .gear-ring {
@@ -618,9 +620,9 @@ body.calfocus #toast { bottom: auto; top: calc(60px + env(safe-area-inset-top));
 .dseg.done { background: var(--ok); border-color: var(--ok); }
 .dseg.cur { background: var(--accent); border-color: var(--accent); }
 .dlabel { font-size: 1.55rem; font-weight: 800; line-height: 1.3; }
-.dtext { font-size: 1.2rem; font-weight: 600; margin-top: 8px; line-height: 1.45; }
+.dtext { font-size: 1.2rem; font-weight: 600; margin-top: 8px; line-height: 1.45; min-height: 4.35em; }   /* room for 3 lines: BACK / NEXT stay put from step to step */
 .countdown {
-  text-align: center; font-size: min(34vw, 20vh); line-height: 1; font-weight: 800;
+  text-align: center; font-size: min(34vw, 16vh); line-height: 1; font-weight: 800;   /* (a 3-line step text still fits above the buttons) */
   font-variant-numeric: tabular-nums; letter-spacing: -.03em;
 }
 .countdown.ready { color: var(--warn); }

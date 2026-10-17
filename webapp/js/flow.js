@@ -33,7 +33,7 @@ function flowNow() {
   // Whenever the board is calibrating, its own step wins (a #D after the gear check is step 5, not 6).
   if (s && state.v33 && s.cal !== 0 && s.flow >= 1 && s.flow <= 6) return s.flow;
   if (state.place) return 1;
-  if (state.check && state.check.phase === 'run' && state.check.flow) return 6;
+  if (state.check && (state.check.phase === 'run' || state.check.phase === 'done') && state.check.flow) return 6;
   if (state.upSaved) return 4;
   return 0;
 }

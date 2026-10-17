@@ -28,7 +28,8 @@ var CAL_INTRO = {
 var onbIdx = 0, onbKey = '';
 
 function onbSteps() {
-  return state.v3 ? CAL_INTRO.crank.filter(function (st) { return !st.v32 || state.v32; }) : CAL_INTRO.still;
+  var known = !!state.s;   // no status line yet (not connected, or just reconnected): assume current firmware
+  return state.v3 || !known ? CAL_INTRO.crank.filter(function (st) { return !st.v32 || state.v32 || !known; }) : CAL_INTRO.still;
 }
 
 function renderOnb() {

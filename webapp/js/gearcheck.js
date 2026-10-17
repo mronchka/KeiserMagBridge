@@ -12,7 +12,7 @@ function maybeOfferCheck() {
   var r = state.result;   // (still set when its card was dismissed: resultHidden)
   if (!r || r.type !== 'K' || !r.ok || reviewItems().length) return;
   // [v3.3] the gear check is step 6 of the flow: it starts by itself (Skip is on screen)
-  if (state.v33) { startGearCheck(); return; }
+  if (state.v33) { if (!state.noAutoCheck) startGearCheck(); return; }
   state.check = { phase: 'offer', v32: !!state.v32, idx: 0, results: [], picking: false, val: 1, app: 0 };
   renderRideCheck();
 }

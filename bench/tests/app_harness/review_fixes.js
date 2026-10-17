@@ -173,6 +173,28 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
     check('...and comes back with the next status line', !app.$('upContinue').disabled && app.$('upContinue').textContent === 'Continue down');
   }
+  // ---------------------------------------------------------------- tester A
+  {
+    const app = loadApp({ search: '' });
+    check('before connecting, the walkthrough describes pedalling (not v2 stop-and-hold)',
+      app.win.onbSteps()[0] === app.win.CAL_INTRO.crank[0], app.win.onbSteps()[0].title);
+  }
+  {
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 12);
+    await app.f('A,cancelled by user');                       // (x) twice in the down pass
+    await app.f('F,end,0');
+    await app.f(S({}));
+    await app.advance(2);
+    check('stopping the down pass with (x) does not start the gear check by itself', !(st.check && st.check.phase === 'run'),
+      st.check && st.check.phase);
+    check('...the start screen offers it instead', app.$('calResume').hidden === false && app.$('resumeCheck').hidden === false);
+    app.$('resumeCheck').click();
+    while (st.check.phase === 'run') app.M3.checkAnswer(5);
+    check('the gear check summary keeps the breadcrumb (step 6)', app.win.flowNow() === 6 && app.$('crumbs').hidden === false);
+  }
   // ---------------------------------------------------------------- Bluetooth link
   {
     const app = mk();

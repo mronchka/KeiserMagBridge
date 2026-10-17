@@ -215,6 +215,7 @@ function onS(p) {
     else if (state.v33 && s.flow === 5) {
       state.calEnded = true; state.upSaved = false; state.fixHold = true;
       state.fixPaused = false;   // flagged gears get their guided redos once this pass is saved
+      state.noAutoCheck = false;
       state.checkDone = false;   // and step 6 follows, even if a gear check was done in between
       if (state.check && state.check.phase !== 'run') state.check = null;
     }
@@ -529,6 +530,7 @@ function onA(p) {
     // [v3.3] the down pass stopped: the up pass and every down point measured are already saved
     logLine('Stopped: ' + (reason || 'no reason given') + '. Everything measured so far is saved.', 'sys');
     state.fixHold = false; state.upSaved = false;
+    state.noAutoCheck = true;   // the rider stopped: step 6 waits on the start screen ("Check a few gears")
     if (reviewItems().length) state.fixPaused = true;
     render();
     return true;
@@ -660,7 +662,7 @@ function onCalStarted() {
   state.check = null;
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
-  state.result = null; state.resultHidden = false;
+  state.result = null; state.resultHidden = false; state.noAutoCheck = false;
   state.calEnded = false;
   state.partialSaved = -1;
   state.learnFailed = false;
