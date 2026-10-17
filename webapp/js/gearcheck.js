@@ -9,7 +9,7 @@
 // ===================================================================
 function maybeOfferCheck() {
   if (state.checkDone || state.check || state.upSaved || state.fixHold) return;
-  var r = state.result;
+  var r = state.result;   // (still set when its card was dismissed: resultHidden)
   if (!r || r.type !== 'K' || !r.ok || reviewItems().length) return;
   // [v3.3] the gear check is step 6 of the flow: it starts by itself (Skip is on screen)
   if (state.v33) { startGearCheck(); return; }
@@ -129,7 +129,7 @@ function finishCheck() {
   if (c.flow) setFlowRecord({ checkDone: true });   // (c.flow, not state.v33: that is cleared by a drop)
   var res = c.results;
   var miss = res.filter(function (r) { return r.app !== r.console; });
-  var rid = state.result && state.result.recordId, saved = false;
+  var rid = calRecordId(), saved = false;
   if (res.length && rid) {
     var lines = ['gear_check: ' + res.length + ' of ' + RIDE_CHECKS.length + ' checks, ' + (res.length - miss.length) +
       ' matched (bridge gear vs Keiser console; watts read below the console on purpose and were not compared)'];
@@ -143,17 +143,20 @@ function finishCheck() {
   }
   $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : miss.length ? 'Some gears differ' : 'All gears match';
   var html = '', redone = {};
+  // one row per check; a mismatch carries its Redo button in the row (four of them still fit the screen)
   res.forEach(function (r) {
-    var ok = r.app === r.console;
-    html += '<div class="rck-row' + (ok ? '' : ' miss') + '"><span class="k">' + esc(r.label) + '</span><span class="v">' +
-      (ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console) + '</span></div>';
+    var ok = r.app === r.console, btn = '';
     if (!ok && (c.v32 || state.v32)) {
       var gg = edgeGear(r.app, r.console);
       if (!redone[gg]) {
         redone[gg] = true;
-        html += '<button class="btn primary wide" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
+        btn = '<button class="btn primary" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
       }
     }
+    var v = ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console;
+    html += '<div class="rck-row' + (ok ? '' : ' miss') + '">' + (btn
+      ? '<span class="k">' + esc(r.label) + '<span class="sub">' + v + '</span></span>' + btn
+      : '<span class="k">' + esc(r.label) + '</span><span class="v">' + v + '</span>') + '</div>';
   });
   if (miss.length) {
     html += '<p class="small muted" style="margin-top:10px">' + (c.v32 || state.v32
@@ -162,5 +165,6 @@ function finishCheck() {
   }
   $('rckSum').innerHTML = html;
   var rec = rid ? findRecord(rid) : null;
-  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').' : '';
+  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').'
+    : res.length ? 'Not added to a saved calibration on this phone (the bridge’s USB log has it).' : '';
 }

@@ -324,6 +324,20 @@ function showCopySheet(text, title) {
   try { ta.focus(); ta.select(); ta.setSelectionRange(0, text.length); } catch (e) {}
 }
 
+// The saved calibration record the gear check adds its lines to (also after a reload, via the flow record).
+function noteCalRecord(id) {
+  if (!id) return;
+  state.calRecordId = id;
+  if (state.v33) setFlowRecord({ recordId: id });
+}
+function calRecordId() {
+  var fr = flowRecord();
+  var ids = [state.result && state.result.type === 'K' && state.result.ok ? state.result.recordId : null,
+    state.calRecordId, fr && fr.recordId];
+  for (var i = 0; i < ids.length; i++) if (ids[i] && findRecord(ids[i])) return ids[i];
+  return null;
+}
+
 // Remember on this phone what is left of the last calibration (resume offers on the start screen).
 var FLOW_KEY = 'm3bridge.flow';
 function flowRecord() {

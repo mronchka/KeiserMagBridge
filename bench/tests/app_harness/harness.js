@@ -103,7 +103,9 @@ function loadApp(opts) {
     getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
     removeAttribute(k) { delete this.attrs[k]; if (k === 'hidden') this.hidden = false; }
     hasAttribute(k) { return k in this.attrs; }
-    addEventListener() {} removeEventListener() {}
+    // listeners run on click() (a disabled button does nothing, as in a browser); other events are never fired
+    addEventListener(ev, fn) { (this._l = this._l || {})[ev] = (this._l[ev] || []).concat(fn); }
+    removeEventListener(ev, fn) { if (this._l && this._l[ev]) this._l[ev] = this._l[ev].filter((f) => f !== fn); }
     appendChild(c) { this.childNodes.push(c); c.parentNode = this; return c; }
     removeChild(c) { this.childNodes = this.childNodes.filter((x) => x !== c); return c; }
     remove() { if (this.parentNode) this.parentNode.removeChild(this); }
@@ -111,7 +113,12 @@ function loadApp(opts) {
     querySelectorAll() { return []; }
     getElementsByTagName(t) { return this.children.filter((c) => c.tagName === t.toUpperCase()); }
     closest() { return null; }
-    scrollIntoView() {} focus() {} select() {} setSelectionRange() {} click() {}
+    scrollIntoView() {} focus() {} select() {} setSelectionRange() {}
+    click() {
+      if (this.disabled) return;
+      const ev = { type: 'click', target: this, preventDefault() {} };
+      ((this._l || {}).click || []).forEach((f) => f.call(this, ev));
+    }
     getBoundingClientRect() { return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }; }
   }
   // Every id the page's HTML defines exists; a cadence dot needs a parent.

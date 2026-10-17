@@ -132,10 +132,13 @@ body.calfocus #calActive { gap: 10px; flex: 1; }
 body.calfocus #calActive .cal-btns { margin-top: auto; }
 /* the down pass adds "Finish without the down pass": the circle makes room for it */
 /* whatever else is showing, the circle gives up that much room (so the buttons stay on screen) */
-#calActive:has(#btnSkipDown:not([hidden])) { --sx1: 40px; }
-#calActive:has(#holdBanner:not([hidden])) { --sx2: 62px; }
-#calActive:has(#behindHint:not([hidden])) { --sx3: 56px; }
-#calActive:has(#redoBanner:not([hidden])) { --sx4: 56px; }
+/* (each one's real height at 393 px wide, where its text takes two lines, plus the 10 px gap) */
+#calActive:has(#btnSkipDown:not([hidden])) { --sx1: 54px; }
+#calActive:has(#holdBanner:not([hidden])) { --sx2: 92px; }
+#calActive:has(#behindHint:not([hidden])) { --sx3: 90px; }
+#calActive:has(#redoBanner:not([hidden])) { --sx4: 92px; }
+/* with a notice up, "stop any time" makes way (two notices at once still fit) */
+#calActive:has(#holdBanner:not([hidden]), #behindHint:not([hidden]), #redoBanner:not([hidden])) #stopNote { display: none; }
 body.calfocus .place-btns, body.calfocus #upSaved .btn-stack { margin-top: auto; }
 .place-btns { display: flex; flex-direction: column; gap: 2px; }
 body.calfocus .place { flex: 1; }
@@ -299,7 +302,9 @@ main {
 .cadg-cap.warn { color: var(--warn); }
 .stage {
   /* as big as the phone allows once everything else is on screen (iPhone 16: 230-300 px) */
-  --stage: max(170px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px))));
+  /* (a bottom safe-area inset above the 12 px padding comes off too) */
+  --stage: max(120px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
+    - max(0px, env(safe-area-inset-bottom, 0px) - 12px))));
   position: relative; width: var(--stage); height: var(--stage); align-self: center; flex: none;
 }
 .stage .pt {
@@ -387,6 +392,7 @@ main {
 }
 .behind-hint b { color: var(--warn); }
 .cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 44px; font-size: 1rem; background: transparent; color: var(--accent); font-weight: 500; }
+.cal-btns .btn.skipdown.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
 #calActive.redoing .cal-btns .btn.danger { grid-column: 1 / -1; }
 /* [v3.3] one flow of numbered steps: "Step 3 of 6 · Sweep the lever" and 6 small segments */
 .crumbs { display: flex; flex-direction: column; gap: 8px; }
@@ -409,7 +415,7 @@ main {
 .place { display: flex; flex-direction: column; gap: 10px; }
 .place h2 { margin: 0; font-size: 1.6rem; letter-spacing: -.01em; line-height: 1.15; }
 .place .lead { margin: 4px 0 0; color: var(--muted); font-size: .94rem; line-height: 1.35; }
-.gauge { position: relative; width: max(150px, min(260px, 66vw, calc((100dvh - 480px) * 1.41))); align-self: center; }
+.gauge { position: relative; width: max(150px, min(260px, 66vw, calc((100dvh - 520px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); align-self: center; }
 .gauge svg { display: block; width: 100%; height: auto; overflow: visible; }
 .gauge .trk { fill: none; stroke: var(--surface2); stroke-width: 16; stroke-linecap: round; }
 .gauge .zn { fill: none; stroke-width: 4; stroke-linecap: butt; opacity: .9; }
@@ -421,7 +427,7 @@ main {
 .meters { background: var(--surface); border-radius: var(--radius); padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
 @media (max-height: 760px) { .meter-s { display: none; } }
 /* iPhone: the screen-lock tip shows too, so the gauge gives up the room */
-.place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 545px) * 1.41))); }
+.place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
 .meter-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .meter-h .k { font-weight: 700; }
 .meter-h .v { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -493,6 +499,7 @@ main {
 .rck-step { font-size: .85rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
 .rck-task { font-size: 1.25rem; font-weight: 700; line-height: 1.35; }
 .rck .gear-ring { --ring: max(120px, min(46vw, 22vh, 200px)); border-width: 6px; align-self: center; }
+#rckRun:has(#rckPick:not([hidden])) .gear-ring { --ring: 88px; border-width: 4px; }
 .rck-cad { padding: 12px 14px 0; }
 .rck-q { font-size: 1.3rem; font-weight: 700; line-height: 1.35; text-align: center; }
 .rck-note { text-align: center; color: var(--warn); font-weight: 600; font-size: .95rem; min-height: 1.4em; }
@@ -505,8 +512,10 @@ main {
 .rck-row .v { font-variant-numeric: tabular-nums; text-align: right; }
 .rck-row.miss .v { color: var(--warn); font-weight: 700; }
 .rck-row .btn { min-height: 48px; padding: 4px 14px; font-size: .95rem; flex: none; }
+.rck-row .k .sub { display: block; font-weight: 700; font-size: .9rem; color: var(--warn); font-variant-numeric: tabular-nums; }
 /* calibration walkthrough (idle screen) */
 #calIdle { display: flex; flex-direction: column; gap: 28px; }
+#calIdle > #calResume { order: -1; }   /* what is left of the last calibration comes before the walkthrough */
 .onb { padding-top: 0; }
 .onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }
 .onb-art { position: relative; width: 100%; height: min(220px, 26vh); display: grid; place-items: center; }
@@ -596,6 +605,8 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
   font-weight: 600; font-size: .95rem; opacity: 0; pointer-events: none; transition: opacity .2s;
 }
 #toast.show { opacity: 1; }
+#toast { width: max-content; z-index: 50; }
+body.calfocus #toast { bottom: auto; top: calc(60px + env(safe-area-inset-top)); }
 
 /* ---------- diagnose ---------- */
 .dsteps { margin: 8px 0 0; padding: 0; list-style: none; }

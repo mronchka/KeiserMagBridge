@@ -52,7 +52,8 @@ function onFlowStatus(s, prevCal, prevFlow) {
   }
   if (s.flow !== 3) state.sweepNexts = s.flow > 3 ? 1 : 0;
   // cal 7: the up pass is saved and the board waits at the checkpoint (n = down now, s/x = later)
-  if (s.cal === 7 && !state.upSaved) { state.upSaved = true; state.fixHold = true; }
+  if (s.cal !== 7) state.checkpointAnswered = false;
+  if (s.cal === 7 && !state.upSaved && !state.checkpointAnswered) { state.upSaved = true; state.fixHold = true; }
   if (prevCal === 7 && s.cal === 0) {   // stopped at the checkpoint (Later, or s/x from elsewhere)
     state.upSaved = false; state.fixHold = false;
     if (reviewItems().length) state.fixPaused = true;
@@ -105,7 +106,9 @@ function renderFlow(active, placing, saved) {
   setHidden('upSaved', !saved);
   $('upContinue').disabled = state.conn !== 'connected';
   // resume offers on the start screen
+  // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&
+    !!(state.s && state.s.flags.V) &&
     (!rec.downDone || !rec.checkDone) && !(state.check && state.check.phase === 'run');
   setHidden('calResume', !show);
   if (show) {

@@ -106,8 +106,8 @@ function onS(p) {
   if (!/^\d{1,2}$/.test(p[1].trim()) || !/^\d$/.test(p[5].trim())) return false;
   // [v3.3] fields 15/16: flow step (0 idle, 1-6) and step count. More fields than that come from
   // a newer bridge: still read the first 16, and suggest reloading the page. (A glued pair of
-  // lines has 25 or more fields, so up to 20 is taken as "newer", not as damage.)
-  var v33line = n >= 16 && n <= 20 && /^\d$/.test((p[14] || '').trim()) && /^\d$/.test((p[15] || '').trim());
+  // lines has 24 or more fields, so up to 23 is taken as "newer", not as damage.)
+  var v33line = n >= 16 && n <= 23 && /^\d$/.test((p[14] || '').trim()) && /^\d$/.test((p[15] || '').trim());
   if (v33line && n > 16) {
     if (++state.newerLines === 3) showStale('The bridge has newer firmware than this page knows. Reload the page.');
     p = p.slice(0, 16); n = 16;
@@ -156,7 +156,9 @@ function onS(p) {
     flow: v33line ? int(p[14]) : 0,      // [v3.3] flow step 1-6 (0 idle)
     flowSteps: v33line ? int(p[15]) : 0, // [v3.3] step count (6)
     paused: !!flags.O,                   // [v3.3] no pedal turn for a while: timers frozen, nothing lost
-    pedalling: src ? (src !== '-' && !!flags.R) : true
+    // src B / W: live cadence from the crank / the pod ('-' none). (Flag R is the crank's own
+    // pedalling and is never set with W.)
+    pedalling: src ? src !== '-' : true
   };
   var prevCal = state.s ? state.s.cal : 0;
   var prevPass = state.s ? state.s.pass : '';
@@ -190,7 +192,7 @@ function onS(p) {
     !(state.v33 && s.flow !== 4 && s.flow !== 5);   // [v3.3] only on the gear steps
   if (!stallable) { state.stallSince = 0; state.stallKey = ''; }
   else if (!state.stallSince || state.stallKey !== s.pass + s.step) { state.stallSince = state.sAt; state.stallKey = s.pass + s.step; }
-  if (s.pass === 'd' && prevPass === 'u' && cal !== 0) {
+  if (s.pass === 'd' && cal !== 0 && cal !== 7 && (prevPass === 'u' || prevCal === 7)) {
     toast('Top done. Now back down, one gear at a time');
     try { if (navigator.vibrate) navigator.vibrate([60, 60, 60]); } catch (e) {}
   }
@@ -201,13 +203,19 @@ function onS(p) {
       try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
     }
   }
-  if (cal === 0) state.redo = 0;
+  if (cal === 0) { state.redo = 0; state.downResumeStep = -1; }
+  else if (state.downResumePending && s.pass === 'd') { state.downResumePending = false; state.downResumeStep = s.step; }
   if (prevCal === 0 && cal !== 0) {
     // A fresh calibration starts at step 0. A later step after a reconnect is the same run continuing.
     // [v3.2] A redo (#R) of one point of the saved calibration is not a new run.
     // [v3.3] Nor is the down pass started from the checkpoint ('n') or later (#D).
     if (s.pass === 'ru' || s.pass === 'rd') onRedoStarted(s);
-    else if (state.v33 && s.flow === 5) { state.calEnded = true; state.upSaved = false; state.fixHold = true; }
+    else if (state.v33 && s.flow === 5) {
+      state.calEnded = true; state.upSaved = false; state.fixHold = true;
+      state.fixPaused = false;   // flagged gears get their guided redos once this pass is saved
+      state.checkDone = false;   // and step 6 follows, even if a gear check was done in between
+      if (state.check && state.check.phase !== 'run') state.check = null;
+    }
     // (at the v3.3 checkpoint, cal 7, the up pass is already saved)
     else if (s.step > 0 && state.points.length) state.calEnded = cal === 7;
     else onCalStarted();
@@ -249,8 +257,9 @@ function onC(p) {
   if (p.length < 2) return false;
   if (p[1].trim() === 'down') return onCDown(p);   // [v3.2]
   var point = int(p[1]);
-  if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
+  if (!fin(point) || point < 1 || point > TOTAL_POINTS || p.length !== 5) return false;
   var pt = { point: point, x: num(p[2]), y: num(p[3]), z: num(p[4]) };
+  if (!fin(pt.x) || !fin(pt.y) || !fin(pt.z)) return false;
   if (isRedoing()) {
     // [v3.2] a redo replaces that one point and keeps the rest
     state.points = state.points.filter(function (q) { return q.point !== point; });
@@ -274,8 +283,9 @@ function onC(p) {
 // [v3.2] C,down,<point>,<x>,<y>,<z>: down point captured (23 down to 2)
 function onCDown(p) {
   var point = int(p[2]);
-  if (!fin(point) || point < 2 || point > TOTAL_POINTS - 1) return false;
+  if (!fin(point) || point < 2 || point > TOTAL_POINTS - 1 || p.length !== 6) return false;
   var pt = { point: point, x: num(p[3]), y: num(p[4]), z: num(p[5]) };
+  if (!fin(pt.x) || !fin(pt.y) || !fin(pt.z)) return false;
   // Down points come 23, 22, ... 2: anything at or below this one is from before an undo.
   state.downPoints = state.downPoints.filter(function (q) { return isRedoing() ? q.point !== point : q.point > point; });
   state.downPoints.push(pt);
@@ -328,20 +338,28 @@ function onK(p) {
   if (ed) { clearTimeout(ed.timer); state.edit = null; r.edit = editLabel(ed); }
   r.down = state.v32 && !state.learnFailed ? state.downPoints.length : -1;   // no down pass with the hold-still method
   state.result = r;
+  state.resultHidden = false;
   state.calEnded = true;
   state.wantReadback = false;
   logLine(r.ok
     ? 'Calibration saved' + (r.edit ? ' (' + r.edit + ')' : '') + ': span ' + fmt(r.span, 1) + ' µT, smallest step ' + fmt(r.minstep, 1) + ' µT at gear ' + (fin(r.minAt) ? r.minAt : '?')
     : 'Calibration rejected: ' + (r.msg || 'no reason given'), 'sys');
+  if (r.ok && r.msg === 'save failed') {
+    logLine('The bridge could not write its flash: this calibration is kept only until the bridge restarts.', 'bad');
+    toast('Not stored on the bridge: flash write failed');
+  }
   try { if (navigator.vibrate) navigator.vibrate(r.ok ? [60, 60, 60] : [300]); } catch (e) {}
   // [v3.3] which step just saved: the up pass (checkpoint) or the down pass (then fixes, then the gear check)
   var flowAt = state.v33 && state.s ? state.s.flow : 0;
-  if (r.ok && !r.edit && flowAt === 4) {
+  // (with the hold-still method, after the crank wasn't found, there is no checkpoint or down pass)
+  if (r.ok && !r.edit && flowAt === 4 && !state.learnFailed) {
     r.down = -1;             // the down pass hasn't started yet: nothing to say about it
     state.upSaved = true;
     state.fixHold = true;    // flagged gears wait until the down pass is done (or Later)
     setFlowRecord({ downDone: false, checkDone: false });
     try { if (navigator.vibrate) navigator.vibrate([60, 60, 60, 60, 120]); } catch (e) {}
+  } else if (r.ok && !r.edit && state.v33 && state.learnFailed) {
+    setFlowRecord({ downDone: true, checkDone: false });   // hold-still method: no down pass to come back for
   } else if (r.ok && !r.edit && flowAt === 5) {
     state.upSaved = false;
     state.fixHold = false;
@@ -356,7 +374,18 @@ function onK(p) {
   } else {
     try {
       r.recordId = saveCalRecord('run', { ok: r.ok, span: r.span, minstep: r.minstep, minAt: r.minAt, msg: r.msg, edit: r.edit, down: state.v32 ? state.downPoints : null }, state.points);
+      if (r.ok) noteCalRecord(r.recordId);
     } catch (e) { console.warn('save failed', e); }
+  }
+  // [v3.2] the F list follows K; if even its F,end is lost (an empty list is just that line), finish it anyway
+  if (r.ok && state.v32) {
+    clearTimeout(state.fTimer);
+    state.fTimer = setTimeout(function () {
+      if (state.result !== r || state.qFromEdit || state.q) return;
+      logLine('The check list after saving never arrived: using the ' + (state.fList || []).length + ' points received.', 'bad');
+      onF(['F', 'end', String((state.fList || []).length)]);
+      render();
+    }, 5000);
   }
   // Older firmware sends no F list: offer the gear check straight away.
   if (r.ok && !state.v32) { state.review = null; maybeOfferCheck(); }
@@ -427,6 +456,13 @@ function onF(p) {
 function onE(p) {
   var kind = (p[1] || '').trim(), text = p.slice(2).join(',').trim();
   var ed = state.edit;
+  if (kind === 'ok' && /^(redo|down)$/.test(text)) {
+    // the bridge accepted #R / #D and starts it; E,ok,saved and K come when it is done
+    if (ed) clearTimeout(ed.timer);
+    if (text === 'down') state.downResumePending = true;
+    logLine(text === 'redo' ? 'Redo started.' : 'Down pass started.', 'sys');
+    return true;
+  }
   if (kind === 'ok') {
     state.editErr = '';
     if (ed) {
@@ -439,7 +475,8 @@ function onE(p) {
         state[list].push({ point: ed.point, x: ed.g.x, y: ed.g.y, z: ed.g.z });
         renderPoints();
       }
-      toast(ed.kind === 'R' ? 'Redone and saved' : 'Best guess used and saved');
+      toast(text === 'save failed' ? 'Changed, but not stored on the bridge: flash write failed'
+        : ed.kind === 'R' ? 'Redone and saved' : 'Best guess used and saved');
     }
     logLine('Edit done' + (text ? ' (' + text + ')' : '') + '.', 'sys');
   } else if (kind === 'fail') {
@@ -472,7 +509,16 @@ function onA(p) {
     render();
     return true;
   }
+  if (state.calEnded && state.result && state.result.type === 'K' && state.result.ok) {
+    // [v3.3] the down pass stopped: the up pass and every down point measured are already saved
+    logLine('Stopped: ' + (reason || 'no reason given') + '. Everything measured so far is saved.', 'sys');
+    state.fixHold = false; state.upSaved = false;
+    if (reviewItems().length) state.fixPaused = true;
+    render();
+    return true;
+  }
   state.result = { type: 'A', reason: reason || 'no reason given' };
+  state.resultHidden = false;
   logLine('Calibration aborted: ' + state.result.reason, 'sys');
   state.result.recordId = savePartialCal('aborted: ' + state.result.reason);
   renderResult();
@@ -598,7 +644,7 @@ function onCalStarted() {
   state.check = null;
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
-  state.result = null;
+  state.result = null; state.resultHidden = false;
   state.calEnded = false;
   state.partialSaved = -1;
   state.learnFailed = false;
@@ -647,31 +693,52 @@ function onQ(p) {
     state.q = null;
     state.qJustEnded = true;   // [v3.2] the F list that follows belongs to the stored calibration
     if (!q || !q.points.length) return true; // stray end without points
+    if (q.points.length !== TOTAL_POINTS) {
+      // a line was lost on the way: don't keep an incomplete copy as if it were the calibration
+      logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points). Tap Save stored calibration to read it again.', 'bad');
+      toast('Stored calibration incomplete: try again');
+      return true;
+    }
     var info = { ok: true, span: num(p[2]), minstep: num(p[3]), minAt: int(p[4]), msg: 'stored', crank: q.crank || null,
       down: state.v32 || q.down.length ? q.down : null };
-    saveCalRecord('stored', info, q.points);
-    toast('Stored calibration saved');
+    var kr = state.result && state.result.type === 'K' && state.result.ok ? state.result : null;
+    var id;
+    if (state.qFromEdit && kr) {
+      // the page read it back after an edit or a #D down pass it didn't watch from the start:
+      // this is that run's record (the gear check adds its lines to it)
+      info.msg = kr.msg; info.edit = kr.edit;
+      id = saveCalRecord('run', info, q.points);
+      kr.recordId = id;
+      kr.down = q.down.length;
+      noteCalRecord(id);
+      renderResult();
+    } else id = saveCalRecord('stored', info, q.points);
+    var rec = findRecord(id);
+    if (rec && rec.persisted) toast(state.qFromEdit && kr ? 'Calibration saved on this phone' : 'Stored calibration saved');
     return true;
   }
   if (kind === 'down') {
     // [v3.2] Q,down,<point>,<x>,<y>,<z>: stored down point (23..2)
     var dp = int(p[2]);
-    if (!fin(dp) || dp < 2 || dp > TOTAL_POINTS - 1) return false;
+    if (!fin(dp) || dp < 2 || dp > TOTAL_POINTS - 1 || p.length !== 6) return false;
+    var dq = { point: dp, x: num(p[3]), y: num(p[4]), z: num(p[5]) };
+    if (!fin(dq.x) || !fin(dq.y) || !fin(dq.z)) return false;
     if (!state.q) state.q = { points: [], down: [], timer: 0 };
     state.q.down = state.q.down.filter(function (x) { return x.point !== dp; });
-    state.q.down.push({ point: dp, x: num(p[3]), y: num(p[4]), z: num(p[5]) });
+    state.q.down.push(dq);
     return true;
   }
   if (kind === 'crank') {
     // [v3] Q,crank,<ux>,<uy>,<uz>,<depth>,<sign>
     var crank = { ux: num(p[2]), uy: num(p[3]), uz: num(p[4]), depth: num(p[5]), sign: int(p[6]) };
-    if (!fin(crank.ux) || !fin(crank.uy) || !fin(crank.uz)) return false;
+    if (p.length !== 7 || !fin(crank.ux) || !fin(crank.uy) || !fin(crank.uz)) return false;
     if (!state.q) state.q = { points: [], down: [], timer: 0 };
     state.q.crank = crank;
     return true;
   }
   var point = int(kind);
-  if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
+  if (!fin(point) || point < 1 || point > TOTAL_POINTS || p.length !== 5) return false;
+  if (!fin(num(p[2])) || !fin(num(p[3])) || !fin(num(p[4]))) return false;
   if (!state.q) state.q = { points: [], down: [], timer: 0 }; // 'k' typed in the console
   clearTimeout(state.q.timer);
   state.q.timer = setTimeout(function () { state.q = null; }, 10000);

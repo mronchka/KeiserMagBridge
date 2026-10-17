@@ -392,7 +392,7 @@ function Simulator(startCalibrated) {
       out('C,down,' + dp + ',' + xyzStr(downPts[dp], 0.05));
       out('Down point ' + dp + ' (gear ' + step + ' coming down) captured.');
       mflag = false; wSent = 0;
-      if (passName === 'rd') { redoInfo = null; out('E,ok,redo'); saveAll('Redo saved.'); return; }
+      if (passName === 'rd') { redoInfo = null; out('E,ok,saved'); saveAll('Redo saved.'); return; }
       step--;
       if (step < 1) { saveAll('Calibration complete: 25 points up, ' + Object.keys(downPts).length + ' down.'); return; }
       cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
@@ -402,7 +402,7 @@ function Simulator(startCalibrated) {
       if (!(DEMO_STUBBORN && step + 1 === 20)) resolved['u' + (step + 1)] = true;   // &stubborn=1: gear 20 stays flagged
       out('C,' + (step + 1) + ',' + xyzStr(PATH[step], 0.05));
       redoInfo = null;
-      out('E,ok,redo');
+      out('E,ok,saved');   // as the firmware: E,ok,redo when the redo starts, E,ok,saved when it is saved
       saveAll('Redo saved.');
       return;
     }
@@ -482,7 +482,7 @@ function Simulator(startCalibrated) {
       resolved[pass + point] = true;
       if (pass === 'd') downPts[point] = downXYZ(point);
       out('Using the best guess for ' + (pass === 'd' ? 'down' : 'up') + ' point ' + point + '.');
-      out('E,ok,guess');
+      out('E,ok,saved');
       out('K,1,146.0,3.8,6,saved');
       sendF();
       return;
@@ -490,6 +490,7 @@ function Simulator(startCalibrated) {
     if (!(point >= 2 && point <= (pass === 'd' ? TOTAL_POINTS - 2 : TOTAL_POINTS - 1))) { out('E,fail,bad point'); return; }
     passName = 'r' + pass; step = point - 1; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
     redoInfo = { pass: pass, point: point, bUntil: Date.now() + (FAST > 1 ? 1500 : 3500) };
+    out('E,ok,redo');
     out(pass === 'u'
       ? 'Redo gear ' + point + ': move the lever DOWN below gear ' + point + ', then up to where the console FIRST shows gear ' + point + ', and hold it there.'
       : 'Redo: from above, down to where the console first shows gear ' + (point - 1) + ', and hold it there.');

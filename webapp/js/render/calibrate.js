@@ -93,11 +93,12 @@ function renderCal() {
   // Staleness never switches the view: an active calibration stays on screen with the last values.
   var active = calRunning(s);   // [v3.3] cal 7 (checkpoint) shows the Saved card, not the circle
   var checkRun = !active && !!state.check && state.check.phase === 'run';   // [v3.2] gear check running
+  var checkDone = !active && !!state.check && state.check.phase === 'done' && !!state.check.flow;   // [v3.3] its summary
   if (active && state.place) closePlace(false);   // the calibration started: step 1 is over
   var placing = !!state.place && !active, saved = !!state.upSaved && !active;
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && Date.now() - state.sAt > WAIT_NOTE_MS));
-  setHidden('calIdle', active || checkRun || placing || saved);
+  setHidden('calIdle', active || checkRun || checkDone || placing || saved);
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
   if (state.result) setHidden('resultCard', resultCardHidden());
@@ -113,9 +114,9 @@ function renderCal() {
 
   setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
-  state.calFocus = active || placing || saved || checkRun;
+  state.calFocus = active || placing || saved || checkRun || checkDone;
   applyCalFocus();
-  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : 'Skip the rest of the gear check');
+  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : 'Skip the rest of the gear check');
   if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }
 
   buildCalDots();
@@ -405,7 +406,8 @@ function renderCal() {
   cap.textContent = auto ? 'Capture now' : 'CAPTURE';
   cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped || mustPass;
   // Undo: at the first down point it goes back to up point 24 (the board allows it).
-  $('btnUndo').disabled = !connected || s.cal !== 1 || (!down && step === 0);
+  // Not at the first point of a down pass resumed with #D (the board doesn't go back into the up pass there).
+  $('btnUndo').disabled = !connected || s.cal !== 1 || (!down && step === 0) || (down && step === state.downResumeStep);
   $('btnCancel').disabled = !connected;
   setHidden('topUndo', $('btnUndo').hidden);
   $('topUndo').disabled = $('btnUndo').disabled;
@@ -532,7 +534,8 @@ function renderPoints() {
 }
 
 function resultCardHidden() {
-  return calRunning(state.s) || !!(state.check && state.check.phase === 'run');
+  return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.phase === 'done' && state.check.flow)) ||
+    !!state.upSaved || !!state.resultHidden;
 }
 
 function renderResult() {
@@ -543,11 +546,13 @@ function renderResult() {
   var html;
   if (r.type === 'K') {
     var marginal = r.ok && fin(r.minstep) && r.minstep < MARGINAL_UT;
-    card.className = 'card result ' + (r.ok ? (marginal ? 'warn' : 'ok') : 'bad');
-    html = '<h2>' + (r.ok ? 'Calibration saved' : 'Calibration rejected') + close + '</h2>';
+    var flashFailed = r.ok && r.msg === 'save failed';   // in the bridge's memory only, until it restarts
+    card.className = 'card result ' + (r.ok ? (marginal || flashFailed ? 'warn' : 'ok') : 'bad');
+    html = '<h2>' + (flashFailed ? 'Calibrated until the bridge restarts' : r.ok ? 'Calibration saved' : 'Calibration rejected') + close + '</h2>';
+    if (flashFailed) html += '<p>The bridge could not write it to its flash. Calibrate again to keep it.</p>';
     if (r.edit) html += '<p>Changed: ' + esc(r.edit) + '.</p>';
     if (!r.ok) html += '<p><b>' + esc(r.msg || 'No reason given') + '</b></p>';
-    else if (r.msg && r.msg.toLowerCase() !== 'saved') html += '<p>' + esc(r.msg) + '</p>';
+    else if (r.msg && r.msg.toLowerCase() !== 'saved' && !flashFailed) html += '<p>' + esc(r.msg) + '</p>';
     html += '<div class="stats">' +
       '<div class="stat"><div class="v">' + fmt(r.span, 1) + '</div><div class="u">Span (µT)</div></div>' +
       '<div class="stat"><div class="v">' + fmt(r.minstep, 1) + '</div><div class="u">Smallest step (µT)' +

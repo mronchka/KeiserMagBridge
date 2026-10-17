@@ -133,7 +133,6 @@
       </div>
     </div>
 
-    <div class="card result" id="resultCard" hidden></div>
     <!-- [v3.2] gears the bridge's check flagged after saving (F lines); filled by renderReview() -->
     <div class="card review" id="reviewCard" role="region" aria-label="Check these gears" hidden></div>
 
@@ -183,6 +182,9 @@
         <button class="btn primary wide" id="rckClose" type="button">Done</button>
       </div>
     </div>
+
+    <!-- the last calibration's result (below the review card and the gear check, which come first) -->
+    <div class="card result" id="resultCard" hidden></div>
 
     <div id="calIdle">
       <!-- One step at a time, Apple-style: a picture, a title, one sentence. Steps come from

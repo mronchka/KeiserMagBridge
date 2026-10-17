@@ -28,7 +28,7 @@ Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (
 $('goCal').addEventListener('click', function () { showView('cal'); });
 
 $('calStart').addEventListener('click', function () {
-  if (state.v33) { onCalStarted(); openPlace(); return; }   // [v3.3] step 1 first: find a good spot
+  if (state.v33) { openPlace(); return; }   // [v3.3] step 1 first: find a good spot (Next starts the run)
   onCalStarted();
   send('c');
 });
@@ -41,11 +41,14 @@ $('placeNext').addEventListener('click', function () {
 });
 $('placeBack').addEventListener('click', function () { closePlace(true); render(); });
 // [v3.3] checkpoint after the up pass
+// One answer per checkpoint: a second tap (or a status line still saying cal 7) doesn't send again.
 $('upContinue').addEventListener('click', function () {
-  if (state.s && state.s.cal === 7) send('n'); else sendCmd('#D');   // cal 7: the board waits at the checkpoint
+  if (state.checkpointAnswered) return;
+  if (state.s && state.s.cal === 7) { state.checkpointAnswered = true; send('n'); }   // cal 7: the board waits at the checkpoint
+  else sendCmd('#D');
 });
 $('upLater').addEventListener('click', function () {
-  if (state.s && state.s.cal === 7) send('x');   // x at the checkpoint keeps the up pass saved
+  if (state.s && state.s.cal === 7 && !state.checkpointAnswered) { state.checkpointAnswered = true; send('x'); }   // keeps the up pass saved
   state.upSaved = false;
   state.fixHold = false;
   if (reviewItems().length) state.fixPaused = true;   // flagged gears wait on their card
@@ -95,12 +98,14 @@ $('topX').addEventListener('click', function () {
   else if (state.place) $('placeBack').click();
   else if (state.upSaved) $('upLater').click();
   else if (state.check && state.check.phase === 'run') $('rckQuit').click();
+  else if (state.check && state.check.phase === 'done') $('rckClose').click();
 });
 $('topUndo').addEventListener('click', function () { if (!$('btnUndo').disabled) send('u'); });
 
 $('resultCard').addEventListener('click', function (ev) {
   var t = ev.target;
-  if (t && t.closest && t.closest('[data-dismiss]')) { state.result = null; renderResult(); renderBadge(); }
+  // hide it only: the gear check still needs to know the calibration was saved
+  if (t && t.closest && t.closest('[data-dismiss]')) { state.resultHidden = true; renderResult(); renderBadge(); }
 });
 
 // [v3.2] down pass: skip the rest and save (s), second tap confirms
