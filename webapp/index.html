@@ -412,7 +412,11 @@
   // Load the app's scripts in order, each with ?v=<APP_BUILD>, so a phone never runs a mix of
   // two builds' files. The demo simulator is only downloaded with ?demo=1.
   (function () {
-    var APP_FILES = ['js/app.js'];   // in load order; the last one boots the page
+    // In load order; the last one wires the buttons and boots the page.
+    var APP_FILES = ['js/state.js', 'js/ui.js', 'js/protocol.js', 'js/ble.js',
+      'js/flow.js', 'js/gearcheck.js', 'js/storage.js', 'js/diag.js',
+      'js/render/ride.js', 'js/render/calibrate.js', 'js/render/diagnose.js', 'js/render/console.js',
+      'js/main.js'];
     var DEMO_FILE = 'js/demo-sim.js';   // with ?demo=1, just before the last file
     var demo = false;
     try { demo = new URLSearchParams(location.search).get('demo') === '1'; } catch (e) {}

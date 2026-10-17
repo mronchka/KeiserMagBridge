@@ -1,4 +1,4 @@
-// M3 Bridge phone page: demo simulator. index.html loads this file only with ?demo=1, before js/app.js.
+// M3 Bridge phone page: demo simulator. index.html loads this file only with ?demo=1, just before js/main.js.
 // Classic script sharing the page's global scope (DEMO_* flags come from the app's constants).
 'use strict';
 

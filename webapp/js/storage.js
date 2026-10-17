@@ -1,0 +1,318 @@
+// M3 Bridge phone page: Saved runs on this phone (localStorage), CSV files, Share / Download / Copy, and the flow record
+// behind the resume offers.
+// Classic script sharing the page's global scope; index.html loads the files in order (see its loader).
+'use strict';
+
+// ===================================================================
+// Saved records (localStorage, ~4 MB cap, oldest dropped first)
+// ===================================================================
+var STORE_IDX = 'm3bridge.records';
+var STORE_PREFIX = 'm3bridge.rec.';
+var STORE_CAP = 4 * 1024 * 1024;   // characters
+var records = [];                  // newest first: {id, type, source, ts, title, summary, filename, size, persisted}
+var memCsv = {};                   // id -> csv (this session)
+
+function loadRecords() {
+  try {
+    var j = localStorage.getItem(STORE_IDX);
+    var a = j ? JSON.parse(j) : [];
+    records = Array.isArray(a) ? a.filter(function (r) { return r && r.id && r.filename; }) : [];
+    records.forEach(function (r) { r.persisted = true; });
+  } catch (e) { records = []; }
+}
+function saveIndex() {
+  try {
+    localStorage.setItem(STORE_IDX, JSON.stringify(records.filter(function (r) { return r.persisted; })));
+    return true;
+  } catch (e) { return false; }
+}
+function getCsv(id) {
+  if (memCsv[id]) return memCsv[id];
+  try { return localStorage.getItem(STORE_PREFIX + id); } catch (e) { return null; }
+}
+function findRecord(id) {
+  for (var i = 0; i < records.length; i++) if (records[i].id === id) return records[i];
+  return null;
+}
+function oldestPersisted(except) {
+  for (var i = records.length - 1; i >= 0; i--) if (records[i].persisted && records[i] !== except) return records[i];
+  return null;
+}
+function removeRecord(r) {
+  try { localStorage.removeItem(STORE_PREFIX + r.id); } catch (e) {}
+  delete memCsv[r.id];
+  records = records.filter(function (x) { return x !== r; });
+}
+function storedTotal(except) {
+  var t = 0;
+  records.forEach(function (r) { if (r.persisted && r !== except) t += r.size || 0; });
+  return t;
+}
+
+function addRecord(meta, csv) {
+  // keep filenames unique when two records land in the same minute
+  var base = meta.filename.replace(/\.csv$/, ''), name = meta.filename, n = 2;
+  while (records.some(function (r) { return r.filename === name; })) name = base + '-' + (n++) + '.csv';
+  meta.filename = name;
+  meta.size = csv.length;
+  meta.persisted = false;
+  memCsv[meta.id] = csv;
+  records.unshift(meta);
+  var dropped = [];
+  if (meta.size <= STORE_CAP) {
+    while (storedTotal(meta) + meta.size > STORE_CAP) {
+      var old = oldestPersisted(meta);
+      if (!old) break;
+      removeRecord(old); dropped.push(old);
+    }
+    for (var attempt = 0; attempt < 50; attempt++) {
+      try {
+        localStorage.setItem(STORE_PREFIX + meta.id, csv);
+        meta.persisted = true;
+        break;
+      } catch (e) {
+        var o = oldestPersisted(meta);
+        if (!o) break;
+        removeRecord(o); dropped.push(o);
+      }
+    }
+  }
+  if (meta.persisted && !saveIndex()) {
+    // index could not be written: undo so storage stays consistent
+    try { localStorage.removeItem(STORE_PREFIX + meta.id); } catch (e) {}
+    meta.persisted = false;
+    saveIndex();
+  }
+  if (dropped.length) {
+    var msg = 'Storage full: removed ' + dropped.length + ' oldest saved run' + (dropped.length > 1 ? 's' : '') +
+      ' (' + dropped.map(function (d) { return d.filename; }).join(', ') + ').';
+    logLine(msg, 'sys');
+    toast('Storage full: removed oldest saved run');
+  }
+  if (!meta.persisted) {
+    logLine('Could not keep ' + meta.filename + ' on this device. Export it before closing the page.', 'bad');
+    toast('Not saved on this device. Export it now.');
+  }
+  renderSaved();
+  return meta.id;
+}
+
+// ---- CSV helpers ----
+function csvCell(v) {
+  v = v === undefined || v === null ? '' : String(v);
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function ascii(s) {
+  return String(s).replace(/[–—]/g, '-').replace(/µ/g, 'u').replace(/[\r\n]+/g, ' ');
+}
+function z2(n) { return (n < 10 ? '0' : '') + n; }
+function fileStamp(d) {
+  return d.getFullYear() + '-' + z2(d.getMonth() + 1) + '-' + z2(d.getDate()) + '-' + z2(d.getHours()) + z2(d.getMinutes());
+}
+function newId(d) { return d.getTime().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+function dist3(a, b) {
+  if (!a || !b || !fin(a.x) || !fin(a.y) || !fin(a.z) || !fin(b.x) || !fin(b.y) || !fin(b.z)) return NaN;
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
+}
+function mmss(ms) {
+  var s = Math.max(0, Math.round(ms / 1000));
+  return Math.floor(s / 60) + ':' + z2(s % 60);
+}
+
+function saveCalRecord(source, info, pointsIn) {
+  var d = new Date();
+  var pts = pointsIn.slice().sort(function (a, b) { return a.point - b.point; });
+  var downs = info.down ? info.down.slice() : null;   // [v3.2] null = firmware without a down pass
+  var stored = source === 'stored';
+  var result = stored ? 'stored' : info.partial ? 'incomplete (' + pts.length + ' of ' + TOTAL_POINTS + ' points)' : (info.ok ? 'saved' : 'rejected');
+  var lines = [
+    '# Keiser M3 Bridge calibration',
+    '# record: calibration',
+    '# source: ' + (stored ? 'stored (read back from the bridge with k)' : 'calibration run'),
+    '# timestamp: ' + d.toISOString(),
+    '# result: ' + result,
+    '# span_uT: ' + (fin(info.span) ? info.span.toFixed(1) : ''),
+    '# minstep_uT: ' + (fin(info.minstep) ? info.minstep.toFixed(1) : ''),
+    '# minstep_at_gear: ' + (fin(info.minAt) ? info.minAt : ''),
+    '# message: ' + ascii(info.msg || ''),
+    '# points: ' + pts.length + ' of ' + TOTAL_POINTS,
+    (info.crank ? '# crank: ux=' + fmt(info.crank.ux, 3) + ', uy=' + fmt(info.crank.uy, 3) + ', uz=' + fmt(info.crank.uz, 3) +
+      ', depth_uT=' + fmt(info.crank.depth, 1) + ', sign=' + (fin(info.crank.sign) ? info.crank.sign : '') : null),
+    (info.edit ? '# edit: ' + ascii(info.edit) : null),
+    '# labels: point 1 = lever all the way down (Bottom); points 2-24 = where the console first shows that gear; point 25 = lever all the way up (Top)',
+    // [v3.2] down points: same gear edge as the up point, approached from above
+    (downs ? '# down_points: ' + downs.length + ' of ' + DOWN_POINTS + ' (down point N = coming down, where the console first shows gear N-1; empty when not measured)' : null),
+    'point,label,x_uT,y_uT,z_uT,dist_prev_uT' + (downs ? ',down_x_uT,down_y_uT,down_z_uT' : '')
+  ].filter(function (l) { return l !== null; });
+  var downBy = {};
+  if (downs) downs.forEach(function (q) { downBy[q.point] = q; });
+  for (var i = 0; i < pts.length; i++) {
+    var p = pts[i];
+    var prev = i > 0 && pts[i - 1].point === p.point - 1 ? pts[i - 1] : null;
+    var dd = dist3(p, prev), dn = downBy[p.point];
+    var row = [p.point, pointLabel(p.point), fmt(p.x, 1), fmt(p.y, 1), fmt(p.z, 1), fin(dd) ? dd.toFixed(2) : ''];
+    if (downs) row = row.concat(dn ? [fmt(dn.x, 1), fmt(dn.y, 1), fmt(dn.z, 1)] : ['', '', '']);
+    lines.push(row.map(function (v) { return csvCell(v === '--' ? '' : v); }).join(','));
+  }
+  var title = stored ? 'Stored calibration' : info.partial ? 'Calibration incomplete' : (info.ok ? (info.edit ? 'Calibration edited' : 'Calibration saved') : 'Calibration rejected');
+  var summary = info.partial
+    ? 'incomplete (' + pts.length + ' of ' + TOTAL_POINTS + ' points) · ' + info.msg
+    : 'Span ' + fmt(info.span, 1) + ' µT · smallest step ' + fmt(info.minstep, 1) + ' µT' +
+    (fin(info.minAt) ? ' at gear ' + info.minAt : '') + ' · ' + pts.length + ' points' +
+    (downs ? ' · down ' + downs.length + ' of ' + DOWN_POINTS : '') +
+    (info.edit ? ' · ' + info.edit : '') +
+    (!stored && !info.ok && info.msg ? ' · ' + info.msg : '');
+  return addRecord({
+    id: newId(d), type: 'cal', source: source, partial: !!info.partial, ts: d.toISOString(), title: title, summary: summary,
+    filename: 'keiser-cal-' + fileStamp(d) + '.csv'
+  }, lines.join('\n') + '\n');
+}
+
+// Add '#' comment lines to a saved record, just above its header row (e.g. the gear check).
+function appendRecordComments(id, comments, summaryAdd) {
+  var rec = findRecord(id), csv = rec ? getCsv(id) : null;
+  if (!rec || csv === null || csv === undefined) return false;
+  var lines = csv.split('\n'), at = 0;
+  while (at < lines.length && lines[at].charAt(0) === '#') at++;
+  lines.splice.apply(lines, [at, 0].concat(comments.map(function (c) { return '# ' + ascii(c); })));
+  csv = lines.join('\n');
+  memCsv[id] = csv;
+  rec.size = csv.length;
+  if (summaryAdd) rec.summary += ' · ' + summaryAdd;
+  if (rec.persisted) {
+    try { localStorage.setItem(STORE_PREFIX + id, csv); } catch (e) { rec.persisted = false; }
+    saveIndex();
+  }
+  renderSaved();
+  return true;
+}
+
+function saveDiagRecord(dump) {
+  var d = new Date();
+  var n = dump.x.length;
+  var markers = dump.markers.slice().sort(function (a, b) { return a.index - b.index || a.k - b.k; });
+  var t = new Array(n), acc = 0;
+  for (var i = 0; i < n; i++) { acc += i === 0 ? 0 : dump.dt[i]; t[i] = acc; }
+  function labelFor(k) { return diag.labelByK[k] || ('marker ' + k); }
+  var lines = [
+    '# Keiser M3 Bridge diagnostic recording',
+    '# record: diagnostic',
+    '# timestamp: ' + d.toISOString(),
+    '# samples: ' + n,
+    '# period_ms: ' + dump.period,
+    '# duration_ms: ' + (n ? t[n - 1] : 0),
+    '# checksum: ' + dump.checksum + ' (verified)',
+    '# firmware: ' + (diag.gstop ? (diag.gstop.full ? 'G,full' : 'G,stop') + ' count=' + diag.gstop.count + ' duration_ms=' + diag.gstop.duration : 'no G,stop seen'),
+    '# lean_step: ' + (diag.lean ? 'yes' : 'no') + (FAST > 1 ? '; fast mode (step times / ' + FAST + ')' : ''),
+    '# units: x/y/z in uT (raw, 0.1 uT resolution); t_ms cumulative from dt; revs empty when no cadence pod',
+    '# markers: k,index,t_ms,step'
+  ];
+  markers.forEach(function (m) {
+    lines.push('# ' + m.k + ',' + m.index + ',' + (m.index < n ? t[m.index] : '') + ',' + csvCell(ascii(labelFor(m.k))));
+  });
+  lines.push('i,t_ms,step,x_uT,y_uT,z_uT,revs');
+  var mi = 0, cur = '';
+  for (var j = 0; j < n; j++) {
+    while (mi < markers.length && markers[mi].index <= j) { cur = csvCell(ascii(labelFor(markers[mi].k))); mi++; }
+    var r = dump.r[j];
+    lines.push(j + ',' + t[j] + ',' + cur + ',' + (dump.x[j] / 10).toFixed(1) + ',' + (dump.y[j] / 10).toFixed(1) + ',' +
+      (dump.z[j] / 10).toFixed(1) + ',' + (r === -1 ? '' : r));
+  }
+  var summary = n + ' samples · ' + mmss(n ? t[n - 1] : 0) + ' · ' + markers.length + (markers.length === 1 ? ' step marker' : ' step markers') + ' · checksum OK' +
+    (diag.full ? ' · memory filled' : '');
+  return addRecord({
+    id: newId(d), type: 'diag', source: 'run', ts: d.toISOString(), title: 'Diagnostic run', summary: summary,
+    filename: 'keiser-diag-' + fileStamp(d) + '.csv'
+  }, lines.join('\n') + '\n');
+}
+
+// ---- export actions ----
+// Share is shown when the browser can share a file, or at least text.
+function canShare() {
+  if (!navigator.share) return false;
+  return true;
+}
+
+function recActionsHtml(id) {
+  return '<div class="rec-acts">' +
+    (canShare() ? '<button class="btn" type="button" data-rec-act="share" data-id="' + id + '">Share</button>' : '') +
+    '<button class="btn" type="button" data-rec-act="download" data-id="' + id + '">Download</button>' +
+    '<button class="btn" type="button" data-rec-act="copy" data-id="' + id + '">Copy</button>' +
+    '<button class="btn danger" type="button" data-rec-act="delete" data-id="' + id + '">Delete</button>' +
+    '</div>';
+}
+
+function doRecAction(act, id, btn) {
+  var rec = findRecord(id);
+  if (!rec) { toast('That record is gone'); renderSaved(); return; }
+  if (act === 'delete') {
+    twoTap(btn, 'Tap again', function () {
+      removeRecord(rec); saveIndex(); renderSaved(); renderResult(); renderDiag();
+      toast('Deleted');
+    });
+    return;
+  }
+  var csv = getCsv(id);
+  if (csv === null || csv === undefined) { toast('Could not read the saved data'); return; }
+  if (act === 'share') {
+    var file = null;
+    try { file = new File([csv], rec.filename, { type: 'text/csv' }); } catch (e) { file = null; }
+    var p;
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) p = navigator.share({ files: [file], title: rec.filename });
+      else if (navigator.share) p = navigator.share({ title: rec.filename, text: csv });
+    } catch (e) { p = Promise.reject(e); }
+    if (p && p.catch) p.catch(function (err) { if (!err || err.name !== 'AbortError') toast('Share failed'); });
+    return;
+  }
+  if (act === 'download') {
+    try {
+      var url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      var a = document.createElement('a');
+      a.href = url; a.download = rec.filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+    } catch (e) { toast('Download failed'); }
+    return;
+  }
+  if (act === 'copy') {
+    var fallback = function () { showCopySheet(csv, rec.filename); };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(csv).then(function () { toast('Copied ' + rec.filename); }, fallback);
+      } else fallback();
+    } catch (e) { fallback(); }
+  }
+}
+
+function showCopySheet(text, title) {
+  $('copyTitle').textContent = title;
+  var ta = $('copyText');
+  ta.value = text;
+  setHidden('copySheet', false);
+  try { ta.focus(); ta.select(); ta.setSelectionRange(0, text.length); } catch (e) {}
+}
+
+// Remember on this phone what is left of the last calibration (resume offers on the start screen).
+var FLOW_KEY = 'm3bridge.flow';
+function flowRecord() { try { return JSON.parse(localStorage.getItem(FLOW_KEY)) || null; } catch (e) { return null; } }
+function setFlowRecord(patch) {
+  var r = flowRecord() || {};
+  for (var k in patch) r[k] = patch[k];
+  r.at = new Date().toISOString();
+  try { localStorage.setItem(FLOW_KEY, JSON.stringify(r)); } catch (e) {}
+}
+
+// Save the points of a calibration that ended without a K line (abort, disconnect,
+// or no result). Saved at most once per point count, and only with at least 1 point.
+function savePartialCal(reason) {
+  state.calEnded = true;
+  var n = state.points.length;
+  if (!n || state.partialSaved === n) return null;
+  state.partialSaved = n;
+  try {
+    var id = saveCalRecord('run', { ok: false, partial: true, msg: reason, down: state.v32 ? state.downPoints : null }, state.points);
+    logLine('Saved the ' + n + ' captured point' + (n > 1 ? 's' : '') + ' as an incomplete calibration.', 'sys');
+    return id;
+  } catch (e) { console.warn('partial save failed', e); return null; }
+}

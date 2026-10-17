@@ -1,6 +1,6 @@
 # Keiser M3 Bridge web app
 
-A single-file phone page (`index.html`) for the Keiser M3 Bridge (Adafruit CLUE nRF52840). It connects over Web Bluetooth (Nordic UART Service) and lets you:
+A phone page (`index.html`, plus its `css/` and `js/` files) for the Keiser M3 Bridge (Adafruit CLUE nRF52840). It connects over Web Bluetooth (Nordic UART Service) and lets you:
 
 - **Ride**: see a large gear number, watts, cadence and resistance, plus status chips (pod, Zwift, calibrated) and warnings (saturated, off-path hold).
 - **Calibrate**: run the 25-point gear calibration from the handlebars.
@@ -9,7 +9,7 @@ A single-file phone page (`index.html`) for the Keiser M3 Bridge (Adafruit CLUE 
 
 The page is dark by default, whatever the phone is set to; the sun/moon button in the header switches between dark and light, and the phone remembers the choice.
 
-Everything is inline: there is no build step, and the only network access besides Bluetooth is a check for a newer published copy of the page. It needs the bridge running the v2 firmware, which sends the status lines this page reads; with older firmware only the Console tab works.
+The files are served as they are: there is no build step (see **Files** below), and the only network access besides Bluetooth is a check for a newer published copy of the page. It needs the bridge running the v2 firmware, which sends the status lines this page reads; with older firmware only the Console tab works.
 
 ## Which browser
 
@@ -97,6 +97,26 @@ Files are CSV with a few `#` comment lines at the top (record type, time, summar
 
 Saved data stays on that phone and in that browser only. Export anything you want to keep.
 
+## Files
+
+| File | What it holds |
+|---|---|
+| `index.html` | The markup; `APP_BUILD` and the dark/light bootstrap in `<head>` (runs before first paint); a small loader at the end of `<body>` |
+| `css/app.css` | All styles |
+| `js/state.js` | Constants, URL flags, the shared `state` / `diag` objects, small helpers (`$`, `num`, `fmt`, `esc`) |
+| `js/ui.js` | `render()` for every screen, chips, the reload bar and page-version check, two-tap confirm, beeps, toast, tabs |
+| `js/protocol.js` | Bytes to lines, `handleLine()` and the handler for each machine line (`bench/PROTOCOL.md`) |
+| `js/ble.js` | Web Bluetooth: command writes (`#` commands in 20-byte pieces), connect and reconnect, the connection UI, wake lock |
+| `js/flow.js` | v3.3 flow: steps and breadcrumb, cadence window, step 1 placement (`X` / `Z`), the review card and guided fixes |
+| `js/gearcheck.js` | Gear check (step 6) |
+| `js/storage.js` | Saved runs (localStorage), CSV, Share / Download / Copy, the flow record behind the resume offers |
+| `js/diag.js` | Diagnostic recording (`G` / `M` / `Y` / `D`) and the guided run |
+| `js/render/ride.js`, `calibrate.js`, `diagnose.js`, `console.js` | One file per screen |
+| `js/main.js` | Button wiring and boot; `window.M3Bridge` (test hooks). Loaded last |
+| `js/demo-sim.js` | The demo simulator, downloaded only with `?demo=1` |
+
+The JS files are classic scripts that share the page's global scope, in the order the loader in `index.html` lists them (`APP_FILES`). Every URL carries `?v=<APP_BUILD>`, so after a deploy a phone fetches the new files rather than mixing cached old ones with new. **When you change any file, bump `APP_BUILD` in `index.html` and the `?v=` on the stylesheet link** (`test_v33_app.py` E0 checks they match and that the loader lists every `js/` file). The reload bar (below) compares `APP_BUILD` with the published copy.
+
 ## Demo mode (no hardware)
 
 Add `?demo=1` to the URL, for example `index.html?demo=1`. A built-in simulator stands in for the bridge, feeding protocol lines through the same parser as Bluetooth. It acts like firmware v3.3: it cycles gear, watts and cadence, and runs the six-step calibration.
@@ -125,7 +145,7 @@ Extra options, added after `?demo=1`:
 
 ## Tests in node
 
-`bench/tests/app_harness/harness.js` runs this page's script in node (a small DOM stub, a virtual clock, writes captured), so board lines go through the same parser as on the phone.
+`bench/tests/app_harness/harness.js` runs this page's scripts in node (the `<head>` script, then the files the loader lists) (a small DOM stub, a virtual clock, writes captured), so board lines go through the same parser as on the phone.
 
 - `node bench/tests/app_harness/replay_v32b.js [log] [--page file]`: replays a real board log (default `bench/logs/2026-10-16_v3_2b.log`) and checks that the guided redo starts after `F,end` and that the down-pass dots turn blue. `--page` runs an older copy of the page (e.g. from `git show`).
 - `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.
