@@ -1,0 +1,304 @@
+         0  E,ok,inject on
+      1992  
+      2011  === Calibration started (hold button 3 s or send 'x' to abort, 'u' to undo) ===
+      2011  Pedal steadily, any comfortable pace, so the bridge can learn your crank (5-15 s).
+      7382  Crank: dip depth 57.9 uT, 6 turns (6 regular) at 75 rpm in 5.5 s: ok.
+      7382  L,1,6,75,57.9,ok
+      7382  Crank learned. Check that the cadence matches the Keiser console:
+      7382  press button A or send 'n' if it does, send 'l' to learn again.
+      8378  Cadence confirmed.
+      8378  Keep pedalling with the lever still for a few more turns.
+     19199  Noise 0.61 uT from 20 still turns.
+     19199  
+     19199  [SWEEP UP] Keep pedalling. Lever all the way down, then slowly push it up as far as you can still pedal, then press button A or send 'n'.
+     38750  
+     38750  [SWEEP DOWN] Keep pedalling. Slowly back down to the bottom, then press button A or send 'n'.
+     58300  Sweep: path 133.4 uT (signal ok), first spot.
+     58300  Z,0.61,133.4,first,-1.0,ok
+     58300  
+     58320  [UP 1/24] Keep pedalling, any steady pace. Push the gear lever ALL THE WAY DOWN and hold it there.
+     58320  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     60273    captured (-83.9, 50.3, -123.0) uT
+     60273  C,1,-83.9,50.3,-123.0
+     60273  
+     60273  [UP 2/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 2, then hold it there.
+     60292  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     65898    captured (-68.4, 48.2, -117.6) uT
+     65898  C,2,-68.4,48.2,-117.6
+     65898  
+     65917  [UP 3/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 3, then hold it there.
+     65917  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     70761  
+     70761  Point 3: the reading is still changing - hold the lever still.
+     70761  W,3,1.0,2.0
+     72402    captured (-53.1, 47.2, -112.4) uT
+     72402  C,3,-53.1,47.2,-112.4
+     72402  
+     72402  [UP 4/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 4, then hold it there.
+     72402  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     77304    captured (-40.5, 47.1, -107.7) uT
+     77304  C,4,-40.5,47.1,-107.7
+     77304  
+     77304  [UP 5/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 5, then hold it there.
+     77304  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     80566    captured (-39.1, 47.1, -107.1) uT
+     80566  C,5,-39.1,47.1,-107.1
+     80566  
+     80585  [UP 6/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 6, then hold it there.
+     80585  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     83808  
+     83808  Point 6: the reading is still changing - hold the lever still.
+     83808  W,6,0.8,2.0
+     85449    captured (-34.7, 47.3, -105.6) uT
+     85449  C,6,-34.7,47.3,-105.6
+     85449  
+     85449  [UP 7/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 7, then hold it there.
+     85449  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     88730    captured (-31.5, 47.5, -104.1) uT
+     88730  C,7,-31.5,47.5,-104.1
+     88730  
+     88730  [UP 8/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 8, then hold it there.
+     88730  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     92148    captured (-27.8, 47.6, -102.9) uT
+     92148  C,8,-27.8,47.6,-102.9
+     92148  
+     92167  [UP 9/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 9, then hold it there.
+     92167  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     95429    captured (-22.8, 48.1, -100.8) uT
+     95429  C,9,-22.8,48.1,-100.8
+     95429  
+     95449  [UP 10/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 10, then hold it there.
+     95449  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+     99648    captured (-17.3, 48.7, -98.8) uT
+     99648  C,10,-17.3,48.7,-98.8
+     99648  
+     99648  [UP 11/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 11, then hold it there.
+     99648  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    102988    captured (-13.8, 49.1, -97.3) uT
+    102988  C,11,-13.8,49.1,-97.3
+    102988  
+    103007  [UP 12/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
+    103007  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    106386  
+    106386  Point 12: the reading is still changing - hold the lever still.
+    106386  W,12,1.2,2.4
+    108085    captured (-8.0, 49.9, -95.0) uT
+    108085  C,12,-8.0,49.9,-95.0
+    108085  
+    108105  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
+    108105  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    111542    captured (-4.5, 50.6, -93.5) uT
+    111542  C,13,-4.5,50.6,-93.5
+    111542  
+    111542  [UP 14/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 14, then hold it there.
+    111542  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    115058    captured (-0.8, 51.2, -92.0) uT
+    115058  C,14,-0.8,51.2,-92.0
+    115058  
+    115058  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
+    115058  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    119628    captured (5.1, 52.4, -89.7) uT
+    119628  C,15,5.1,52.4,-89.7
+    119628  
+    119648  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
+    119648  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    123378    captured (8.4, 53.1, -88.2) uT
+    123378  C,16,8.4,53.1,-88.2
+    123378  
+    123398  [UP 17/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 17, then hold it there.
+    123398  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    127382    captured (11.8, 53.9, -86.9) uT
+    127382  C,17,11.8,53.9,-86.9
+    127382  
+    127382  [UP 18/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 18, then hold it there.
+    127382  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    131660    captured (16.7, 55.1, -84.9) uT
+    131660  C,18,16.7,55.1,-84.9
+    131660  
+    131679  [UP 19/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 19, then hold it there.
+    131679  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    136601    captured (21.3, 56.3, -82.9) uT
+    136601  C,19,21.3,56.3,-82.9
+    136601  
+    136621  [UP 20/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 20, then hold it there.
+    136621  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    141835    captured (23.1, 56.9, -82.0) uT
+    141835  C,20,23.1,56.9,-82.0
+    141835  
+    141835  [UP 21/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 21, then hold it there.
+    141835  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    145839  
+    145839  Point 21: the reading is still changing - hold the lever still.
+    145839  W,21,0.6,1.7
+    148417    captured (24.7, 57.3, -81.5) uT
+    148417  C,21,24.7,57.3,-81.5
+    148417  
+    148417  [UP 22/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 22, then hold it there.
+    148417  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    152480  
+    152480  Point 22: the reading is still changing - hold the lever still.
+    152480  W,22,0.9,1.5
+    155058    captured (28.2, 58.3, -79.9) uT
+    155058  C,22,28.2,58.3,-79.9
+    155058  
+    155058  [UP 23/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 23, then hold it there.
+    155058  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    160429    captured (32.4, 59.5, -78.1) uT
+    160429  C,23,32.4,59.5,-78.1
+    160429  
+    160429  [UP 24/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 24, then hold it there.
+    160429  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    165644    captured (38.0, 61.5, -75.6) uT
+    165644  C,24,38.0,61.5,-75.6
+    165664  Top point worked out from gears 23 and 24.
+    165664  C,25,39.7,62.1,-74.8
+    165683  
+    165683  === Up pass saved. Path 134.6 uT, smallest step 1.59 uT (around gear 4). Saved. ===
+    165683  K,1,134.6,1.59,4,saved
+    165683  Up pass saved. Press button A or send 'n' to come back DOWN through the gears now, or 's' to stop here ('#D' does the down pass later).
+    165761  Check: all points fit.
+    165761  F,end,0
+    167167  Coming back down.
+    167167  
+    167167  [DOWN 1/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 22, then hold it there.
+    167167  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    172558    captured (29.7, 58.7, -79.3) uT
+    172558  C,down,23,29.7,58.7,-79.3
+    172558  
+    172558  [DOWN 2/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 21, then hold it there.
+    172558  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    177792    captured (25.2, 57.4, -81.1) uT
+    177792  C,down,22,25.2,57.4,-81.1
+    177792  
+    177792  [DOWN 3/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 20, then hold it there.
+    177792  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    183105    captured (20.2, 56.0, -83.2) uT
+    183105  C,down,21,20.2,56.0,-83.2
+    183105  
+    183105  [DOWN 4/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 19, then hold it there.
+    183105  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    186992  
+    187011  Point 20: the reading is still changing - hold the lever still.
+    187011  W,20,0.8,1.4
+    189511    captured (18.1, 55.4, -84.1) uT
+    189511  C,down,20,18.1,55.4,-84.1
+    189511  
+    189511  [DOWN 5/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 18, then hold it there.
+    189511  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    193027    captured (16.1, 55.1, -84.8) uT
+    193027  C,down,19,16.1,55.1,-84.8
+    193027  
+    193027  [DOWN 6/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 17, then hold it there.
+    193027  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    197246    captured (11.8, 53.9, -86.8) uT
+    197246  C,down,18,11.8,53.9,-86.8
+    197246  
+    197246  [DOWN 7/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 16, then hold it there.
+    197246  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    201132  
+    201152  Point 17: the reading is still changing - hold the lever still.
+    201152  W,17,0.6,0.9
+    203027    captured (7.7, 52.9, -88.5) uT
+    203027  C,down,17,7.7,52.9,-88.5
+    203027  
+    203027  [DOWN 8/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 15, then hold it there.
+    203027  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    206777  
+    206777  Point 16: the reading is still changing - hold the lever still.
+    206777  W,16,1.5,2.3
+    208574    captured (2.4, 51.8, -90.8) uT
+    208574  C,down,16,2.4,51.8,-90.8
+    208574  
+    208574  [DOWN 9/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 14, then hold it there.
+    208574  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    212246    captured (-0.8, 51.2, -92.1) uT
+    212246  C,down,15,-0.8,51.2,-92.1
+    212246  
+    212246  [DOWN 10/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 13, then hold it there.
+    212246  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    216621    captured (-8.2, 49.9, -95.2) uT
+    216621  C,down,14,-8.2,49.9,-95.2
+    216621  
+    216621  [DOWN 11/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 12, then hold it there.
+    216621  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    219980    captured (-11.4, 49.4, -96.2) uT
+    219980  C,down,13,-11.4,49.4,-96.2
+    219980  
+    219980  [DOWN 12/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 11, then hold it there.
+    219980  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    220039  Down pass: 11 points.
+    220058  
+    220058  === Calibration complete. Path 134.6 uT, smallest step 1.59 uT (around gear 4). Saved. ===
+    220058  K,1,134.6,1.59,4,saved
+    220136  Check: all points fit.
+    220136  F,end,0
+    240019  E,ok,down
+    240039  
+    240058  [DOWN 12/22] Keep pedalling, any steady pace. First shift UP into the gear above. Move the lever DOWN to where the Keiser console FIRST shows gear 11, then hold it there.
+    240058  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    241074  Now come back to the point and hold it there.
+    244433    captured (-13.6, 49.2, -97.1) uT
+    244433  C,down,12,-13.6,49.2,-97.1
+    244433  
+    244433  [DOWN 13/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 10, then hold it there.
+    244433  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    247792  
+    247792  Point 11: the reading is still changing - hold the lever still.
+    247792  W,11,1.2,1.0
+    250292    captured (-17.4, 48.7, -98.8) uT
+    250292  C,down,11,-17.4,48.7,-98.8
+    250292  
+    250292  [DOWN 14/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 9, then hold it there.
+    250292  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    254433    captured (-24.4, 48.0, -101.6) uT
+    254433  C,down,10,-24.4,48.0,-101.6
+    254433  
+    254433  [DOWN 15/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 8, then hold it there.
+    254433  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    257792  
+    257792  Point 9: the reading is still changing - hold the lever still.
+    257792  W,9,0.9,1.5
+    259433    captured (-29.1, 47.6, -103.3) uT
+    259433  C,down,9,-29.1,47.6,-103.3
+    259433  
+    259433  [DOWN 16/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 7, then hold it there.
+    259433  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    263574    captured (-34.7, 47.2, -105.6) uT
+    263574  C,down,8,-34.7,47.2,-105.6
+    263574  
+    263574  [DOWN 17/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 6, then hold it there.
+    263574  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    266777    captured (-38.0, 47.1, -106.5) uT
+    266777  C,down,7,-38.0,47.1,-106.5
+    266777  
+    266777  [DOWN 18/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 5, then hold it there.
+    266777  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    269980  
+    269980  Point 6: the reading is still changing - hold the lever still.
+    269980  W,6,0.8,0.9
+    271542  W,6,0.7,0.7
+    273183    captured (-40.4, 47.1, -107.5) uT
+    273183  C,down,6,-40.4,47.1,-107.5
+    273183  
+    273183  [DOWN 19/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 4, then hold it there.
+    273183  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    276464  
+    276464  Point 5: the reading is still changing - hold the lever still.
+    276464  W,5,1.4,1.7
+    278027    captured (-45.6, 47.1, -109.6) uT
+    278027  C,down,5,-45.6,47.1,-109.6
+    278027  
+    278027  [DOWN 20/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 3, then hold it there.
+    278027  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    281308    captured (-48.4, 47.1, -110.5) uT
+    281308  C,down,4,-48.4,47.1,-110.5
+    281308  
+    281308  [DOWN 21/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 2, then hold it there.
+    281308  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    286152    captured (-59.4, 47.5, -114.6) uT
+    286152  C,down,3,-59.4,47.5,-114.6
+    286152  
+    286152  [DOWN 22/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 1, then hold it there.
+    286152  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    291035    captured (-73.1, 48.6, -119.5) uT
+    291035  C,down,2,-73.1,48.6,-119.5

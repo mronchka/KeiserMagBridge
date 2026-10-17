@@ -2170,6 +2170,16 @@ class Firmware:
             return self.log("E,ok,moved")
         if cmd == "D" and n == 1:
             return self.cal_down_start()
+        if cmd == "E" and n == 1:                                       # erase the calibration (USB only)
+            if self.cmdSrc != "usb":
+                return self.log("E,fail,usb only")
+            if self.calState != CAL_IDLE:
+                return self.log("E,fail,busy calibrating")
+            self.cal, self.calValid, self.prev = None, False, None
+            self.suspects, self.staging, self.spotForced = [], False, False
+            self.load_crank_from_cal()
+            self.stableGear = self.pendingGear = 1
+            return self.log("E,ok,erased")
         if cmd == "I" and n == 1:                                       # injected samples (USB only)
             if self.cmdSrc != "usb":
                 return self.log("E,fail,usb only")

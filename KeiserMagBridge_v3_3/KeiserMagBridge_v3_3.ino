@@ -3767,6 +3767,20 @@ static void handleLine(char* line) {
     Log.println(F("E,ok,moved"));
   } else if (cmd == 'D' && n == 1) {
     calDownStart();
+  } else if (cmd == 'E' && n == 1) {             // erase the calibration (USB only; bench testing)
+    if (cmdSrc != SRC_USB) { Log.println(F("E,fail,usb only")); return; }
+    if (calState != CAL_IDLE) { Log.println(F("E,fail,busy calibrating")); return; }
+    InternalFS.remove(CAL_PATH);
+    InternalFS.remove(TMP_PATH);
+    forgetPrev();
+    calValid = false;
+    suspectN = 0;
+    staging = false;
+    spotForced = false;
+    loadCrankFromCal();                           // crank.ok follows calValid: off
+    stableGear = pendingGear = 1;
+    Log.println(F("Calibration erased: the board is uncalibrated."));
+    Log.println(F("E,ok,erased"));
   } else if (cmd == 'I' && n == 1) {             // injected samples (bench/PROTOCOL.md, v3.3)
     if (cmdSrc != SRC_USB) { Log.println(F("E,fail,usb only")); return; }
     if (calState != CAL_IDLE) { Log.println(F("E,fail,busy calibrating")); return; }

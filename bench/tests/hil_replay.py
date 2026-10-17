@@ -43,6 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCEN_DIR = os.path.join(HERE, "scenarios")
 MACHINE = re.compile(r"^(?:[CKFUNWPZEALJ]),|^Q,")
 TOL_UT = 0.15
+SYNC_EVERY = 4          # board runs: wait for the board to catch up every this many samples
 
 
 # ====================================================================== scenario files
@@ -253,6 +254,22 @@ class Board:
                 ln, self.buf = self.buf.split(b"\n", 1)
                 self.lines.append((self.last_ms, ln.decode("utf-8", "replace").rstrip("\r")))
 
+    def sync(self, n, timeout=5.0):
+        """Wait until the board has handled everything sent so far: it echoes '#J,sync,<n>' in order.
+        The board's clock follows the injected samples, so waiting here changes nothing in its results,
+        and it stops the USB receive buffer overflowing while the board is busy (a flash write)."""
+        self.write("#J,sync,%d\n" % n)
+        tag = "J,sync,%d" % n
+        end = time.time() + timeout
+        while time.time() < end:
+            self.poll()
+            for i in range(len(self.lines) - 1, max(-1, len(self.lines) - 40), -1):
+                if self.lines[i][1] == tag:
+                    del self.lines[i]
+                    return True
+            time.sleep(0.001)
+        return False
+
     def wait_quiet(self, s=0.5):
         end = time.time() + s
         while time.time() < end:
@@ -279,6 +296,7 @@ def run_board(sc, port, speed=1.0, log=None):
         bd.write("#I\n")
         bd.wait_quiet(0.3)
         t_start, ms0 = time.time(), None
+        nsync, lost_sync = 0, 0
         for ev in sc["events"]:
             ms, kind, x = ev[:3]
             if ms0 is None:
@@ -291,13 +309,22 @@ def run_board(sc, port, speed=1.0, log=None):
             bd.last_ms = ms
             if kind == "S":
                 bd.write(sample_line(ms, x))
+                nsync += 1
+                if nsync % SYNC_EVERY == 0 and not bd.sync(nsync):
+                    lost_sync += 1
             elif kind == "C":
                 bd.write(x)
             elif kind == "L":
                 bd.write("#" + x + "\n")
             bd.poll()
-        bd.wait_quiet(2.0)
+        if lost_sync:
+            print(f"  note: {lost_sync} sync(s) timed out: the board may have missed samples")
+        # The last sample can end the calibration: two flash saves and the check (5 s or more).
+        if not bd.sync(nsync + 1, timeout=20.0):
+            print("  note: the board didn't answer for 20 s after the last sample")
+        bd.wait_quiet(1.0)
         bd.write("k")                                   # the final dump, still injecting
+        bd.sync(nsync + 2, timeout=20.0)
         bd.wait_quiet(2.0)
         keep = len(bd.lines)
         bd.write("#I\n")                                # leave injection; its answer isn't compared
