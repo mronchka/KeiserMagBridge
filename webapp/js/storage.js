@@ -38,10 +38,14 @@ function adoptUnlistedRecords() {
     if (!csv) return;
     var head = function (name) { var m = new RegExp('^# ' + name + ': (.*)$', 'm').exec(csv); return m ? m[1] : ''; };
     var type = /calibration/.test(head('record')) ? 'cal' : 'diag', ts = head('timestamp') || new Date(0).toISOString();
-    var d = new Date(ts);
-    records.push({ id: k.slice(STORE_PREFIX.length), type: type, source: 'run', ts: ts, persisted: true, size: csv.length,
-      title: type === 'cal' ? 'Calibration (recovered)' : 'Diagnostic recording (recovered)', summary: head('result') || 'recovered from this phone',
-      filename: (type === 'cal' ? 'keiser-cal-' : 'keiser-diag-') + (isFinite(d.getTime()) ? fileStamp(d) : 'recovered') + '.csv' });
+    var d = new Date(ts), result = head('result'), partial = /^incomplete/.test(result);
+    var title = type !== 'cal' ? 'Diagnostic recording' : result === 'stored' ? 'Stored calibration' : partial ? 'Calibration incomplete'
+      : /^rejected/.test(result) ? 'Calibration rejected' : head('edit') ? 'Calibration edited' : 'Calibration saved';   // (#73)
+    var base = (type === 'cal' ? 'keiser-cal-' : 'keiser-diag-') + (head('timestamp') && isFinite(d.getTime()) ? fileStamp(d) : 'recovered');
+    var name = base + '.csv', n = 2;
+    while (records.some(function (r) { return r.filename === name; })) name = base + '-' + (n++) + '.csv';
+    records.push({ id: k.slice(STORE_PREFIX.length), type: type, source: result === 'stored' ? 'stored' : 'run', partial: partial,
+      ts: ts, persisted: true, size: csv.length, title: title + ' (recovered)', summary: result || 'recovered from this phone', filename: name });
   });
   records.sort(function (a, b) { return a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0; });
 }
@@ -414,7 +418,7 @@ function parsePointStats(text) {
 // The saved calibration of this phone with exactly these points (as the bridge sends them, to 0.1 uT):
 // { stats, id } from the newest one that has a point_stats line (else the newest match, stats {}),
 // or null. Readings that match mean it is the same calibration.
-function savedPointStatsFor(points, down) {
+function savedPointStatsFor(points, down, upOnly) {
   var key = function (q) { return q.point + ':' + fmt(q.x, 1) + ',' + fmt(q.y, 1) + ',' + fmt(q.z, 1); };
   var want = points.map(key).sort().join('|'), wantDown = (down || []).map(key).sort().join('|'), firstMatch = null;
   for (var i = 0; i < records.length; i++) {
@@ -433,13 +437,21 @@ function savedPointStatsFor(points, down) {
       if (c[2] !== '') up.push({ point: n, x: +c[2], y: +c[3], z: +c[4] });
       if (c.length >= 9 && c[6] !== '') dn.push({ point: n, x: +c[6], y: +c[7], z: +c[8] });
     });
-    if (up.map(key).sort().join('|') !== want || dn.map(key).sort().join('|') !== wantDown) continue;
+    if (up.map(key).sort().join('|') !== want || (!upOnly && dn.map(key).sort().join('|') !== wantDown)) continue;
     if (!firstMatch) firstMatch = r.id;
     if (stats !== null) return { stats: parsePointStats(stats), id: r.id };
   }
   return firstMatch ? { stats: {}, id: firstMatch } : null;
 }
 
+// #71: the up pass's tries from a saved file with these up points (the checkpoint's, when the down pass
+// was done later or after a reload), for points the page has nothing on
+function mergeSavedUpStats(points) {
+  var m = savedPointStatsFor(points, null, true);
+  if (!m) return;
+  state.pointStats = state.pointStats || {};
+  Object.keys(m.stats).forEach(function (k) { if (k.charAt(0) === 'u' && !state.pointStats[k]) state.pointStats[k] = m.stats[k]; });
+}
 // The saved calibration record the gear check adds its lines to (also after a reload, via the flow record).
 function noteCalRecord(id, v33) {
   if (!id) return;

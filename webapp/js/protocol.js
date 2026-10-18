@@ -251,11 +251,20 @@ function onS(p) {
       setTimeout(function () {
         if (state.edit === ed0 && ed0.okd) {   // saved (E,ok,saved) but its K was lost: the awaitK readback catches up
           state.edit = null;
+          state.redoStash = null;   // (#74)
           renderReview(); render();
         } else if (state.edit === ed0 && !ed0.okd) {
           state.edit = null;
-          redoNotSaved();
-          if (state.fixAfter) redoStopped(); else if (reviewItems().length) state.fixPaused = true;
+          if (state.fixAfter) { redoNotSaved(); redoStopped(); }   // the rider chose Skip / best guess: the redo was cancelled
+          else if (state.redoStash && state.conn === 'connected') {
+            // #74: no E, K or A seen (a drop, lost lines): the bridge may have saved it. The readback tells.
+            state.redoStash.unsure = true; state.redoStash.label = editLabel(ed0);
+            if (!state.q && !state.qFromEdit) {
+              logLine('The end of that redo never arrived: reading the calibration back from the bridge.', 'sys');
+              state.qFromEdit = true;
+              requestStoredCal();
+            }
+          } else { redoNotSaved(); if (reviewItems().length) state.fixPaused = true; }
           renderReview(); render();
         }
       }, 3000);
@@ -339,6 +348,30 @@ function downPointsMissing() {
   return d.length < (TOTAL_POINTS - 2) - low + 1;
 }
 
+// #74: a redo whose end the page didn't see: the point read back says whether the bridge saved it.
+// Returns the redo's label when it was saved.
+function redoOutcome(points, down) {
+  var st = state.redoStash;
+  if (!st || !st.unsure) return '';
+  var now = (st.pass === 'd' ? down : points).filter(function (x) { return x.point === st.point; })[0];
+  if (st.old && now && fmt(st.old.x, 1) === fmt(now.x, 1) && fmt(st.old.y, 1) === fmt(now.y, 1) && fmt(st.old.z, 1) === fmt(now.z, 1)) {
+    logLine('That redo wasn\u2019t saved: ' + pointWords(st.pass, st.point) + ' is as it was.', 'sys');
+    redoNotSaved();
+    if (state.improving && state.improveLast === st.key) state.improveLast = '';   // (it stays in the Improve queue)
+    if (reviewItems().length) state.fixPaused = true;
+    return '';
+  }
+  state.redoStash = null;
+  logLine('The bridge saved that redo (' + st.label + ').', 'sys');
+  return st.label || '';
+}
+// #76: Improve carries on without the readback's F list: a gear the bridge saved leaves the queue
+function dropSavedImprove() {
+  if (!state.improveLast || state.improveSaved !== state.improveLast || !state.review || state.review.source !== 'improve') return;
+  var k = state.improveLast;
+  state.review.items = state.review.items.filter(function (it) { return fixKey(it) !== k; });
+  state.improveLast = '';
+}
 // #52: the redo ended without saving: what was known about its point comes back
 function redoNotSaved() {
   var st = state.redoStash;
@@ -361,7 +394,9 @@ function onRedoStarted(s) {
     // #11 quality: this point's tries count afresh (#49: not when picked up again after a drop);
     // #52: kept aside until the redo is saved, and given back if it isn't
     var k = pass + point;
-    state.redoStash = { key: k, point: point, stats: state.pointStats && state.pointStats[k],
+    var was = (pass === 'd' ? state.downPoints : state.points).filter(function (x) { return x.point === point; })[0];
+    state.redoStash = { key: k, pass: pass, point: point, old: was ? { x: was.x, y: was.y, z: was.z } : null,   // (#74)
+      stats: state.pointStats && state.pointStats[k],
       miss: state.checkMisses && state.checkMisses[point], kept: state.keptEdges && state.keptEdges[k] };
     pointStatClear(pass, point);
     if (pass === 'u' && state.checkMisses) delete state.checkMisses[point];   // (#40)
@@ -394,8 +429,8 @@ function onK(p) {
     msg: p.slice(5).join(',').trim()
   };
   // [v3.2] after an edit (#R / #G) the board saves again and sends K
-  var ed = state.edit && state.edit.okd ? state.edit : null;
-  if (ed && ed.kind === 'R') state.redoStash = null;   // (#52: the redo was saved)
+  var ed = state.edit && (state.edit.okd || (state.edit.kind === 'R' && state.edit.started)) ? state.edit : null;   // (#74: E,ok,saved lost)
+  if (ed && ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; }   // (#52: the redo was saved)
   if (ed) { clearTimeout(ed.timer); state.edit = null; r.edit = editLabel(ed); }
   // (right after a reconnect, before any status line, the firmware level is the one from before the drop)
   var v32 = isV32(), v33 = isV33();
@@ -473,7 +508,7 @@ function onF(p) {
   if (kind === 'end') {
     var count = int(p[2]);
     if (!fin(count) || count < 0) return false;
-    clearTimeout(state.fTimer);
+    clearTimeout(state.fTimer); clearTimeout(state.qEditFT);
     var items = state.fList || [];
     state.fList = null;
     if (state.q && (state.q.points.length || state.q.down.length)) {
@@ -584,6 +619,7 @@ function onE(p) {
     if (ed) {
       clearTimeout(ed.timer);
       ed.okd = true;   // K follows
+      if (ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; }   // (#74: saved, even if its K is lost)
       // A guess isn't sent back as a C line: apply it here so the saved copy matches the bridge.
       if (ed.kind === 'G' && ed.g && fin(ed.g.x)) {
         var list = ed.pass === 'd' ? 'downPoints' : 'points';
@@ -598,7 +634,7 @@ function onE(p) {
   } else if (kind === 'fail') {
     state.dPending = 0;
     if (ed) { clearTimeout(ed.timer); state.edit = null; }
-    if (ed && ed.kind === 'R') redoNotSaved();
+    if (ed && ed.kind === 'R' && ed.started) redoNotSaved();   // (#74: a refused #R isn't the last redo's end)
     logLine('Edit refused: ' + (text || 'no reason given'), 'bad');
     if (ed && ed.kind === 'R' && state.fixAfter) {
       redoStopped();   // the rider chose Skip / Use best guess: this is just the redo being cancelled
@@ -809,7 +845,7 @@ function requestStoredCal(quiet) {
     if (!quiet && state.qFromEdit) {   // #67: the page asked for it (after an edit or a lost K)
       state.qFromEdit = false;
       logLine('The bridge didn\u2019t answer the readback.', 'bad');
-      if (state.improving && !state.edit) fixNext();
+      if (state.improving && !state.edit) { dropSavedImprove(); fixNext(); }
       render();
     }
   }, 10000);
@@ -827,6 +863,34 @@ function quietGiveUp() {
   if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;
   render();
 }
+// #76: the F list after the page's own readback drives what comes next: if it never comes, carry on without it
+function editFList() {
+  clearTimeout(state.qEditFT);
+  state.qEditFT = setTimeout(function () {
+    if (state.fList) return;   // its lines came: their own timer finishes the list
+    if (state.qRetryAfterF) {
+      state.qRetryAfterF = false; state.qJustEnded = false;
+      requestStoredCal();
+      return;
+    }
+    if (!state.qJustEnded || !state.qFromEdit) return;   // (it came)
+    logLine('The check list after the readback never arrived: carrying on.', 'bad');
+    onF(['F', 'end', '0']);
+    render();
+  }, 5000);
+}
+// #72: Q lines came, then nothing (Q,end and the F list lost): the page's own readback takes what came
+function qLinesStopped() {
+  if (state.qQuiet) { state.q = null; quietGiveUp(); return; }
+  if (state.q && state.qFromEdit) {
+    logLine('The end of the stored calibration never arrived.', 'bad');
+    var kr = state.result && state.result.type === 'K' && state.result.ok ? state.result : null;
+    onQ(['Q', 'end', kr ? String(kr.span) : '', kr ? String(kr.minstep) : '', kr ? String(kr.minAt) : '']);
+    render();
+    return;
+  }
+  state.q = null;
+}
 // The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
 function quietFList() {
   state.qQuietF = true;
@@ -835,15 +899,35 @@ function quietFList() {
 }
 // The page's copy of a calibration read back from the bridge: points, down points, and how each
 // point went (from the matching saved file on this phone, if there is one).
-function adoptStoredCal(q) {
+function adoptStoredCal(q, ours) {   // ours: the page's own readback of this run or edit (#70: never another calibration)
   var key = function (a) { return a.map(function (x) { return x.point + ':' + fmt(x.x, 1) + ',' + fmt(x.y, 1) + ',' + fmt(x.z, 1); }).sort().join('|'); };
-  if (key(q.points) !== key(state.points) || key(q.down) !== key(state.downPoints)) {
+  var changed = key(q.points) !== key(state.points) || key(q.down) !== key(state.downPoints);
+  // another calibration (not this one with a point or two redone): more than 2 points differ
+  var other = false, had = state.points.length === TOTAL_POINTS;
+  if (had) {
+    var diff = 0, by = {};
+    state.points.forEach(function (x) { by['u' + x.point] = x; });
+    state.downPoints.forEach(function (x) { by['d' + x.point] = x; });
+    var cmp = function (pass) { return function (x) { var o = by[pass + x.point]; if (o && key([o]) !== key([x])) diff++; }; };
+    q.points.forEach(cmp('u')); q.down.forEach(cmp('d'));
+    other = diff > 2 && !ours;
+  }
+  if (changed && (other || !had)) {
     // another calibration than the page knew (or the first one it reads): nothing carried over from before
     state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null; state.lastFlags = [];
   }
+  if (other) {
+    // #70: nor this session's result: the gear check goes to the file that matches the bridge's calibration
+    if (state.result && state.result.type === 'K') { state.result = null; renderResult(); }
+    forgetCalRecord();
+    state.redoStash = null;
+  }
   state.points = q.points.slice(); state.downPoints = q.down.slice();
   var m = savedPointStatsFor(q.points, q.down);
-  state.pointStats = m ? m.stats : {};   // (nothing from another attempt: only what belongs to these points)
+  // (nothing from another attempt: only what belongs to these points; the page's own when it is this calibration)
+  if (m) state.pointStats = m.stats;
+  else if (other || !had || !state.pointStats) state.pointStats = {};
+  mergeSavedUpStats(q.points);   // #71
   state.homeRecordId = m ? m.id : null;
 }
 
@@ -877,6 +961,7 @@ function onQ(p) {
         return true;
       }
       adoptStoredCal(q);
+      redoOutcome(q.points, q.down);   // (#74)
       state.homeRead = true;
       render();
       return true;
@@ -884,6 +969,7 @@ function onQ(p) {
     if (!readbackComplete(q) && state.qFromEdit && !state.qRetried) {
       // the page's own readback (after an edit or #D): read it once more, after this one's F list
       state.qRetried = true; state.qRetryAfterF = true;
+      editFList();   // (#76)
       logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points): reading it again.', 'sys');
       return true;
     }
@@ -901,6 +987,7 @@ function onQ(p) {
           return Object.keys(by).map(function (k) { return by[k]; });
         };
         state.points = merge(state.points, q.points); state.downPoints = merge(state.downPoints, q.down);
+        redoOutcome(state.points, state.downPoints);   // (#74)
         if (kr0 && !kr0.recordId) {
           try {
             kr0.recordId = saveCalRecord('run', { ok: true, span: kr0.span, minstep: kr0.minstep, minAt: kr0.minAt, edit: kr0.edit,
@@ -910,7 +997,7 @@ function onQ(p) {
           } catch (e) { console.warn('save failed', e); }
         }
         logLine('The stored calibration arrived incomplete twice: carrying on.', 'bad');
-        if (state.improving) setTimeout(function () { if (state.improving && !state.edit && !state.q) fixNext(); render(); }, 6000);
+        if (state.improving) setTimeout(function () { if (state.improving && !state.edit && !state.q) { dropSavedImprove(); fixNext(); } render(); }, 6000);
         return true;
       }
       logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points). Tap Save stored calibration to read it again.', 'bad');
@@ -921,21 +1008,24 @@ function onQ(p) {
       down: state.v32 || q.down.length ? q.down : null };
     var kr = state.result && state.result.type === 'K' && state.result.ok ? state.result : null;
     var id;
+    var redone = state.qFromEdit ? redoOutcome(q.points, q.down) : '';   // (#74)
+    if (state.qFromEdit) editFList();   // (#76)
     if (state.qFromEdit && kr) {
       // the page read it back after an edit or a #D down pass it didn't watch from the start:
       // this is that run's record (the gear check adds its lines to it)
-      info.msg = kr.msg; info.edit = kr.edit;
+      info.msg = kr.msg; info.edit = redone || kr.edit;
+      mergeSavedUpStats(q.points);   // #71: the up pass's tries, from the checkpoint's file
       id = saveCalRecord('run', info, q.points);
       kr.recordId = id;
       kr.down = q.down.length;
       // from now on the page works with the bridge's copy (a later redo is saved from it)
       if (state.pointStats && Object.keys(state.pointStats).length) { state.points = q.points.slice(); state.downPoints = q.down.slice(); }
-      else adoptStoredCal(q);
+      else adoptStoredCal(q, true);
       if (state.v33 && q.down.some(function (x) { return x.point === 2; })) setFlowRecord({ downDone: true });   // the bridge has the whole down pass
       noteCalRecord(id, state.v33);
       renderResult();
     } else if (state.qFromEdit && state.improving) {
-      adoptStoredCal(q);   // #55: Improve from 'Your calibration' caught up after a lost K: the bridge's copy, nothing saved
+      adoptStoredCal(q, true);   // #55: Improve from 'Your calibration' caught up after a lost K: the bridge's copy, nothing saved
       id = null;
     } else id = saveCalRecord('stored', info, q.points);
     var rec = findRecord(id);
@@ -966,7 +1056,7 @@ function onQ(p) {
   if (!fin(num(p[2])) || !fin(num(p[3])) || !fin(num(p[4]))) return false;
   if (!state.q) state.q = { points: [], down: [], timer: 0 }; // 'k' typed in the console
   clearTimeout(state.q.timer);
-  state.q.timer = setTimeout(function () { state.q = null; if (state.qQuiet) quietGiveUp(); }, 10000);
+  state.q.timer = setTimeout(qLinesStopped, 10000);   // (#72)
   state.q.points = state.q.points.filter(function (x) { return x.point !== point; });
   state.q.points.push({ point: point, x: num(p[2]), y: num(p[3]), z: num(p[4]) });
   return true;

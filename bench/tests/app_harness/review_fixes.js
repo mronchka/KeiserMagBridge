@@ -848,5 +848,179 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.f(S({}));
     check('...and it shows once it is calibrated', app.$('calResume').hidden === false);
   }
+  // ---------------------------------------------------------------- pass 3 (#70-#76)
+  const up3 = (p) => (p === 25 ? '75.0' : (p * 3).toFixed(1));
+  // a whole calibration where gears 5 and 12 took 3 tries each (yellow), no flags; ends on the gear list
+  const triesCal = async (app) => {
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    for (let p = 1; p <= 24; p++) {
+      await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' }));
+      if (p === 5 || p === 12) { await app.f('W,' + p + ',1.4,1.6'); await app.f('W,' + p + ',1.2,1.0'); }
+      await app.f('C,' + p + ',' + up3(p) + ',1.0,2.0');
+    }
+    await app.f('C,25,75.0,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    await app.advance(5);
+  };
+  // the bridge answering k: point 5 at x5; opts: noEnd (Q,end lost), noF (the F list lost)
+  const answerK = async (app, x5, opts) => {
+    opts = opts || {};
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + (p === 5 ? x5 : up3(p)) + ',1.0,2.0', 0.02);
+    for (let p = 23; p >= 2; p--) await app.f('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0', 0.02);
+    if (!opts.noEnd) await app.f('Q,end,120.0,3.00,6', 0.02);
+    if (!opts.noF) await app.f('F,end,0', 0.02);
+  };
+  const improveRedo5 = async (app) => {   // Improve: the redo of gear 5 starts
+    app.$('glImprove').click();
+    await app.advance(0.5);
+    await app.f('E,ok,redo');
+    await app.f(S({ cal: 1, flow: 6, step: 4, pass: 'ru' }));
+  };
+  const redos = (app) => app.cmds().filter((c) => /^#R/.test(c));
+  for (const saved of [true, false]) {
+    // #74: the link drops during an Improve redo; after the reconnect the readback says whether the bridge saved it
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    await improveRedo5(app);
+    app.M3.setConn('disconnected'); app.connect();
+    await app.f(S({}));
+    await app.advance(4);
+    check('#74 a redo whose end wasn\'t seen: the page reads the calibration back', app.cmds().filter((c) => c === 'k').length >= 1, JSON.stringify(app.cmds().slice(-3)));
+    await answerK(app, saved ? '15.6' : '15.0');
+    await app.f(S({}));
+    await app.advance(1);
+    if (saved) {
+      check('#74 ...saved by the bridge: gear 5 keeps no old tries, and Improve goes on to gear 12',
+        !(st.pointStats || {}).u5 && JSON.stringify(redos(app)) === '["#R,u,5","#R,u,12"]', JSON.stringify(st.pointStats) + ' ' + JSON.stringify(redos(app)));
+    } else {
+      check('#74 ...not saved: gear 5 gets its tries back, and Improve waits for the rider',
+        !!(st.pointStats || {}).u5 && st.pointStats.u5.w === 2 && st.fixPaused && JSON.stringify(redos(app)) === '["#R,u,5"]', JSON.stringify(st.pointStats) + ' ' + JSON.stringify(redos(app)));
+    }
+  }
+  {
+    // #74: E,ok,saved lost, K arrives: the K is the redo's (no extra "Calibration saved" file)
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    const n0 = app.win.records.length;
+    await improveRedo5(app);
+    await app.f('C,5,15.6,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    await app.advance(4);
+    check('#74 a K whose E,ok,saved was lost is the redo\'s: "Calibration edited", gear 5 without old tries, on to gear 12',
+      app.win.records.length === n0 + 1 && app.win.records[0].title === 'Calibration edited' && !(st.pointStats || {}).u5 &&
+      JSON.stringify(redos(app)) === '["#R,u,5","#R,u,12"]', app.titles().join(' / ') + ' ' + JSON.stringify(redos(app)));
+  }
+  for (const lose of ['F', 'QendF']) {
+    // #76 / #72: the redo's K is lost, then the page's own readback loses its F list (and its Q,end): Improve still goes on
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    await improveRedo5(app);
+    await app.f('C,5,15.6,1.0,2.0');
+    await app.f('E,ok,saved');
+    await app.f(S({}));                                            // K and F,end lost
+    await app.advance(4);
+    await answerK(app, '15.6', lose === 'F' ? { noF: true } : { noEnd: true, noF: true });
+    for (let i = 0; i < 6; i++) await app.f(S({}), 3);
+    await app.advance(20);
+    check('#' + (lose === 'F' ? '76' : '72') + ' the page\'s readback loses ' + (lose === 'F' ? 'its F list' : 'Q,end and its F list') +
+      ': Improve goes on to gear 12, nothing left waiting', redos(app).indexOf('#R,u,12') >= 0 && !st.qFromEdit && !st.q,
+      JSON.stringify(app.cmds().slice(-4)) + ' qFromEdit ' + st.qFromEdit);
+  }
+  {
+    // #70: a re-read finds another calibration: the gear check doesn't go into this session's file
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    const ridA = app.win.calRecordId();
+    app.$('glFinish').click();
+    app.M3.setConn('disconnected'); app.connect();
+    await app.f(S({}));
+    app.win.showView('cal'); app.M3.render();
+    await app.advance(0.1);
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + (p * 3 + 0.7).toFixed(1) + ',1.0,2.0', 0.02);   // every point elsewhere
+    await app.f('Q,end,121.0,3.00,6', 0.02);
+    await app.f('F,end,0', 0.02);
+    await app.f(S({}));
+    check('#70 the re-read shows the other calibration', app.$('glTitle').textContent === 'Your calibration' && st.points[2].x === 9.7, app.$('glTitle').textContent);
+    app.$('glCheck').click();
+    while (st.check && st.check.phase === 'run') app.M3.checkAnswer(5);
+    check('#70 ...and its gear check is not added to this session\'s file', !/# gear_check:/.test(app.win.getCsv(ridA) || ''), app.$('rckSaved').textContent);
+  }
+  {
+    // #75: after a reconnect the last list shows while the bridge is read again, but can't be acted on; given up: gone
+    const app = mk();
+    await triesCal(app);
+    app.$('glFinish').click();
+    app.win.showView('cal'); app.M3.render();
+    app.M3.setConn('disconnected'); app.connect();
+    await app.f(S({}));
+    app.M3.render();
+    check('#75 the last list shows while the bridge is read again, its buttons off', !app.$('gearList').hidden && app.$('glImprove').disabled &&
+      app.$('glCheck').disabled && /reading it again/.test(app.$('glLead').textContent), app.$('glLead').textContent);
+    for (let i = 0; i < 20; i++) await app.f(S({}), 3);              // no answer to any k
+    check('#75 ...and once the reads give up it is no longer shown as the bridge\'s', app.$('gearList').hidden,
+      'k sent ' + app.cmds().filter((c) => c === 'k').length);
+  }
+  {
+    // #71: Later at the checkpoint, reload, Continue down: the up pass's tries are in the final file
+    const app = mk();
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    for (let p = 1; p <= 24; p++) {
+      await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' }));
+      if (p === 5) { await app.f('W,5,1.4,1.6'); await app.f('W,5,1.2,1.0'); }
+      await app.f('C,' + p + ',' + up3(p) + ',1.0,2.0');
+    }
+    await app.f('C,25,75.0,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    app.$('upLater').click();
+    await app.f(S({}));
+    const app2 = loadApp({ search: '' }); Object.assign(app2.store, app.store); app2.win.loadRecords(); app2.connect();
+    let t2 = 1; const f2 = async (l) => { t2 += 0.05; await app2.feed(t2, l); };
+    await f2(S({}));
+    app2.$('resumeDown').click();
+    await f2('E,ok,down');
+    for (let p = 23; p >= 2; p--) { await f2(S({ cal: 1, flow: 5, step: p - 1, pass: 'd' })); await f2('C,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0'); }
+    await f2('K,1,120.0,3.00,6,saved');
+    await f2('F,end,0');
+    for (let p = 1; p <= 25; p++) await f2('Q,' + p + ',' + up3(p) + ',1.0,2.0');
+    for (let p = 23; p >= 2; p--) await f2('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0');
+    await f2('Q,end,120.0,3.00,6');
+    await f2('F,end,0');
+    await f2(S({}));
+    const csv = app2.win.getCsv(app2.win.calRecordId()) || '';
+    check('#71 Later, reload, Continue down: the final file keeps the up pass\'s tries (gear 5 unsure)',
+      /^# point_stats: u5 w=2$/m.test(csv) && /# down_points: 22/.test(csv) && app2.win.gearQuality()[5].level === 1, (csv.match(/^# point_stats.*$/m) || ['none'])[0]);
+  }
+  {
+    // #73: runs listed again from their own header keep their kind, and file names stay unique
+    const app = loadApp({ search: '' });
+    const store = app.store;
+    app.win.localStorage = {   // (with length / key(), as in a browser)
+      get length() { return Object.keys(store).length; }, key: (i) => Object.keys(store)[i] || null,
+      getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } };
+    const head = (result, extra) => '# Keiser M3 Bridge calibration\n# record: calibration\n# timestamp: 2026-10-12T10:00:30.000Z\n# result: ' + result + '\n' + (extra || '') + 'point,label\n';
+    store['m3bridge.rec.a1'] = head('saved');
+    store['m3bridge.rec.a2'] = head('stored');
+    store['m3bridge.rec.a3'] = head('incomplete (8 of 25 points)');
+    store['m3bridge.rec.a4'] = head('saved', '# edit: redo of gear 5 (going up)\n');
+    app.win.loadRecords();
+    const by = {}; app.win.records.forEach((r) => { by[r.id] = r; });
+    const names = app.win.records.map((r) => r.filename);
+    check('#73 recovered runs: their own kinds, unique file names', by.a2.title === 'Stored calibration (recovered)' && by.a3.partial === true &&
+      by.a3.title === 'Calibration incomplete (recovered)' && by.a4.title === 'Calibration edited (recovered)' && new Set(names).size === names.length,
+      app.win.records.map((r) => r.id + ':' + r.title + ':' + r.filename).join(' | '));
+  }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });
