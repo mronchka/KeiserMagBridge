@@ -60,6 +60,15 @@ function gearQuality() {
     mark(gear, 2, edgeWords(it.pass, it.point) + ' ' + (FLAG_WORDS[it.reason] || 'looks wrong') + '.' +
       (fixCanRedo(e) ? '' : ' It can\u2019t be redone on its own: calibrate again to change it.'), e);
   });
+  // yellow: no reading on this phone for an edge (a readback that came incomplete) (#63)
+  if (state.points.length) {
+    for (p = 2; p <= GEARS; p++) if (!up[p]) mark(p, 1, 'Where it starts going up wasn\u2019t read from the bridge.', null);
+    var los = state.downPoints.map(function (x) { return x.point; });
+    if (los.length) {
+      var lo = Math.min.apply(null, los);
+      for (p = lo; p <= TOTAL_POINTS - 2; p++) if (!dn[p]) mark(p - 1, 1, 'Where it starts coming down wasn\u2019t read from the bridge.', null);
+    }
+  }
   // red: the gear check found the console on another gear (the edge between the two, redone going up)
   Object.keys(state.checkMisses || {}).forEach(function (gg) {
     var m = state.checkMisses[gg];
@@ -158,7 +167,12 @@ function homeListDue() {
     !(rec && rec.downDone === false);
 }
 // (#22: only once read on this link, or calibrated on it)
-function homeListShown() { return homeListDue() && !!state.homeRead && state.points.length === TOTAL_POINTS; }
+function homeListShown() {
+  if (state.points.length !== TOTAL_POINTS || state.gearList || state.homeWalk || state.improving) return false;
+  if (homeListDue()) return !!state.homeRead || !!state.homeShownBefore;   // (while it is read again: the last one, then the new)
+  // #65: a drop: keep showing it (its buttons are off until the link is back)
+  return state.conn !== 'connected' && !!state.homeShownBefore && !state.place && !state.check && !calRunning(state.s);
+}
 function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; render(); }
 
 var gearListKey = '';
@@ -169,6 +183,7 @@ function renderGearList() {
     requestStoredCal(true);
   }
   var gl = state.gearList || (home ? { sel: state.homeSel || 0, home: true } : null);
+  if (home) state.homeShownBefore = true;
   var show = !!gl && !calRunning(state.s) && !state.check && !reviewItems().length;
   setHidden('gearList', !show);
   if (!show) { gearListKey = ''; return; }

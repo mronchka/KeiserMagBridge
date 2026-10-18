@@ -385,7 +385,7 @@ function editLabel(ed) {
 
 // K,<ok>,<span>,<minstep>,<minstepAt>,<msg>
 function onK(p) {
-  if (p.length < 2) return false;
+  if (p.length < 6) return false;   // #66: K,<ok>,<span>,<minstep>,<minstepAt>,<msg>: a cut line is not a result
   var okStr = p[1].trim();
   if (okStr !== '0' && okStr !== '1') return false;
   var r = {
@@ -411,6 +411,7 @@ function onK(p) {
   logLine(r.ok
     ? 'Calibration saved' + (r.edit ? ' (' + r.edit + ')' : '') + ': span ' + fmt(r.span, 1) + ' µT, smallest step ' + fmt(r.minstep, 1) + ' µT at gear ' + (fin(r.minAt) ? r.minAt : '?')
     : 'Calibration rejected: ' + (r.msg || 'no reason given'), 'sys');
+  if (r.ok && /^save f/.test(r.msg)) r.msg = 'save failed';   // (#66: a message cut short on the way)
   if (r.ok && r.msg === 'save failed') {
     logLine('The bridge could not write its flash: this calibration is kept only until the bridge restarts.', 'bad');
     toast('Not stored on the bridge: flash write failed');
@@ -507,7 +508,8 @@ function onF(p) {
     state.lastFlags = items.slice();
     // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
     // after an edit (wantReadback) carries on with the guided fixes.
-    var stored = state.qJustEnded && !state.qFromEdit;
+    var stored = state.qJustEnded && !state.qFromEdit && !state.qGaveUp;
+    state.qGaveUp = false;
     var improveQueue = state.review && state.review.source === 'improve' ? state.review.items : null;
     state.review = { items: flagged, source: stored ? 'stored' : 'run' };
     state.qJustEnded = false;
@@ -772,7 +774,7 @@ function onCalStarted() {
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
   state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
   state.pointStats = {}; state.gearList = null; state.improving = null; state.homeWalk = false; state.homeSel = 0;
-  state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null;
+  state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null; state.homeShownBefore = false;
   state.homeRead = false; state.homeRecordId = null; state.homeAsked = false; state.homeTries = 0;   // #46
   forgetCalRecord();
   state.calEnded = false;
@@ -802,10 +804,22 @@ function requestStoredCal(quiet) {
   state.qQuiet = quiet;
   state.q = { points: [], down: [], timer: 0 };
   state.q.timer = setTimeout(function () {
-    if (state.q) { state.q = null; if (!quiet) toast('No reply. The bridge may need firmware v2.'); }
+    if (state.q) { state.q = null; if (!quiet && !state.qFromEdit) toast('No reply. The bridge may need firmware v2.'); }
     if (quiet && state.qQuiet) quietGiveUp();
+    if (!quiet && state.qFromEdit) {   // #67: the page asked for it (after an edit or a lost K)
+      state.qFromEdit = false;
+      logLine('The bridge didn\u2019t answer the readback.', 'bad');
+      if (state.improving && !state.edit) fixNext();
+      render();
+    }
   }, 10000);
   send('k', quiet);
+}
+function readbackComplete(q) {
+  if (q.points.length !== TOTAL_POINTS) return false;
+  if (!q.down.length) return true;
+  var lo = Math.min.apply(null, q.down.map(function (x) { return x.point; }));
+  return q.down.length === (TOTAL_POINTS - 2) - lo + 1;
 }
 // #48: the quiet readback got no (complete) answer: try again later, at most twice more on this link
 function quietGiveUp() {
@@ -857,7 +871,7 @@ function onQ(p) {
       // #12: the Calibrate tab's gear list; the F list that follows gives the bridge's flags
       state.qQuiet = false;
       quietFList();   // its F list follows either way: swallow it (with a time limit)
-      if (q.points.length !== TOTAL_POINTS) {
+      if (!readbackComplete(q)) {
         logLine('The stored calibration arrived incomplete: the gear list waits for the next read.', 'sys');
         if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;   // (read it again, at most twice more on this link)
         return true;
@@ -867,14 +881,38 @@ function onQ(p) {
       render();
       return true;
     }
-    if (q.points.length !== TOTAL_POINTS && state.qFromEdit && !state.qRetried) {
+    if (!readbackComplete(q) && state.qFromEdit && !state.qRetried) {
       // the page's own readback (after an edit or #D): read it once more, after this one's F list
       state.qRetried = true; state.qRetryAfterF = true;
       logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points): reading it again.', 'sys');
       return true;
     }
-    if (q.points.length !== TOTAL_POINTS) {
+    if (!readbackComplete(q)) {
       // a line was lost on the way: don't keep an incomplete copy as if it were the calibration
+      if (state.qFromEdit) {
+        // #63: the page's own readback gave up: an Improve pass carries on with the next gear
+        state.qFromEdit = false; state.qGaveUp = true;   // (its F list is still the run's, not a stored readback's)
+        // keep what there is: the page's points with what the bridge sent, saved as this run's file (#63)
+        var kr0 = state.result && state.result.type === 'K' && state.result.ok ? state.result : null;
+        var merge = function (mine, got) {
+          var by = {};
+          mine.forEach(function (x) { by[x.point] = x; });
+          got.forEach(function (x) { by[x.point] = x; });
+          return Object.keys(by).map(function (k) { return by[k]; });
+        };
+        state.points = merge(state.points, q.points); state.downPoints = merge(state.downPoints, q.down);
+        if (kr0 && !kr0.recordId) {
+          try {
+            kr0.recordId = saveCalRecord('run', { ok: true, span: kr0.span, minstep: kr0.minstep, minAt: kr0.minAt, edit: kr0.edit,
+              msg: (kr0.msg || 'saved') + ' (read back incomplete: ' + state.points.length + ' of ' + TOTAL_POINTS + ' points on this phone)',
+              down: state.downPoints }, state.points);
+            noteCalRecord(kr0.recordId, state.v33);
+          } catch (e) { console.warn('save failed', e); }
+        }
+        logLine('The stored calibration arrived incomplete twice: carrying on.', 'bad');
+        if (state.improving) setTimeout(function () { if (state.improving && !state.edit && !state.q) fixNext(); render(); }, 6000);
+        return true;
+      }
       logLine('The stored calibration arrived incomplete (' + q.points.length + ' of ' + TOTAL_POINTS + ' points). Tap Save stored calibration to read it again.', 'bad');
       toast('Stored calibration incomplete: try again');
       return true;

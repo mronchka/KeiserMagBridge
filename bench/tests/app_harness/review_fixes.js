@@ -547,8 +547,8 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     app.M3.setConn('disconnected'); app.connect();
     await app.f(S({}));
     app.win.showView('cal'); app.M3.render(); await app.advance(0.1);
-    check('#22 after a reconnect the Calibrate tab reads the calibration again (k)', app.cmds().filter((c) => c === 'k').length === 1 &&
-      app.$('gearList').hidden, JSON.stringify(app.cmds().slice(-2)));
+    check('#22 after a reconnect the Calibrate tab reads the calibration again (k), showing the last one meanwhile (#65)',
+      app.cmds().filter((c) => c === 'k').length === 1 && !app.$('gearList').hidden, JSON.stringify(app.cmds().slice(-2)));
     // #17: its F list never comes: the page stops waiting for it
     for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + (p * 3) + '.0,1.0,2.0', 0.02);
     for (let p = 23; p >= 2; p--) await app.f('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0', 0.02);
