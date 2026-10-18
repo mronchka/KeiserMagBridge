@@ -188,14 +188,16 @@ $('rckClose').addEventListener('click', function () {
 // [v3.3] the gear list (#11)
 $('glGrid').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-gear]') : null;
-  if (!b || !state.gearList) return;
+  if (!b) return;
   var g = +b.getAttribute('data-gear');
-  state.gearList.sel = state.gearList.sel === g ? 0 : g;
+  if (state.gearList) state.gearList.sel = state.gearList.sel === g ? 0 : g;
+  else state.homeSel = state.homeSel === g ? 0 : g;   // #12: the Calibrate tab's list
   renderGearList();
 });
 $('glImprove').addEventListener('click', startImprove);
 $('glCheck').addEventListener('click', function () { state.gearList = null; startGearCheck(); });
 $('glFinish').addEventListener('click', finishGearList);
+$('glAgain').addEventListener('click', calibrateAgain);
 $('rckSum').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-rck-redo]') : null;
   if (b && !b.disabled) startEdit('R', 'u', +b.getAttribute('data-rck-redo'));

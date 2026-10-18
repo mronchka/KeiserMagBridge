@@ -478,6 +478,54 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
       app.$('glLead').textContent);
   }
   {
+    // #12: the Calibrate tab opens on the stored calibration's gear list; after a reload the yellow
+    // reasons from the run (hold-still tries, go-backs) come back from the saved file (# point_stats)
+    const app = mk();
+    const up = (p) => (p === 10 ? '27.5' : (p * 3).toFixed(1));
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    for (let p = 1; p <= 24; p++) {
+      await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' }));
+      if (p === 5) { await app.f('W,5,1.4,1.6'); await app.f('W,5,1.2,1.0'); }
+      await app.f('C,' + p + ',' + up(p) + ',1.0,2.0');
+    }
+    await app.f('C,25,75.0,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,15,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    const csv = app.win.getCsv(app.win.calRecordId()) || '';
+    check('#12 the saved calibration file carries the point stats', /^# point_stats: u5 w=2$/m.test(csv), (csv.match(/^# point_stats.*$/m) || ['none'])[0]);
+    // reload: a fresh page on the same phone storage
+    const app2 = loadApp({ search: '' }); Object.assign(app2.store, app.store); app2.win.loadRecords(); app2.connect();
+    const st2 = app2.M3.state, nRec = app2.win.records.length;
+    let t2 = 1; const f2 = async (l) => { t2 += 0.05; await app2.feed(t2, l); };
+    await f2(S({}));
+    app2.win.showView('cal'); app2.M3.render();
+    await app2.advance(0.1);
+    check('#12 opening Calibrate on a calibrated bridge reads the calibration back quietly', app2.commands().some((c) => c.cmd === 'k'));
+    for (let p = 1; p <= 25; p++) await f2('Q,' + p + ',' + (p === 25 ? '75.0' : up(p)) + ',1.0,2.0');
+    for (let p = 23; p >= 2; p--) await f2('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0');
+    await f2('Q,end,120.0,3.00,6');
+    await f2('F,u,15,behind,1.0,2.0,3.0');
+    await f2('F,end,1');
+    await f2(S({}));
+    const q2 = app2.win.gearQuality();
+    check('#12 ...and opens on its gear list (Your calibration), not the walkthrough', !app2.$('gearList').hidden && app2.$('onb').hidden &&
+      app2.$('glTitle').textContent === 'Your calibration' && !app2.$('glAgain').hidden && app2.$('glImprove').textContent === 'Improve calibration',
+      app2.$('glTitle').textContent);
+    check('#12 ...with the red flag, the narrow gear, and the hold-still tries restored from the saved file', q2[15].level === 2 && q2[9].level === 1 && q2[5].level === 1,
+      [5, 9, 15].map((g) => g + ':' + q2[g].level).join(' '));
+    check('#12 ...without saving a "Stored calibration" record or a review card', app2.win.records.length === nRec && app2.$('reviewCard').hidden && !st2.review);
+    app2.$('glAgain').click();
+    check('#12 Calibrate again shows the walkthrough', app2.$('gearList').hidden && !app2.$('onb').hidden);
+  }
+  {
     // crank not found: the reason stays on screen; the hold-still notice and the circle agree
     const app = mk();
     await app.f(S({}));

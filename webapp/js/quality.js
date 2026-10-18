@@ -123,24 +123,39 @@ function finishGearList() {
   render();
 }
 
+// #12: the Calibrate tab opens on the stored calibration's gear list (a calibrated v3.3 bridge, idle,
+// nothing else on the Calibrate screen). The page reads the calibration back quietly when it hasn't got it.
+function homeListDue() {
+  var s = state.s;
+  return state.v33 && state.conn === 'connected' && !!s && s.cal === 0 && !!s.flags.V && !state.place && !state.upSaved &&
+    !state.check && !reviewItems().length && !state.gearList && !state.homeWalk && !state.improving && !state.edit;
+}
+function homeListShown() { return homeListDue() && state.points.length === TOTAL_POINTS; }
+function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; render(); }
+
 var gearListKey = '';
 function renderGearList() {
-  var gl = state.gearList;
+  var home = !state.gearList && homeListShown();
+  if (!state.gearList && homeListDue() && state.view === 'cal' && state.points.length < TOTAL_POINTS && !state.homeAsked && !state.q) {
+    state.homeAsked = true;
+    requestStoredCal(true);
+  }
+  var gl = state.gearList || (home ? { sel: state.homeSel || 0, home: true } : null);
   var show = !!gl && !calRunning(state.s) && !state.check && !reviewItems().length;
   setHidden('gearList', !show);
   if (!show) { gearListKey = ''; return; }
   var q = gearQuality(), bad = 0, unsure = 0, g;
   for (g = 1; g <= GEARS; g++) { if (q[g].level === 2) bad++; else if (q[g].level === 1) unsure++; }
   var edges = improveEdges(q), connected = state.conn === 'connected';
-  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '');
+  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home;
   if (key === gearListKey) return;
   gearListKey = key;
   var lead = gl.improved ? gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. '
-    : 'Saved on the bridge and ready to ride. ';
+    : gl.home ? 'The calibration on the bridge. ' : 'Saved on the bridge and ready to ride. ';
   lead += !bad && !unsure ? 'Every gear looks good.'
     : (bad ? bad + ' gear' + (bad === 1 ? '' : 's') + ' need' + (bad === 1 ? 's' : '') + ' another look' : '') + (bad && unsure ? ', ' : '') +
       (unsure ? unsure + ' ' + (unsure === 1 ? 'is' : 'are') + ' unsure' : '') + '. Tap a gear to see why.';
-  $('glTitle').textContent = gl.improved ? 'Your gears now' : 'Calibration done';
+  $('glTitle').textContent = gl.improved ? 'Your gears now' : gl.home ? 'Your calibration' : 'Calibration done';
   $('glLead').textContent = lead;
   var html = '';
   for (g = 1; g <= GEARS; g++) {
@@ -151,7 +166,10 @@ function renderGearList() {
   var sel = gl.sel && q[gl.sel];
   $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'both edges look good.');
   setHidden('glImprove', !edges.length);
-  $('glImprove').textContent = 'Improve ' + (bad + unsure) + ' gear' + (bad + unsure === 1 ? '' : 's');
+  $('glImprove').textContent = gl.home ? 'Improve calibration' : 'Improve ' + (bad + unsure) + ' gear' + (bad + unsure === 1 ? '' : 's');
+  setHidden('glFinish', !!gl.home);
+  setHidden('glAgain', !gl.home);
+  $('glAgain').disabled = !connected;
   $('glImprove').disabled = !connected;
   $('glCheck').className = 'btn ' + (edges.length ? '' : 'primary ') + 'wide';
   $('glCheck').disabled = !connected;

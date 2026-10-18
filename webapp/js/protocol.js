@@ -458,6 +458,13 @@ function onF(p) {
       state.qJustEnded = true;
       if (!state.qFromEdit) toast('Stored calibration incomplete: try again');
     }
+    if (state.qQuietF) {   // #12: the quiet readback's F list: its flags color the gear list, nothing more
+      state.qQuietF = false; state.qJustEnded = false;
+      state.review = null;
+      state.lastFlags = items.slice();
+      render();
+      return true;
+    }
     if (state.qRetryAfterF) {   // the F list of an incomplete readback: read it again (qFromEdit stays)
       state.qRetryAfterF = false; state.qJustEnded = false;
       requestStoredCal();
@@ -726,7 +733,7 @@ function onCalStarted() {
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
   state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
-  state.pointStats = {}; state.gearList = null; state.improving = null;
+  state.pointStats = {}; state.gearList = null; state.improving = null; state.homeWalk = false; state.homeSel = 0;
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
@@ -746,15 +753,25 @@ function onCalStarted() {
 // Q: stored calibration (reply to 'k')
 // Q,<point>,<x>,<y>,<z> ... Q,end,<span>,<minstep>,<minstepAt>   or   Q,none
 // ===================================================================
-function requestStoredCal() {
-  if (state.conn !== 'connected') { toast('Not connected'); return; }
+// quiet === true: the page reads it for the Calibrate tab's gear list (#12): nothing saved, no messages.
+function requestStoredCal(quiet) {
+  quiet = quiet === true;   // (as a click handler it gets the event)
+  if (state.conn !== 'connected') { if (!quiet) toast('Not connected'); return; }
   if (state.q) clearTimeout(state.q.timer);
-  setHidden('storedMsg', true);
+  if (!quiet) setHidden('storedMsg', true);
+  state.qQuiet = quiet;
   state.q = { points: [], down: [], timer: 0 };
   state.q.timer = setTimeout(function () {
-    if (state.q) { state.q = null; toast('No reply. The bridge may need firmware v2.'); }
+    if (state.q) { state.q = null; state.qQuiet = false; if (!quiet) toast('No reply. The bridge may need firmware v2.'); }
   }, 10000);
-  send('k');
+  send('k', quiet);
+}
+// The page's copy of a calibration read back from the bridge: points, down points, and how each
+// point went (from the matching saved file on this phone, if there is one).
+function adoptStoredCal(q) {
+  state.points = q.points.slice(); state.downPoints = q.down.slice();
+  var st = savedPointStatsFor(q.points, q.down);
+  if (st) state.pointStats = st;
 }
 
 function onQ(p) {
@@ -762,6 +779,7 @@ function onQ(p) {
   if (kind === 'none') {
     if (state.q) clearTimeout(state.q.timer);
     state.q = null;
+    if (state.qQuiet) { state.qQuiet = false; return true; }   // (the gear list just doesn't show)
     var hasPartial = records.some(function (x) { return x.type === 'cal' && x.partial; });
     var m = $('storedMsg');
     m.textContent = 'No complete calibration on the bridge yet. Finish all 25 points first' +
@@ -776,6 +794,15 @@ function onQ(p) {
     state.q = null;
     state.qJustEnded = true;   // [v3.2] the F list that follows belongs to the stored calibration
     if (!q || !q.points.length) return true; // stray end without points
+    if (state.qQuiet) {
+      // #12: the Calibrate tab's gear list; the F list that follows gives the bridge's flags
+      state.qQuiet = false;
+      if (q.points.length !== TOTAL_POINTS) { logLine('The stored calibration arrived incomplete: the gear list waits for the next read.', 'sys'); state.homeAsked = false; return true; }
+      adoptStoredCal(q);
+      state.homeRead = true; state.qQuietF = true;
+      render();
+      return true;
+    }
     if (q.points.length !== TOTAL_POINTS && state.qFromEdit && !state.qRetried) {
       // the page's own readback (after an edit or #D): read it once more, after this one's F list
       state.qRetried = true; state.qRetryAfterF = true;
@@ -800,7 +827,8 @@ function onQ(p) {
       kr.recordId = id;
       kr.down = q.down.length;
       // from now on the page works with the bridge's copy (a later redo is saved from it)
-      state.points = q.points.slice(); state.downPoints = q.down.slice();
+      if (state.pointStats && Object.keys(state.pointStats).length) { state.points = q.points.slice(); state.downPoints = q.down.slice(); }
+      else adoptStoredCal(q);
       if (state.v33 && q.down.some(function (x) { return x.point === 2; })) setFlowRecord({ downDone: true });   // the bridge has the whole down pass
       noteCalRecord(id, state.v33);
       renderResult();

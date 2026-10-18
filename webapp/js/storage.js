@@ -186,6 +186,8 @@ function saveCalRecord(source, info, pointsIn) {
       ', depth_uT=' + fmt(info.crank.depth, 1) + ', sign=' + (fin(info.crank.sign) ? info.crank.sign : '') : null),
     (info.edit ? '# edit: ' + ascii(info.edit) : null),
     '# labels: point 1 = lever all the way down (Bottom); points 2-24 = where the console first shows that gear; point 25 = lever all the way up (Top)',
+    // [v3.3] how each point went (#11 / #12): hold-still tries (w) and go-backs (back), e.g. "u5 w=3; d12 back=1"
+    (!stored && pointStatsText() ? '# point_stats: ' + pointStatsText() : null),
     // [v3.2] down points: same gear edge as the up point, approached from above
     (downs ? '# down_points: ' + downs.length + ' of ' + DOWN_POINTS + ' (down point N = coming down, where the console first shows gear N-1; empty when not measured)' : null),
     'point,label,x_uT,y_uT,z_uT,dist_prev_uT' + (downs ? ',down_x_uT,down_y_uT,down_z_uT' : '')
@@ -354,6 +356,52 @@ function showCopySheet(text, title) {
   ta.value = text;
   setHidden('copySheet', false);
   try { ta.focus(); ta.select(); ta.setSelectionRange(0, text.length); } catch (e) {}
+}
+
+// ---- point stats in saved files (#12): "u5 w=3; d12 back=1 w=2" ----
+function pointStatsText() {
+  var st = state.pointStats || {};
+  return Object.keys(st).filter(function (k) { return st[k].w || st[k].back; }).sort(function (a, b) {
+    return a.charAt(0) === b.charAt(0) ? +a.slice(1) - +b.slice(1) : a < b ? 1 : -1;   // up points first
+  }).map(function (k) {
+    return k + (st[k].w ? ' w=' + st[k].w : '') + (st[k].back ? ' back=' + st[k].back : '');
+  }).join('; ');
+}
+function parsePointStats(text) {
+  var st = {};
+  String(text || '').split(';').forEach(function (part) {
+    var m = /^\s*([ud])(\d+)((?:\s+\w+=\d+)*)\s*$/.exec(part);
+    if (!m) return;
+    var o = { w: 0, back: 0 };
+    m[3].replace(/(\w+)=(\d+)/g, function (all, k, v) { if (k === 'w' || k === 'back') o[k] = +v; return all; });
+    st[m[1] + m[2]] = o;
+  });
+  return st;
+}
+// The newest saved calibration of this phone with exactly these points (as the bridge sends them,
+// to 0.1 uT): its point stats, or null. Readings that match mean it is the same calibration.
+function savedPointStatsFor(points, down) {
+  var key = function (q) { return q.point + ':' + fmt(q.x, 1) + ',' + fmt(q.y, 1) + ',' + fmt(q.z, 1); };
+  var want = points.map(key).sort().join('|'), wantDown = (down || []).map(key).sort().join('|');
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    if (r.type !== 'cal' || r.partial) continue;
+    var csv = getCsv(r.id);
+    if (!csv) continue;
+    var up = [], dn = [], stats = null, header = null;
+    csv.split('\n').forEach(function (line) {
+      var m = /^# point_stats: (.*)$/.exec(line);
+      if (m) { stats = m[1]; return; }
+      if (!line || line.charAt(0) === '#') return;
+      var c = line.split(',');
+      if (!header) { header = c; return; }
+      var n = +c[0];
+      if (c[2] !== '') up.push({ point: n, x: +c[2], y: +c[3], z: +c[4] });
+      if (c.length >= 9 && c[6] !== '') dn.push({ point: n, x: +c[6], y: +c[7], z: +c[8] });
+    });
+    if (up.map(key).sort().join('|') === want && dn.map(key).sort().join('|') === wantDown) return stats === null ? {} : parsePointStats(stats);
+  }
+  return null;
 }
 
 // The saved calibration record the gear check adds its lines to (also after a reload, via the flow record).

@@ -102,6 +102,7 @@ function renderCal() {
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
+  setHidden('onb', homeListShown());   // #12: the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
   if (state.result) setHidden('resultCard', resultCardHidden());
