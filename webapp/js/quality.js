@@ -175,7 +175,7 @@ function renderGearList() {
   var q = gearQuality(), bad = 0, unsure = 0, g;
   for (g = 1; g <= GEARS; g++) { if (q[g].level === 2) bad++; else if (q[g].level === 1) unsure++; }
   var edges = improveEdges(q), connected = state.conn === 'connected';
-  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home;
+  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked;
   if (key === gearListKey) return;
   gearListKey = key;
   var lead = gl.improved ? gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. '

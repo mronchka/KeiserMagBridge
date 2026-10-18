@@ -184,11 +184,12 @@ function finishCheck() {
   var res = (c.prev || []).concat(c.results);   // (with "Check a few more gears": the earlier answers too)
   if (c.flow) {
     state.checkMisses = state.checkMisses || {};
-    c.results.forEach(function (r) {
-      var gg = edgeGear(r.app, r.console);
-      if (r.app !== r.console) state.checkMisses[gg] = { app: r.app, console: r.console };
-      else { delete state.checkMisses[r.app]; delete state.checkMisses[r.app + 1]; }   // (a match clears an earlier miss at that gear)
+    var fresh = {};
+    c.results.forEach(function (r) { if (r.app !== r.console) fresh[edgeGear(r.app, r.console)] = { app: r.app, console: r.console }; });
+    c.results.forEach(function (r) {   // a match clears an EARLIER check's miss at that gear (#56: not this check's)
+      if (r.app === r.console) [r.app, r.app + 1].forEach(function (g) { if (!fresh[g]) delete state.checkMisses[g]; });
     });
+    Object.keys(fresh).forEach(function (g) { state.checkMisses[g] = fresh[g]; });
   }
   var miss = res.filter(function (r) { return r.app !== r.console; });
   var rid = calRecordId(), saved = false;

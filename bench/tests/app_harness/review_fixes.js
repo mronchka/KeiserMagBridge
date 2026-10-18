@@ -620,6 +620,23 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
       JSON.stringify(app.win.gearQuality()[16].why));
   }
   {
+    // #56: a match later in the same gear check doesn't erase that check's own mismatch; #30 Done -> "Your gears"
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({ gear: 12 }));
+    app.$('glCheck').click();
+    st.check.list = [{ gear: 12, pace: 'easy', label: 'Gear 12, easy', task: '' }, { gear: 12, pace: 'fast', label: 'Gear 12, faster', task: '' }];
+    st.check.askGear = 12; app.M3.checkAnswer(13);               // bridge 12, console 13: the edge at 13 is off
+    st.check.askGear = 13; app.M3.checkAnswer(13);               // then bridge 13, console 13 (same check)
+    app.$('rckClose').click();
+    check('#56 a later match in the same check keeps its mismatch on the list', app.win.gearQuality()[13].level === 2);
+    check('#30 Done after the check: the list says "Your gears"', app.$('glTitle').textContent === 'Your gears', app.$('glTitle').textContent);
+  }
+  {
     // #20: a run deleted on another page (same origin) doesn't come back
     const a = mk(), b = mk();
     b.store = a.store; b.win.localStorage = a.win.localStorage;

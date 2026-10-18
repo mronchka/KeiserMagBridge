@@ -324,7 +324,8 @@ function renderReview() {
   var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
   var dis = !connected || busy ? ' disabled' : '';
   var named = improving && it.gear ? 'Gear ' + it.gear : capFirst(words.replace(/ \(.*\)$/, ''));
-  var html = '<h2>' + esc(named) + ' needs another look' +
+  var unsure = improving && /^(narrow|gap|back|unsteady)$/.test(it.reason);
+  var html = '<h2>' + esc(named) + (unsure ? ' is unsure' : ' needs another look') +
     '<button class="x-btn" type="button" data-review="dismiss" aria-label="Stop checking gears">×</button></h2>' +
     (improving && it.why ? '<p class="rv-t">' + esc(it.why) + '</p>'
       : '<p class="rv-t">The bridge checked the saved calibration: <b>' + esc(words) + '</b> ' + esc(why) + '.</p>');
@@ -333,7 +334,7 @@ function renderReview() {
   html += '<div class="btn-stack" style="margin-top:12px">' +
     (tired && guessable
       ? '<button class="btn primary wide" type="button" data-review="guess"' + dis + ' aria-label="Use the bridge’s best guess for ' + esc(words) + '">Use best guess</button>'
-      : '<button class="btn primary wide" type="button" data-review="redo"' + dis + ' aria-label="Redo ' + esc(words) + ' by pedalling">Redo ' + esc(words.replace(/ \(.*\)$/, '')) + '</button>') +
+      : '<button class="btn primary wide" type="button" data-review="redo"' + dis + ' aria-label="Redo ' + esc(words) + ' by pedalling">' + (improving && it.gear ? 'Redo it' : 'Redo ' + esc(words.replace(/ \(.*\)$/, ''))) + '</button>') +
     '</div><div class="rv-links">' +
     (tired || !guessable ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
     '<button class="linkbtn" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
