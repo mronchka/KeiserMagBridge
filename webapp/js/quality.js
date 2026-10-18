@@ -60,6 +60,12 @@ function gearQuality() {
     mark(gear, 2, edgeWords(it.pass, it.point) + ' ' + (FLAG_WORDS[it.reason] || 'looks wrong') + '.' +
       (fixCanRedo(e) ? '' : ' It can\u2019t be redone on its own: calibrate again to change it.'), e);
   });
+  // red: the gear check found the console on another gear (the edge between the two, redone going up)
+  Object.keys(state.checkMisses || {}).forEach(function (gg) {
+    var m = state.checkMisses[gg];
+    mark(+gg, 2, 'In the gear check the bridge read gear ' + m.app + ' where the console showed gear ' + m.console + '.',
+      { pass: 'u', point: +gg, reason: 'check' });
+  });
   // yellow: a gear much narrower than most (its two edges very close together)
   var steps = [];
   for (p = 2; p <= GEARS; p++) if (up[p] && up[p - 1]) steps.push({ p: p, d: dist3(up[p], up[p - 1]) });
@@ -93,12 +99,12 @@ function gearQuality() {
 
 // The edges to redo for every yellow or red gear: red first, then by gear.
 function improveEdges(q) {
-  var out = [];
+  var out = [], kept = state.keptEdges || {};
   [2, 1].forEach(function (level) {
     for (var g = 1; g <= GEARS; g++) {
       if (q[g].level !== level) continue;
       q[g].edges.forEach(function (e) {
-        if (!out.some(function (x) { return x.pass === e.pass && x.point === e.point; })) out.push(e);
+        if (!kept[e.pass + e.point] && !out.some(function (x) { return x.pass === e.pass && x.point === e.point; })) out.push(e);
       });
     }
   });
@@ -114,6 +120,8 @@ function openGearList() {
     var now = qualityLevels(gearQuality()), before = state.improving.before, total = 0, better = 0;
     for (var g = 1; g <= GEARS; g++) if (before[g] > 0) { total++; if (now[g] < before[g]) better++; }
     gl.improved = { better: better, total: total };
+    state.improvedGears = {};
+    for (var k = 1; k <= GEARS; k++) if (before[k] > 0) state.improvedGears[k] = true;
     state.improving = null;
   }
   state.gearList = gl;
@@ -184,10 +192,13 @@ function renderGearList() {
   }
   $('glGrid').innerHTML = html;
   var sel = gl.sel && q[gl.sel];
-  $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'looks good going up and coming down.');
+  var keptHere = sel && sel.edges.length && sel.edges.every(function (e) { return (state.keptEdges || {})[e.pass + e.point]; });
+  $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'looks good going up and coming down.') +
+    (keptHere ? ' You chose to keep it as it is.' : '');
   setHidden('glImprove', !edges.length);
   var fixable = 0;   // #36: gears with something Improve can redo
-  for (g = 1; g <= GEARS; g++) if (q[g].level && q[g].edges.length) fixable++;
+  var kept = state.keptEdges || {};
+  for (g = 1; g <= GEARS; g++) if (q[g].level && q[g].edges.some(function (e) { return !kept[e.pass + e.point]; })) fixable++;
   $('glImprove').textContent = gl.home ? 'Improve calibration' : 'Improve ' + fixable + ' gear' + (fixable === 1 ? '' : 's');
   setHidden('glFinish', !!gl.home);
   setHidden('glAgain', !gl.home);

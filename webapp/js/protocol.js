@@ -346,8 +346,8 @@ function onRedoStarted(s) {
   clearTimeout(state.edit.timer);   // the redo can take a while; E arrives when it is saved
   state.calEnded = true;            // not a new run: never saved as an incomplete calibration
   pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
-  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
-  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
+  if (pass === 'u' && state.checkMisses) delete state.checkMisses[point];   // (#40: redone)
+  if (state.keptEdges) delete state.keptEdges[pass + point];
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
   state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
   if (state.check && state.check.phase === 'run') finishCheck();   // keep the answers given so far
@@ -385,8 +385,6 @@ function onK(p) {
   state.result = r;
   state.resultHidden = false;
   state.awaitK = false; state.lastKAt = Date.now();
-  if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
-  if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
   if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
   state.calEnded = true;
   state.wantReadback = false;
@@ -749,6 +747,7 @@ function onCalStarted() {
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
   state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
   state.pointStats = {}; state.gearList = null; state.improving = null; state.homeWalk = false; state.homeSel = 0;
+  state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null;
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
@@ -780,18 +779,6 @@ function requestStoredCal(quiet) {
     if (state.q) { state.q = null; state.qQuiet = false; if (!quiet) toast('No reply. The bridge may need firmware v2.'); }
   }, 10000);
   send('k', quiet);
-}
-// The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
-function quietFList() {
-  state.qQuietF = true;
-  clearTimeout(state.qQuietT);
-  state.qQuietT = setTimeout(function () { state.qQuietF = false; }, 5000);
-}
-// The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
-function quietFList() {
-  state.qQuietF = true;
-  clearTimeout(state.qQuietT);
-  state.qQuietT = setTimeout(function () { state.qQuietF = false; }, 5000);
 }
 // The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
 function quietFList() {

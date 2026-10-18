@@ -24,7 +24,7 @@ function startGearCheck(prev) {
   var skip = {};
   if (prev) prev.results.forEach(function (r) { if (r.app === r.console) skip[r.target] = true; });
   state.check = { phase: 'run', flow: isV33(), v32: isV32(), idx: 0, results: [], picking: false, val: 1, app: 0,
-    list: pickChecks(skip, prev && prev.redone), prev: prev ? (prev.prev || []).concat(prev.results) : [], redone: prev ? prev.redone : null };
+    list: pickChecks(skip, prev ? prev.redone : state.improvedGears), prev: prev ? (prev.prev || []).concat(prev.results) : [], redone: prev ? prev.redone : null };
   showView('cal');
   render();
 }
@@ -182,6 +182,14 @@ function finishCheck() {
   state.checkDone = true;
   if (c.flow) setFlowRecord({ checkDone: true });   // (c.flow, not state.v33: that is cleared by a drop)
   var res = (c.prev || []).concat(c.results);   // (with "Check a few more gears": the earlier answers too)
+  if (c.flow) {
+    state.checkMisses = state.checkMisses || {};
+    c.results.forEach(function (r) {
+      var gg = edgeGear(r.app, r.console);
+      if (r.app !== r.console) state.checkMisses[gg] = { app: r.app, console: r.console };
+      else { delete state.checkMisses[r.app]; delete state.checkMisses[r.app + 1]; }   // (a match clears an earlier miss at that gear)
+    });
+  }
   var miss = res.filter(function (r) { return r.app !== r.console; });
   var rid = calRecordId(), saved = false;
   if (c.results.length && rid) {

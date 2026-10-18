@@ -122,7 +122,7 @@ function renderFlow(active, placing, saved) {
   // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&
     !!(state.s && state.s.flags.V) &&
-    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow)) && !state.gearList;
+    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow)) && !state.gearList && !homeListShown();
   setHidden('calResume', !show);
   if (show) {
     setHidden('resumeDown', !!rec.downDone);
@@ -279,9 +279,15 @@ function fixAction(act) {
     send('x');
     return;
   }
-  if (act === 'skip' || !fixGuess(it)) { state.reviewKept[fixKey(it)] = true; fixNext(); }   // (no guess to use: same as Skip)
+  if (act === 'skip' || !fixGuess(it)) { keepAsIs(it); fixNext(); }   // (no guess to use: same as Skip)
   else startEdit('G', it.pass, it.point, fixGuess(it));
   renderReview();
+}
+
+// The rider keeps a flagged point as it is: not asked again (and the gear list, #41, stops offering it).
+function keepAsIs(it) {
+  state.reviewKept[fixKey(it)] = true;
+  (state.keptEdges = state.keptEdges || {})[fixKey(it)] = true;
 }
 
 // The redo was cancelled because the rider chose Skip or Use best guess.
@@ -289,7 +295,7 @@ function redoStopped() {
   var act = state.fixAfter, it = reviewItems()[0];
   state.fixAfter = '';
   if (!it) return;
-  if (act === 'skip' || !fixGuess(it)) { state.reviewKept[fixKey(it)] = true; fixNext(); return; }   // (no guess: as Skip)
+  if (act === 'skip' || !fixGuess(it)) { keepAsIs(it); fixNext(); return; }   // (no guess: as Skip)
   // #G needs the board idle: wait for the status line to say so (at most ~3 s)
   var tries = 0;
   (function go() {
@@ -316,10 +322,6 @@ function renderReview() {
   var why = REASON_TEXT[it.reason] || 'looks wrong (' + it.reason + ')';
   // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
   var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
-  // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
-  var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
-  // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
-  var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
   var dis = !connected || busy ? ' disabled' : '';
   var named = improving && it.gear ? 'Gear ' + it.gear : capFirst(words.replace(/ \(.*\)$/, ''));
   var html = '<h2>' + esc(named) + ' needs another look' +
@@ -336,7 +338,8 @@ function renderReview() {
     (tired || !guessable ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
     '<button class="linkbtn" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
   if (items.length > 1) html += '<p class="small muted" style="margin-top:8px">Then ' + (items.length - 1) + ' more to look at.</p>';
-  if (busy) html += '<div class="rv-msg busy" role="status">' + (state.edit.kind === 'R' ? 'Starting the redo…' : 'Saving the best guess…') + '</div>';
+  if (busy) html += '<div class="rv-msg busy" role="status">' + (!connected ? 'Connection lost: reconnect to carry on.'
+    : state.edit.kind === 'R' ? 'Starting the redo…' : 'Saving the best guess…') + '</div>';
   if (state.editErr) html += '<div class="rv-msg bad" role="alert">Not changed: ' + esc(state.editErr) + '</div>';
   card.innerHTML = html;
 }
@@ -352,8 +355,6 @@ function renderFixLinks() {
 
 // Send #R (redo by pedalling) or #G (use the board's guess) for one point.
 function startEdit(kind, pass, point, g) {
-  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
-  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
   if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
   if (state.conn !== 'connected') { toast('Not connected'); return; }
   if (state.edit) { toast('Still waiting for the bridge'); return; }

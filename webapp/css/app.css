@@ -544,7 +544,8 @@ main {
 .gl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: .8rem; color: var(--muted); }
 .gl-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
 .gl-legend .q0 { background: var(--ok); } .gl-legend .q1 { background: var(--warn-fill); } .gl-legend .q2 { background: var(--bad); }
-.gl-why { min-height: 2.8em; margin: 8px 0 0; font-size: .88rem; line-height: 1.4; }
+.gl-why { margin: 8px 0 0; font-size: .88rem; line-height: 1.4; }
+.gl-why:empty { display: none; }
 .gears .btn-stack { margin-top: 6px; gap: 8px; }
 
 /* calibration walkthrough (idle screen) */
@@ -640,7 +641,7 @@ nav button .badge { display: inline-block; width: 9px; height: 9px; border-radiu
 }
 #toast.show { opacity: 1; }
 #toast { width: max-content; z-index: 50; }
-body.calfocus #toast { bottom: auto; top: calc(60px + env(safe-area-inset-top)); }
+body.calfocus #toast { bottom: auto; top: calc(118px + env(safe-area-inset-top)); }   /* below the breadcrumb */
 
 /* ---------- diagnose ---------- */
 .dsteps { margin: 8px 0 0; padding: 0; list-style: none; }

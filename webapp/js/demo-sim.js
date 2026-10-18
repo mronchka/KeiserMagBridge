@@ -561,6 +561,7 @@ function Simulator(startCalibrated) {
       case 'l':
         if (!DEMO_V3 || !(cal === 4 || (cal === 1 && step === 0))) break;
         cal = 3; step = 0; stab = 0; agree = 0; lturns = 0;
+        if (DEMO_V33) flowStep = 2;
         out('Learning the crank again.');
         break;
       case 'u':

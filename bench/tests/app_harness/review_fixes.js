@@ -587,6 +587,39 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
       'review ' + (st.review && st.review.items.length) + ' list ' + !!st.gearList);
   }
   {
+    // #41 keep it as it is; #39 the check after Improve; #40 a check mismatch shows on the list; #45 no old result card
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,15,behind,1.0,2.0,3.0');
+    await app.f('F,u,8,behind,1.0,2.0,3.0');
+    await app.f('F,end,2');
+    await app.f(S({}));
+    check('#45 the gear list hides the old result card', app.$('resultCard').hidden);
+    app.$('glImprove').click();                                   // first: gear 8
+    await app.advance(0.5);
+    await app.f('E,ok,redo');
+    await app.f(S({ cal: 1, flow: 6, step: 7, pass: 'ru' }));
+    app.win.fixAction('skip');                                    // Skip on the redo screen = keep gear 8 as it is
+    await app.f('A,cancelled by user');                           // (the bridge cancels the redo)
+    await app.f(S({}));
+    await app.advance(1);
+    await app.f('E,ok,redo');                                     // then gear 15, redone fine
+    await app.f(S({ cal: 1, flow: 6, step: 14, pass: 'ru' }));
+    await app.f('C,15,45.0,1.0,2.0'); await app.f('E,ok,saved'); await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,8,behind,1.0,2.0,3.0'); await app.f('F,end,1'); await app.f(S({}));
+    check('#41 a gear kept as it is is no longer offered by Improve', !!st.gearList && app.$('glImprove').hidden, app.$('glImprove').textContent);
+    app.$('glCheck').click();
+    check('#39 the check after Improve includes the improved gears', st.check.list.some((c) => c.gear === 15) && st.check.list.some((c) => c.gear === 8),
+      st.check.list.map((c) => c.gear).join(' '));
+    while (st.check.phase === 'run') { const c = st.check.list[st.check.idx]; app.M3.checkAnswer(c.gear === 15 ? 16 : c.gear); }
+    app.$('rckClose').click();
+    check('#40 a gear the check found off shows on the list', app.win.gearQuality()[16].level === 2 && /console showed gear 16/.test(app.win.gearQuality()[16].why.join(' ')),
+      JSON.stringify(app.win.gearQuality()[16].why));
+  }
+  {
     // #20: a run deleted on another page (same origin) doesn't come back
     const a = mk(), b = mk();
     b.store = a.store; b.win.localStorage = a.win.localStorage;

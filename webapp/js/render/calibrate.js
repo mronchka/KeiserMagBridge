@@ -102,7 +102,7 @@ function renderCal() {
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
-  setHidden('onb', homeListShown());   // #12: the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
+  setHidden('onb', homeListShown() || !!state.improving);   // #12 (#38: nor under an Improve pass): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
@@ -544,7 +544,8 @@ function renderPoints() {
 
 function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
-    !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk;   // #25
+    !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk ||   // #25
+    !!state.improving || homeListShown();   // #45 (the list says it all; the file is under Saved runs)
 }
 
 function renderResult() {

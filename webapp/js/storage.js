@@ -47,16 +47,6 @@ function saveIndex() {
     if (!r.persisted) return true;
     try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
   });
-  // runs whose data another page removed (deleted, or dropped for room) leave this page's list too
-  records = records.filter(function (r) {
-    if (!r.persisted) return true;
-    try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
-  });
-  // runs whose data another page removed (deleted, or dropped for room) leave this page's list too
-  records = records.filter(function (r) {
-    if (!r.persisted) return true;
-    try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
-  });
   try {
     localStorage.setItem(STORE_IDX, JSON.stringify(records.filter(function (r) { return r.persisted; })));
     return true;
