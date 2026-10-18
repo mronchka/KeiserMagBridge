@@ -120,7 +120,7 @@ function renderFlow(active, placing, saved) {
   // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&
     !!(state.s && state.s.flags.V) &&
-    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow));
+    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow)) && !state.gearList;
   setHidden('calResume', !show);
   if (show) {
     setHidden('resumeDown', !!rec.downDone);
@@ -243,7 +243,12 @@ function fixNext() {
   if (!state.review) return;
   state.review.items = state.review.items.filter(function (it) { return !state.reviewKept[fixKey(it)]; });
   var it = state.review.items[0];
-  if (!it) { state.review = null; state.fixPaused = false; maybeOfferCheck(); render(); return; }
+  if (!it) {
+    state.review = null; state.fixPaused = false;
+    if (state.improving) openGearList(); else maybeOfferCheck();   // #11: the improve pass is done
+    render();
+    return;
+  }
   var tries = state.fixTries[fixKey(it)] || 0;
   if (state.fixPaused || tries >= FIX_MAX_TRIES || !fixCanRedo(it) || state.conn !== 'connected' || state.edit) { renderReview(); return; }
   if (state.s && state.s.cal !== 0) {
@@ -254,6 +259,7 @@ function fixNext() {
     return;
   }
   state.fixTries[fixKey(it)] = tries + 1;
+  if (state.review.source === 'improve') state.improveLast = fixKey(it);
   startEdit('R', it.pass, it.point);
 }
 

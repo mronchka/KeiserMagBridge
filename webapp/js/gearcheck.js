@@ -14,6 +14,7 @@ function maybeOfferCheck() {
   // [v3.3] the calibration is done: a finish card offers step 6 (Check a few gears) or Finish and ride.
   // (Not after the rider stopped the down pass: the start screen offers what is left.)
   if (isV33() && state.noAutoCheck) return;
+  if (isV33()) { openGearList(); return; }   // #11: the gear list (with Check a few gears) is the finish
   state.check = { phase: 'offer', flow: isV33(), v32: isV32(), idx: 0, results: [], picking: false, val: 1, app: 0, list: pickChecks() };
   if (state.check.flow) showView('cal');
   render();

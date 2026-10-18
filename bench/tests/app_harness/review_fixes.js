@@ -68,9 +68,10 @@ function addDiag(app, i, size) {
   return app.M3.addRecord({ id: 'r' + i, type: 'diag', source: 'run', ts: new Date().toISOString(), title: 'Diag ' + i,
     summary: 's', filename: 'keiser-diag-' + i + '.csv' }, 'x'.repeat(size));
 }
+const $ok = (el) => !!el && !el.hidden;
 const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r) => r.id);
-// after the down pass the finish card offers step 6: tap "Check a few gears"
-const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'offer') app.$('rckStart').click(); };
+// after the down pass the gear list (#11) offers step 6: tap "Check a few gears"
+const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); };
 
 (async function main() {
   // ---------------------------------------------------------------- saved runs
@@ -309,7 +310,7 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app.f('F,end,0');
     await app.f(S({}));
     check('two drops in a row: the down pass\'s K is still taken as v3.3 (finish card, down points kept)',
-      st.result.down === 22 && !!st.check && st.check.phase === 'offer' && st.check.flow, 'down ' + st.result.down + ' check ' + (st.check && st.check.phase));
+      st.result.down === 22 && !!st.gearList, 'down ' + st.result.down + ' gear list ' + !!st.gearList);
   }
   {
     const app = mk(); const st = app.M3.state;
@@ -406,11 +407,15 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app.f('F,end,1');
     await app.f(S({}));
     st.review = null; app.win.maybeOfferCheck();                     // (the flagged gear left as it is)
-    check('#9 the finish card: Check a few gears / Finish and ride, no start screen', st.check && st.check.phase === 'offer' &&
-      app.$('calIdle').hidden && app.$('calResume').hidden && app.$('rckSkip').textContent === 'Finish and ride');
+    check('#9 the finish (gear list): Check a few gears / Finish and ride, no start screen', !!st.gearList && !app.$('gearList').hidden &&
+      app.$('calIdle').hidden && app.$('calResume').hidden && !app.$('glFinish').hidden);
+    check('#11 the gear list shows the flagged gear red, and why when tapped', app.win.gearQuality()[15].level === 2 &&
+      (app.$('glGrid').innerHTML.match(/class="gl-g q2[^"]*" type="button" data-gear="15"/) || []).length === 1, app.$('glLead').textContent);
+    st.gearList.sel = 15; app.win.renderGearList();   // (a tap on chip 15: the DOM stub has no event targets)
+    check('#11 ...tapping gear 15 says why', /Gear 15: Its bottom edge isn.t past the gear before it/.test(app.$('glWhy').textContent), app.$('glWhy').textContent);
+    app.$('glCheck').click();
     check('#10 the gear check starts with the gear the bridge flagged', st.check.list.some((c) => c.gear === 15),
       st.check.list.map((c) => c.gear + c.pace[0]).join(' '));
-    app.$('rckStart').click();
     while (st.check.phase === 'run') app.M3.checkAnswer(st.check.list[st.check.idx].gear === 15 ? 14 : 5);
     check('#10 the summary offers "Check a few more gears"', app.$('rckMore').hidden === false);
     app.$('rckMore').click();
@@ -424,9 +429,53 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app2.f('K,1,120.0,3.00,6,saved');
     await app2.f('F,end,0');
     await app2.f(S({}));
-    app2.$('rckSkip').click();
+    app2.$('glFinish').click();
     check('#9 Finish and ride: off to the Ride tab, nothing left to resume', st2.view === 'ride' && !st2.check &&
       (app2.win.flowRecord() || {}).checkDone === true);
+  }
+  {
+    // #11: unsure (yellow) gears from the run itself, and a full improve pass over red and yellow
+    const app = mk(); const st = app.M3.state;
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    for (let p = 1; p <= 24; p++) {
+      await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' }));
+      if (p === 5) { await app.f('W,5,1.4,1.6'); await app.f('W,5,1.2,1.0'); }   // gear 5 took 3 tries to settle
+      await app.f('C,' + p + ',' + (p === 10 ? '27.5' : (p * 3).toFixed(1)) + ',1.0,2.0');   // gear 9 very narrow (0.5 vs 3 uT)
+    }
+    await app.f('C,25,75.0,1.0,2.0');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,15,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    const q = app.win.gearQuality();
+    check('#11 quality: flagged gear red, a very narrow gear and a gear that took tries yellow, the rest green',
+      q[15].level === 2 && q[9].level === 1 && q[5].level === 1 && [1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 20, 24].every((g) => q[g].level === 0),
+      [5, 9, 15].map((g) => g + ':' + q[g].level).join(' '));
+    check('#11 the gear list offers "Improve 3 gears"', $ok(app.$('glImprove')) && app.$('glImprove').textContent === 'Improve 3 gears', app.$('glImprove').textContent);
+    app.$('glImprove').click();
+    const redo = async (point, x) => {                            // the bridge redoes one up point and saves
+      await app.advance(0.5);
+      await app.f('E,ok,redo');
+      await app.f(S({ cal: 1, flow: 6, step: point - 1, pass: 'ru' }));
+      await app.f('C,' + point + ',' + x + ',1.0,2.0');
+      await app.f('E,ok,saved');
+      await app.f('K,1,120.0,3.00,6,saved');
+      await app.f('F,end,0');
+      await app.f(S({}));
+    };
+    const sent = () => app.cmds().filter((c) => /^#R/.test(c));
+    await redo(15, '45.0');
+    await redo(5, '15.0');
+    await redo(10, '30.0');
+    check('#11 Improve redoes the red gear first, then the yellow ones in order', JSON.stringify(sent()) === '["#R,u,15","#R,u,5","#R,u,10"]', JSON.stringify(sent()));
+    check('#11 ...then the gear list again: 3 of 3 improved, every gear good', !!st.gearList && /^3 of 3 gears improved\. Every gear looks good\.$/.test(app.$('glLead').textContent),
+      app.$('glLead').textContent);
   }
   {
     // crank not found: the reason stays on screen; the hold-still notice and the circle agree
@@ -510,8 +559,8 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
-    check('hold-still method (crank not found): no Saved checkpoint, the gear check follows', !st.upSaved && !st.fixHold && !!st.check,
-      'upSaved ' + st.upSaved + ' check ' + (st.check && st.check.phase));
+    check('hold-still method (crank not found): no Saved checkpoint, the gear list follows', !st.upSaved && !st.fixHold && !!st.gearList,
+      'upSaved ' + st.upSaved + ' gear list ' + !!st.gearList);
   }
   {
     const app = mk(); const st = app.M3.state;
@@ -529,7 +578,9 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app.f('F,end,1');
     await app.f(S({}));
     await app.advance(3);
-    check('Later, then Continue down (#D): the guided redo starts after the down pass', app.cmds().some((c) => /^#R,u,20/.test(c)),
+    app.$('glImprove').click();                                  // the gear list: Improve
+    await app.advance(1);
+    check('Later, then Continue down (#D): the gear list improves the flagged gear', app.cmds().some((c) => /^#R,u,20/.test(c)),
       JSON.stringify(app.cmds().slice(-3)) + ' fixPaused ' + st.fixPaused);
     await app.f('E,ok,redo');
     check('E,ok,redo (the redo starting) is not "Redone and saved"', app.toasts.indexOf('Redone and saved') < 0 && !(st.edit && st.edit.okd));
@@ -549,7 +600,7 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     await app.f('K,1,120.0,3.00,6,saved');   // ... and its F,end is lost
     await app.f(S({}));
     await app.advance(6);
-    check('the F,end after the down pass is lost: the finish card comes anyway', !!st.check && st.check.phase === 'offer', st.check && st.check.phase);
+    check('the F,end after the down pass is lost: the gear list comes anyway', !!st.gearList, String(!!st.gearList));
   }
   {
     const app = mk(); const st = app.M3.state;
@@ -573,7 +624,7 @@ const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'of
     st.resultHidden = true; app.win.renderResult();   // the result card's (x)
     app.win.fixAction('skip');
     if (!st.review) { st.editErr = ''; app.win.maybeOfferCheck(); }
-    check('dismissing the result card does not stop the finish card (step 6)', !!st.check && st.check.phase === 'offer');
+    check('dismissing the result card does not stop the gear list (step 6 offer)', !!st.gearList);
   }
   // ---------------------------------------------------------------- gear check
   {

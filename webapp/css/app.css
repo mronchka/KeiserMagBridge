@@ -524,6 +524,25 @@ main {
 .rck-row.miss .v { color: var(--warn); font-weight: 700; }
 .rck-row .btn { min-height: 48px; padding: 4px 14px; font-size: .95rem; flex: none; }
 .rck-row .k .sub { display: block; font-weight: 700; font-size: .9rem; color: var(--warn); font-variant-numeric: tabular-nums; }
+/* [v3.3] the gear list at the end of a calibration (#11): 24 chips, 6 across */
+.gears h2 { margin: 0; }
+.gl-lead { margin: 6px 0 0; font-size: .95rem; line-height: 1.4; }
+.gl-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 12px; }
+.gl-g {
+  position: relative; height: 44px; border-radius: 12px; border: 2px solid transparent; padding: 0;
+  font: inherit; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums;
+  background: var(--ok-bg); color: var(--text);
+}
+.gl-g::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.gl-g.q1 { background: var(--warn-bg); } .gl-g.q1::after { background: var(--warn-fill); }
+.gl-g.q2 { background: var(--bad-bg); } .gl-g.q2::after { background: var(--bad); }
+.gl-g.sel { border-color: var(--accent); }
+.gl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: .8rem; color: var(--muted); }
+.gl-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+.gl-legend .q0 { background: var(--ok); } .gl-legend .q1 { background: var(--warn-fill); } .gl-legend .q2 { background: var(--bad); }
+.gl-why { min-height: 2.8em; margin: 8px 0 0; font-size: .88rem; line-height: 1.4; }
+.gears .btn-stack { margin-top: 6px; gap: 8px; }
+
 /* calibration walkthrough (idle screen) */
 #calIdle { display: flex; flex-direction: column; gap: 28px; }
 #view-cal:has(#calResume:not([hidden])) #resultCard { order: 1; }   /* "Pick up where you stopped" first */

@@ -108,6 +108,7 @@ $('topX').addEventListener('click', function () {
   else if (state.check && state.check.phase === 'run') $('rckQuit').click();
   else if (state.check && state.check.phase === 'done') $('rckClose').click();
   else if (state.check && state.check.phase === 'offer') $('rckSkip').click();
+  else if (state.gearList) finishGearList();
 });
 $('topUndo').addEventListener('click', function () { if (!$('btnUndo').disabled) send('u'); });
 
@@ -138,7 +139,7 @@ $('reviewCard').addEventListener('click', function (ev) {
     state.fixPaused = false;
     fixAction(act);
   }
-  if (!state.review) { state.editErr = ''; maybeOfferCheck(); }
+  if (!state.review) { state.editErr = ''; if (state.improving) openGearList(); else maybeOfferCheck(); }
   renderReview();
   renderRideCheck();
   renderBadge();
@@ -178,7 +179,23 @@ $('rckMinus').addEventListener('click', function () { var c = state.check; if (c
 $('rckPlus').addEventListener('click', function () { var c = state.check; if (c && c.val < 24) { c.val++; renderRideCheck(); } });
 $('rckSave').addEventListener('click', function () { var c = state.check; if (c) checkAnswer(c.val); });
 $('rckQuit').addEventListener('click', function () { finishCheck(); render(); });
-$('rckClose').addEventListener('click', function () { state.check = null; render(); });
+$('rckClose').addEventListener('click', function () {
+  var flow = state.check && state.check.flow;
+  state.check = null;
+  if (flow && state.result && state.result.type === 'K' && state.result.ok) openGearList();   // [v3.3] back to the gear list
+  else render();
+});
+// [v3.3] the gear list (#11)
+$('glGrid').addEventListener('click', function (ev) {
+  var b = ev.target && ev.target.closest ? ev.target.closest('[data-gear]') : null;
+  if (!b || !state.gearList) return;
+  var g = +b.getAttribute('data-gear');
+  state.gearList.sel = state.gearList.sel === g ? 0 : g;
+  renderGearList();
+});
+$('glImprove').addEventListener('click', startImprove);
+$('glCheck').addEventListener('click', function () { state.gearList = null; startGearCheck(); });
+$('glFinish').addEventListener('click', finishGearList);
 $('rckSum').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-rck-redo]') : null;
   if (b && !b.disabled) startEdit('R', 'u', +b.getAttribute('data-rck-redo'));

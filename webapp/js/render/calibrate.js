@@ -96,11 +96,12 @@ function renderCal() {
   var checkRun = !active && !!state.check && state.check.phase === 'run';   // [v3.2] gear check running
   var checkDone = !active && !!state.check && state.check.phase === 'done' && !!state.check.flow;   // [v3.3] its summary
   var checkOffer = !active && !!state.check && state.check.phase === 'offer' && !!state.check.flow;   // [v3.3] the finish card
+  var gearsShown = !active && !!state.gearList && !state.check && !reviewItems().length;   // [v3.3] the gear list (#11)
   if (active && state.place) closePlace(false);   // the calibration started: step 1 is over
   var placing = !!state.place && !active, saved = !!state.upSaved && !active;
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
-  setHidden('calIdle', active || checkRun || checkDone || checkOffer || placing || saved);
+  setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
   if (state.result) setHidden('resultCard', resultCardHidden());
@@ -116,9 +117,9 @@ function renderCal() {
 
   setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
-  state.calFocus = active || placing || saved || ((checkRun || checkDone || checkOffer) && connected);
+  state.calFocus = active || placing || saved || ((checkRun || checkDone || checkOffer || gearsShown) && connected);
   applyCalFocus();
-  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : checkOffer ? 'Finish and ride' : 'Skip the rest of the gear check');
+  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : checkOffer || gearsShown ? 'Finish and ride' : 'Skip the rest of the gear check');
   if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }
 
   buildCalDots();
@@ -541,7 +542,7 @@ function renderPoints() {
 
 function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
-    !!state.upSaved || !!state.resultHidden || !!state.place;
+    !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList;
 }
 
 function renderResult() {

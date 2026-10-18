@@ -11,7 +11,8 @@ DOM stub and a virtual clock).  SKIPs with a message if node or the harness isn'
         - breadcrumb 'STEP n OF 6' follows the board's step field
         - 'Paused - pedal to continue' while flag O is set, no alarm styling
         - down-pass dots turn blue
-        - the guided redo starts after F,end when the check flagged something (a #R is written)
+        - after F,end with something flagged: the gear list shows it red and offers Improve (#11),
+          or (an edit's F list) the guided redo starts (a #R is written)
         - no page errors; Z / J / X lines don't upset the page
 Exit code 1 if a check fails.
 """
@@ -144,7 +145,9 @@ const { loadApp, readLog } = require(process.argv[2]);
   const st = app.M3.state;
   console.log(JSON.stringify({ rec, fEndAt, fEndN, dotProblems: dotProblems.slice(0, 10), nDotProblems: dotProblems.length,
     cmds: app.commands(), errors: app.errors.map(String), downPoints: (st.downPoints || []).length,
-    review: st.review ? st.review.items.map((i) => i.pass + i.point) : null }));
+    review: st.review ? st.review.items.map((i) => i.pass + i.point) : null,
+    gearList: !!st.gearList && !$('gearList').hidden, improve: !$('glImprove').hidden,
+    red: app.win.gearQuality ? Object.keys(app.win.gearQuality()).filter((g) => app.win.gearQuality()[g].level === 2) : [] }));
 })().catch((e) => { console.log(JSON.stringify({ fatal: String(e && e.stack || e) })); process.exit(2); });
 """
 drv = os.path.join(TMP, "feed_driver.js")
@@ -223,8 +226,9 @@ def page_checks(label, f, res):
     if res["fEndN"]:
         redo = [c for c in res["cmds"] if res["fEndAt"] is not None and c["t"] >= res["fEndAt"] and
                 re.match(r"^#R,[ud],\d+$", c["cmd"])]
-        ck.check(bool(redo), f"E2 {label}: guided redo starts after F,end,{res['fEndN']} "
-                             f"({redo[0]['cmd'] if redo else [c['cmd'] for c in res['cmds'][-8:]]})")
+        listed = res.get("gearList") and res.get("improve") and res.get("red")
+        ck.check(bool(redo) or bool(listed), f"E2 {label}: after F,end,{res['fEndN']} the flagged gear is redone or shown red "
+                 f"with Improve ({redo[0]['cmd'] if redo else 'gear list, red ' + ','.join(res.get('red') or []) if listed else [c['cmd'] for c in res['cmds'][-8:]]})")
 
 
 def bad_point(sim, pol):

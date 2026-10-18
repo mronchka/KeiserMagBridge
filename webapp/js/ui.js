@@ -28,6 +28,7 @@ function render() {
   renderCal();
   renderReview();
   renderRideCheck();
+  renderGearList();
   renderBadge();
 }
 

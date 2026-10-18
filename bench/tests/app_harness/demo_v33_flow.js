@@ -73,18 +73,27 @@ function check(name, ok, detail) {
   const blue = st.downPoints.filter((q) => /\bdown\b|\bcur\b/.test(dots[q.point - 1] || '')).length;
   check('down-pass dots turn blue', blue === st.downPoints.length && blue >= 3, blue + ' of ' + st.downPoints.length);
 
-  // Finish the down pass; the review list (u20, d23) then drives guided redos
+  // Finish the down pass: the gear list (#11) shows the flagged gears (u20, d23) red, and Improve redoes them
   await until(() => st.s.cal === 0 && st.s.flow === 0, 400);
+  await until(() => !!st.gearList, 10);
+  const q = app.win.gearQuality();
+  check('the gear list after the down pass: the flagged gears are red', !$('gearList').hidden && q[20].level === 2 && q[22].level === 2,
+    'gear 20 ' + q[20].level + ', gear 22 ' + q[22].level + ' / ' + $('glLead').textContent);
+  check('...and it offers to improve them', !$('glImprove').hidden && /^Improve \d+ gears?$/.test($('glImprove').textContent), $('glImprove').textContent);
+  $('glImprove').click();
   await until(() => st.s.pass === 'ru' || st.s.pass === 'rd', 10);
-  check('guided redo starts after the down pass', st.s.pass === 'ru' || st.s.pass === 'rd', 'pass ' + st.s.pass + ' step ' + st.s.step);
+  check('Improve starts the guided redo', st.s.pass === 'ru' || st.s.pass === 'rd', 'pass ' + st.s.pass + ' step ' + st.s.step);
   // B (go back first): the circle shows the gear to go back into
   const sawGoTo = await until(() => $('discLbl').textContent === 'GO TO', 5, 0.1);
   check('during B the circle shows the gear to go back into', sawGoTo, $('discLbl').textContent + ' ' + $('discBig').textContent + ' / ' + $('calHead').textContent);
   const sawGreen = await until(() => /green/.test($('disc').className) && !$('discNum').hidden, 8, 0.1);
   check('when B clears it turns green on that gear', sawGreen, $('discBig').textContent);
   await until(() => !st.review && st.s.cal === 0, 120);
-  await until(() => st.check && st.check.phase === 'run', 10);
-  check('step 6 (gear check) starts after the fixes', !!st.check && st.check.phase === 'run' && /STEP 6 OF 6/.test(crumb()), crumb());
+  await until(() => !!st.gearList, 10);
+  check('after the improve pass the gear list comes back with what improved', !!st.gearList && /improved/.test($('glLead').textContent) &&
+    $('glTitle').textContent === 'Your gears now', $('glTitle').textContent + ': ' + $('glLead').textContent);
+  $('glCheck').click();
+  check('step 6 (gear check) starts from it', !!st.check && st.check.phase === 'run' && /STEP 6 OF 6/.test(crumb()), crumb());
 
   // E2: the board starts calibrating again during step 6 (#D): the breadcrumb follows the board
   M3.sendCmd('#D');

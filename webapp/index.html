@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.3-2026-10-17.3';
+  var APP_BUILD = 'v3.3-2026-10-18.1';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-17.3">
+<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.1">
 </head>
 <body>
 
@@ -135,6 +135,20 @@
 
     <!-- [v3.2] gears the bridge's check flagged after saving (F lines); filled by renderReview() -->
     <div class="card review" id="reviewCard" role="region" aria-label="Check these gears" hidden></div>
+
+    <!-- [v3.3] the end of a calibration: every gear with how well it was captured, and "Improve" (#11) -->
+    <div class="card gears" id="gearList" role="region" aria-label="Your gears" hidden>
+      <h2 id="glTitle">Calibration done</h2>
+      <p class="gl-lead" id="glLead"></p>
+      <div class="gl-grid" id="glGrid"></div>
+      <div class="gl-legend" aria-hidden="true"><span><i class="q0"></i>Good</span><span><i class="q1"></i>Unsure</span><span><i class="q2"></i>Needs another look</span></div>
+      <p class="gl-why" id="glWhy" role="status"></p>
+      <div class="btn-stack">
+        <button class="btn primary wide" id="glImprove" type="button" hidden>Improve</button>
+        <button class="btn wide" id="glCheck" type="button">Check a few gears</button>
+        <button class="btn text" id="glFinish" type="button">Finish and ride</button>
+      </div>
+    </div>
 
     <!-- [v3.2] confirm ride: app-only walkthrough comparing the bridge's gear with the console -->
     <div class="card rck" id="rideCheck" role="region" aria-label="Gear check" hidden>
@@ -417,7 +431,7 @@
   (function () {
     // In load order; the last one wires the buttons and boots the page.
     var APP_FILES = ['js/state.js', 'js/ui.js', 'js/protocol.js', 'js/ble.js',
-      'js/flow.js', 'js/gearcheck.js', 'js/storage.js', 'js/diag.js',
+      'js/flow.js', 'js/gearcheck.js', 'js/quality.js', 'js/storage.js', 'js/diag.js',
       'js/render/ride.js', 'js/render/calibrate.js', 'js/render/diagnose.js', 'js/render/console.js',
       'js/main.js'];
     var DEMO_FILE = 'js/demo-sim.js';   // with ?demo=1, just before the last file

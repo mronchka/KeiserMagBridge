@@ -283,6 +283,7 @@ function onC(p) {
   if (isRedoing()) {
     // [v3.2] a redo replaces that one point and keeps the rest
     state.points = state.points.filter(function (q) { return q.point !== point; });
+    pointStatClear('u', point);
   } else {
     state.points = state.points.filter(function (q) { return q.point < point; });
     state.downPoints = [];   // an up point after the down pass started can only be a new run
@@ -309,6 +310,7 @@ function onCDown(p) {
   var pt = { point: point, x: num(p[3]), y: num(p[4]), z: num(p[5]) };
   if (!fin(pt.x) || !fin(pt.y) || !fin(pt.z)) return false;
   // Down points come 23, 22, ... 2: anything at or below this one is from before an undo.
+  if (isRedoing()) pointStatClear('d', point);
   state.downPoints = state.downPoints.filter(function (q) { return isRedoing() ? q.point !== point : q.point > point; });
   state.downPoints.push(pt);
   state.behind = null; state.overshoot = null;
@@ -467,6 +469,7 @@ function onF(p) {
     // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
     // after an edit (wantReadback) carries on with the guided fixes.
     var stored = state.qJustEnded && !state.qFromEdit;
+    var improveQueue = state.review && state.review.source === 'improve' ? state.review.items : null;
     state.review = { items: flagged, source: stored ? 'stored' : 'run' };
     state.qJustEnded = false;
     state.qFromEdit = false;
@@ -474,11 +477,22 @@ function onF(p) {
       logLine('The bridge flagged ' + items.length + ' point' + (items.length === 1 ? '' : 's') + ': ' +
         items.map(function (it) { return pointWords(it.pass, it.point) + ' (' + it.reason + ')'; }).join('; ') + '.', 'sys');
     }
-    if (state.wantReadback) {
+    if (improveQueue && !state.wantReadback && !stored) {
+      // #11 improve pass: the gear just redone leaves the queue (it comes back if the bridge still flags it)
+      var rest = improveQueue.filter(function (it) { return fixKey(it) !== state.improveLast; });
+      flagged.forEach(function (it) { if (!rest.some(function (x) { return fixKey(x) === fixKey(it); })) rest.unshift(it); });
+      state.review = { items: rest, source: 'improve' };
+      state.improveLast = '';
+      fixNext();
+    } else if (state.wantReadback) {
       // save the edited calibration first; its F list (after Q,end) drives what comes next
       state.wantReadback = false;
       state.qFromEdit = true;
       requestStoredCal();
+    } else if (flagged.length && isV33() && !stored && !state.fixHold && state.result && state.result.type === 'K' && state.result.ok && !state.result.edit) {
+      // [v3.3] the end of a calibration: the gear list shows what the bridge flagged and asks before redoing (#11)
+      state.review = null;
+      maybeOfferCheck();
     } else if (flagged.length) {
       if (stored) state.fixPaused = true;
       if (!state.fixHold) {
@@ -603,6 +617,7 @@ function onU(p) {
   var b = state.behind;
   if (!wasStuck && b && Date.now() - b.at < 5000 && (down ? b.pass === 'd' && step === b.step + 1 : b.pass === 'u' && step === b.step - 1)) {
     state.overshoot = { pass: down ? 'd' : 'u', step: step };
+    pointStat(down ? 'd' : 'u', step + 1, 'back');   // (#11 quality)
     try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {}
   }
   state.stuck = null;
@@ -643,6 +658,7 @@ function onW(p) {
   var fresh = !state.w || state.w.point !== point || state.w.resolved;
   var count = fresh ? 1 : state.w.count + 1;
   state.w = { point: point, drift: num(p[2]), creep: num(p[3]), resolved: false, count: count };
+  pointStat(state.s && (state.s.pass === 'd' || state.s.pass === 'rd') ? 'd' : 'u', point, 'w');   // (#11 quality)
   logLine('Point ' + point + ': still changing (the check turn moved ' + fmt(state.w.drift, 1) + ' \u00b5T further, creep ' +
     fmt(state.w.creep, 1) + ' \u00b5T). Waiting for the lever to settle.', 'sys');
   if (fresh) { try { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch (e) {} }
@@ -710,6 +726,7 @@ function onCalStarted() {
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
   state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
+  state.pointStats = {}; state.gearList = null; state.improving = null;
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
