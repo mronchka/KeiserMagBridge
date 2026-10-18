@@ -82,9 +82,24 @@ for js in sorted(os.listdir(HARN)):
         ck.check(rc == 0, f"E0 app_harness/{js} parses" + (f": {err.strip()[:200]}" if rc else ""))
 
 # ====================================================================== E1
+def required_args(path):
+    """Positional arguments a harness script needs, from its 'Usage: node ...js ARGS' header line
+    (optional ones are in [brackets]; '(exit 1 on failure)' and later text is ignored)."""
+    head = "".join(open(path, encoding="utf-8").readlines()[:15])
+    m = re.search(r"Usage: node \S+\.js([^\n(]*)", head)
+    if not m:
+        return []
+    args = re.sub(r"\[[^\]]*\]", " ", m.group(1)).split()
+    return args
+
+
 print("\nE1. The app agent's harness scripts")
 for js in sorted(os.listdir(HARN)):
     if not js.endswith(".js") or js == "harness.js":
+        continue
+    need = required_args(os.path.join(HARN, js))
+    if need:   # a tool run by hand on a given log (e.g. replay_board_log.js LOG), not a self-contained check
+        ck.skip(f"E1 {js}: needs {' '.join(need)} (run it by hand)")
         continue
     rc, out, err = node([os.path.join(HARN, js)])
     fails = [l for l in out.splitlines() if l.startswith("FAIL")]
