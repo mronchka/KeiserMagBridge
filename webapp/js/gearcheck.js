@@ -86,7 +86,7 @@ function renderRideCheck() {
   }
   setHidden('rckMore', !(c.phase === 'done' && c.flow && connected));
   if (c.phase !== 'run') return;
-  $('rckQuit').textContent = c.flow ? 'Skip this step' : 'Skip the rest';
+  $('rckQuit').textContent = c.flow ? 'Stop the gear check' : 'Skip the rest';
   var list = checkList(c), st = list[c.idx], s = state.s;
   $('rckStep').textContent = 'Check ' + (c.idx + 1) + ' of ' + list.length + ' · ' + st.label;
   if ($('rckTask').textContent !== st.task) $('rckTask').textContent = st.task;
@@ -217,7 +217,8 @@ function renderCheckSummary() {
   if (!c) return;
   var res = c.results, done = c.redone || {};
   var miss = res.filter(function (r) { return r.app !== r.console; });
-  $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : miss.length ? 'Some gears differ' : 'All gears match';
+  var allRedone = miss.length && miss.every(function (r) { return done[edgeGear(r.app, r.console)]; });
+  $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : allRedone ? 'Redone: check them again?' : miss.length ? 'Some gears differ' : 'All gears match';
   var html = '', redone = {};
   res.forEach(function (r) {
     var ok = r.app === r.console, btn = '';
@@ -229,7 +230,8 @@ function renderCheckSummary() {
           : '<button class="btn primary" type="button" data-rck-redo="' + gg + '" aria-label="Redo gear ' + gg + ' going up by pedalling">Redo gear ' + gg + '</button>';
       }
     }
-    var v = ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console;
+    var v = ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console +
+      ((c.v32 || state.v32) ? ' · the change to gear ' + edgeGear(r.app, r.console) : '');
     html += '<div class="rck-row' + (ok ? '' : ' miss') + '">' + (btn
       ? '<span class="k">' + esc(r.label) + '<span class="sub">' + v + '</span></span>' + btn
       : '<span class="k">' + esc(r.label) + '</span><span class="v">' + v + '</span>') + '</div>';

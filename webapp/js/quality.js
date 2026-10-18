@@ -8,7 +8,7 @@ var GEARS = TOTAL_POINTS - 1;   // 24 gears; gear g's bottom edge is up point g,
 var Q_TEXT = ['Good', 'Unsure', 'Needs another look'];
 // #24 / #29: plain words for the why line (no "edges" or units)
 var FLAG_WORDS = {
-  behind: 'isn\u2019t past the gear below it',
+  behind: 'was saved too soon (too close to the gear below it)',
   updown: 'is in a different place going up and coming down',
   offpath: 'doesn\u2019t line up with the other gears',
   pair: 'is in a different place going up and coming down, and it isn\u2019t clear which is off',

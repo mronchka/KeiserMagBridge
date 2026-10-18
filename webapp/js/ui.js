@@ -53,7 +53,8 @@ function checkPageVersion() {
 // Generic "tap twice within 3 s" confirmation.
 function twoTap(btn, armedText, fn) {
   var until = +(btn.getAttribute('data-armed') || 0);
-  if (Date.now() < until) { disarm(btn); fn(); return; }
+  if (Date.now() < until && Date.now() > until - 2600) { disarm(btn); fn(); return; }   // (#61: a double-tap doesn't confirm)
+  if (Date.now() < until) return;
   btn.setAttribute('data-armed', String(Date.now() + 3000));
   if (btn.getAttribute('data-label') === null) btn.setAttribute('data-label', btn.textContent);
   btn.textContent = armedText;

@@ -102,7 +102,7 @@ function renderCal() {
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
-  setHidden('onb', homeListShown() || !!state.improving);   // #12 (#38: nor under an Improve pass): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
+  setHidden('onb', homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
@@ -390,7 +390,7 @@ function renderCal() {
     : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
     // (the hold-still method after the crank wasn't found: why, where 0 of 25 would be)
     : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + state.learnWhy
-    : step + ' of ' + TOTAL_POINTS + ' saved';   // #33 (25 positions: the bottom, 23 gear changes, the top)
+    : step + ' of ' + TOTAL_POINTS + ' positions saved';   // #33 (25 positions: the bottom, 23 gear changes, the top)
   // [v3.3] on the gear steps: stopping is fine
   setHidden('stopNote', !(v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking));
   var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0 && !down && !redoing && !sweeping;
@@ -545,7 +545,8 @@ function renderPoints() {
 function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
     !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk ||   // #25
-    !!state.improving || homeListShown();   // #45 (the list says it all; the file is under Saved runs)
+    !!state.improving || homeListShown() ||   // #45 (the list says it all; the file is under Saved runs)
+    (state.v33 && !!state.result && state.result.type === 'K' && state.result.ok && !calRunning(state.s));
 }
 
 function renderResult() {
@@ -587,11 +588,12 @@ function renderResult() {
   } else {
     // #27: stopped by the rider is not an error
     var byRider = /cancel/i.test(r.reason);
-    card.className = 'card result' + (byRider ? '' : ' bad');
+    card.className = 'card result first' + (byRider ? '' : ' bad');
     html = '<h2>' + (byRider ? 'Calibration stopped' : 'Calibration aborted') + close + '</h2>' + (byRider ? '' : '<p><b>' + esc(r.reason) + '</b></p>') +
       '<p class="small">The previous calibration (if any) is unchanged.</p>';
     var prec = r.recordId ? findRecord(r.recordId) : null;
-    if (prec) html += '<p class="small">The points captured so far were saved as ' + esc(prec.filename) + ' (' + esc(prec.summary) + ').</p>' + recActionsHtml(prec.id);
+    if (prec) html += byRider ? '<p class="small">The points so far are kept under Saved runs.</p>'
+      : '<p class="small">The points captured so far were saved as ' + esc(prec.filename) + ' (' + esc(prec.summary) + ').</p>' + recActionsHtml(prec.id);
   }
   card.innerHTML = html;
 }

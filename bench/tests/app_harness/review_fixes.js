@@ -222,7 +222,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.upPass();
     app.$('upContinue').click();
     await app.downPass(23, 12);
-    app.$('btnCancel').click(); app.$('btnCancel').click();   // (x) twice in the down pass: the board saves (K), as the firmware does
+    app.$('btnCancel').click(); await app.advance(0.5); app.$('btnCancel').click();   // (x) twice in the down pass: the board saves (K), as the firmware does
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
@@ -349,7 +349,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.upPass(['u,20']);
     app.$('upContinue').click();
     await app.downPass(23, 12);
-    app.$('btnSkipDown').click(); app.$('btnSkipDown').click();   // Finish without the down pass
+    app.$('btnSkipDown').click(); await app.advance(0.5); app.$('btnSkipDown').click();   // Finish without the down pass (two taps, #61)
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,u,20,behind,1.0,2.0,3.0');
     await app.f('F,end,1');
@@ -412,7 +412,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#11 the gear list shows the flagged gear red, and why when tapped', app.win.gearQuality()[15].level === 2 &&
       (app.$('glGrid').innerHTML.match(/class="gl-g q2[^"]*" type="button" data-gear="15"/) || []).length === 1, app.$('glLead').textContent);
     st.gearList.sel = 15; app.win.renderGearList();   // (a tap on chip 15: the DOM stub has no event targets)
-    check('#11 ...tapping gear 15 says why', /Gear 15: Where it starts going up \(from gear 14\) isn.t past the gear below it/.test(app.$('glWhy').textContent), app.$('glWhy').textContent);
+    check('#11 ...tapping gear 15 says why', /Gear 15: Where it starts going up \(from gear 14\) was saved too soon/.test(app.$('glWhy').textContent), app.$('glWhy').textContent);
     app.$('glCheck').click();
     check('#10 the gear check starts with the gear the bridge flagged', st.check.list.some((c) => c.gear === 15),
       st.check.list.map((c) => c.gear + c.pace[0]).join(' '));

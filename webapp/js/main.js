@@ -62,6 +62,7 @@ $('upLater').addEventListener('click', function () {
   render();
 });
 $('resumeDown').addEventListener('click', sendDownCmd);
+$('resumeNew').addEventListener('click', calibrateAgain);   // #58: the walkthrough (and Start) instead
 $('resumeCheck').addEventListener('click', function () { state.checkDone = false; startGearCheck(); });
 $('staleReload').addEventListener('click', function () { location.reload(); });
 $('btnCapture').addEventListener('click', function () { send('n'); });
@@ -85,7 +86,7 @@ function disarmCancel() {
 }
 function cancelTap() {
   var b = $('btnCancel');
-  if (Date.now() < cancelArmedUntil) {
+  if (Date.now() < cancelArmedUntil && Date.now() > cancelArmedUntil - 2600) {   // (#61: not within 0.4 s: a double-tap)
     clearTimeout(cancelTimer);
     disarmCancel();
     if (state.s && state.s.pass === 'd' && state.s.cal !== 7) state.stopSent = true;   // ends the down pass (K): no auto step 6
