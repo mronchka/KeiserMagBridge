@@ -556,6 +556,9 @@ main {
 #view-cal:has(#calResume) #resultCard.result.first { order: -1; }   /* #27: "Calibration stopped" comes first (even before the resume offer) */
 /* #34: with the Connect card above it, the walkthrough's picture gives up room so Continue stays above the tab bar */
 body:has(#connCard.show) .onb-art { height: min(150px, 18vh); }
+body:has(#connCard.show) .onb-art .art-ring { width: min(150px, 18vh); height: min(150px, 18vh); }   /* #79 */
+body:has(#connCard.show) .onb-art .art-disc { --d: min(130px, 16vh); padding: 8px; }
+body:has(#connCard.show) .onb-art .art-disc.small { --d: min(96px, 12vh); }
 #view-cal:has(#calResume:not([hidden])) #resultCard { order: 1; }   /* "Pick up where you stopped" first */
 .onb { padding-top: 0; }
 .onb { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 8px 0; touch-action: pan-y; }

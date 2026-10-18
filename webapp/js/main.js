@@ -104,7 +104,7 @@ $('btnCancel').addEventListener('click', cancelTap);
 // the top bar's (x): cancel while calibrating (tap twice), else leave the step it is on
 $('topX').addEventListener('click', function () {
   if (calRunning(state.s)) cancelTap();
-  else if (state.place) $('placeBack').click();
+  else if (state.place) { closePlace(true); state.homeWalk = false; onbIdx = 0; render(); }   // (#80)
   else if (state.upSaved) $('upLater').click();
   else if (state.check && state.check.phase === 'run') $('rckQuit').click();
   else if (state.check && state.check.phase === 'done') $('rckClose').click();

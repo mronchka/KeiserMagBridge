@@ -1046,5 +1046,23 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#77 reconnecting mid-calibration: "Calibration paused", no walkthrough or result card',
       !app.$('calLost').hidden && app.$('onb').hidden && app.$('resultCard').hidden, 'calLost ' + !app.$('calLost').hidden + ' onb ' + !app.$('onb').hidden);
   }
+  {
+    // #81: Later: the board says cal 7 a moment longer; the start screen shows no step strip over the resume card (it doesn't jump)
+    const app = mk();
+    await app.upPass();
+    app.$('upLater').click();
+    await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
+    check('#81 after Later, while the bridge still says cal 7: no step strip', app.$('crumbs').hidden === true, app.$('crumbT').textContent);
+    await app.f(S({}));
+    check('#58 ...the resume card shows, without a review card stacked on it', !app.$('calResume').hidden && app.$('reviewCard').hidden);
+    // #83: the down pass not done: the list doesn't say coming down looks good
+    app.win.openGearList();
+    app.M3.render();
+    check('#83 no down pass: the list says coming down isn\'t measured yet', /coming down isn\u2019t measured yet/i.test(app.$('glLead').textContent), app.$('glLead').textContent);
+    // #80: Calibrate again starts the walkthrough at page 1
+    app.win.onbIdx = 4;
+    app.win.calibrateAgain();
+    check('#80 Calibrate again opens the walkthrough at its first page', app.win.onbIdx === 0, String(app.win.onbIdx));
+  }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });

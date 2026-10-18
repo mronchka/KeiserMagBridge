@@ -396,7 +396,9 @@ function renderCal() {
   // [v3.3] on the gear steps: stopping is fine
   var holdMethod = state.learnFailed && v3 && !redoing;
   setHidden('stopNote', !((v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking) || holdMethod));
-  var sn = holdMethod ? 'Crank not found' + (state.learnWhy ? ' (' + learnWhyText() + ')' : '') + ': ' + (v33 ? 'the sweep is skipped, and ' : '') + 'you stop pedalling at each gear.'
+  var whyShown = step === 0 && !!state.learnWhy;   // (calCount says it there)
+  var sn = holdMethod ? (whyShown ? 'So ' : 'Crank not found' + (state.learnWhy ? ' (' + learnWhyText() + ')' : '') + ': ') +
+      (v33 ? 'the sweep is skipped, and ' : '') + 'you stop pedalling at each gear.'
     : 'Stop pedalling to shift any time you like.';
   if ($('stopNote').textContent !== sn) $('stopNote').textContent = sn;
   var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0 && !down && !redoing && !sweeping;

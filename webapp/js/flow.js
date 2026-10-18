@@ -31,7 +31,7 @@ function cadWindow(gear) {
 function flowNow() {
   var s = state.s;
   // Whenever the board is calibrating, its own step wins (a #D after the gear check is step 5, not 6).
-  if (s && state.v33 && s.cal !== 0 && s.flow >= 1 && s.flow <= 6) return s.flow;
+  if (s && state.v33 && s.cal !== 0 && !(s.cal === 7 && !state.upSaved) && s.flow >= 1 && s.flow <= 6) return s.flow;   // (#81: Later)
   if (state.place) return 1;
   if (state.check && state.check.flow) return 6;   // the finish card, the check and its summary
   if (state.upSaved) return 4;
@@ -309,7 +309,8 @@ function renderReview() {
   var card = $('reviewCard'), items = reviewItems();
   var active = calRunning(state.s);
   var checkRun = !!state.check && state.check.phase === 'run';
-  var show = !active && !checkRun && items.length > 0 && !state.fixHold && !state.upSaved && !state.place;   // [v3.3] fixes wait for the down pass
+  var show = !active && !checkRun && items.length > 0 && !state.fixHold && !state.upSaved && !state.place &&   // [v3.3] fixes wait for the down pass
+    !(isV33() && !$('calResume').hidden);   // (#58: and while the start screen offers to pick it up)
   renderFixLinks();
   setHidden('reviewCard', !show);
   if (!show) { reviewKey = ''; return; }
