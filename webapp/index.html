@@ -208,6 +208,11 @@
         <h2 style="margin:0">Calibration paused</h2>
         <p class="small muted" style="margin:6px 0 0">The connection to the bridge dropped. Reconnect: the bridge has kept your place, and the calibration carries on from there.</p>
       </div>
+      <!-- #85: a calibrated bridge whose calibration this page hasn't read yet -->
+      <div class="card" id="calReading" hidden role="status">
+        <h2 style="margin:0">Your calibration</h2>
+        <p class="small muted" style="margin:6px 0 0">Reading it from the bridge…</p>
+      </div>
       <!-- [v3.3] pick up where the last calibration stopped (first, above the walkthrough) -->
       <div class="card resume" id="calResume" hidden>
         <h2 style="margin:0">Pick up where you stopped</h2>

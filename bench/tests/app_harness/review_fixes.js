@@ -1064,5 +1064,29 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     app.win.calibrateAgain();
     check('#80 Calibrate again opens the walkthrough at its first page', app.win.onbIdx === 0, String(app.win.onbIdx));
   }
+  {
+    // #84: a cut flag line is not a flag; a cut down-pass undo doesn't wipe the up points
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 10);
+    await app.f('U,8');                                            // was U,8,d
+    check('#84 a cut down-pass undo (U,n without ,d) leaves the points alone', st.points.length === 25 && st.downPoints.length === 14,
+      'up ' + st.points.length + ' down ' + st.downPoints.length);
+    await app.downPass(9, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,1');                                          // was F,u,14,pair,...
+    await app.f('F,end,1');
+    await app.f(S({}));
+    check('#84 a cut flag line is not taken as a flag on another gear', !(st.lastFlags || []).some((f) => f.point === 1), JSON.stringify(st.lastFlags));
+  }
+  {
+    // #85: a fresh page on a calibrated bridge: "reading your calibration", not the first-time walkthrough
+    const app = mk();
+    await app.f(S({}));
+    app.win.showView('cal'); app.M3.render();
+    check('#85 a fresh page reading the bridge\'s calibration shows that, not the walkthrough', !app.$('calReading').hidden && app.$('onb').hidden,
+      'reading ' + !app.$('calReading').hidden + ' onb ' + !app.$('onb').hidden);
+  }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });

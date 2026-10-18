@@ -587,6 +587,7 @@ function onF(p) {
     return true;
   }
   if (kind !== 'u' && kind !== 'd') return false;
+  if (p.length !== 7 || !(p[3] || '').trim()) return false;   // #84: F,<u|d>,<point>,<reason>,<gx>,<gy>,<gz>
   var point = int(p[2]);
   if (!fin(point) || point < 1 || point > TOTAL_POINTS) return false;
   if (!state.fList) state.fList = [];
@@ -692,6 +693,7 @@ function onU(p) {
   var step = int(p[1]);
   if (!fin(step) || step < 0 || step >= TOTAL_POINTS) return false;
   var down = (p[2] || '').trim() === 'd';   // [v3.2] U,<step>,d: undo in the down pass
+  if (!down && state.s && state.s.pass === 'd' && state.s.cal !== 7 && state.s.cal !== 0) return false;   // #84: a cut down-pass undo
   // After undo the current step is <step>, so points 1..step remain captured.
   // [v3.1] A redo after cal=5 keeps the same step: that point was never added (no C line), so nothing is lost.
   var wasStuck = (state.s && state.s.cal === 5) || (state.stuck && state.stuck.point === step + 1);
@@ -883,7 +885,7 @@ function editFList() {
       requestStoredCal();
       return;
     }
-    if (!state.qJustEnded || !state.qFromEdit) return;   // (it came)
+    if (!state.qJustEnded || !(state.qFromEdit || state.qGaveUp)) return;   // (it came)
     logLine('The check list after the readback never arrived: carrying on.', 'bad');
     onF(['F', 'end', '0']);
     render();
@@ -1008,6 +1010,7 @@ function onQ(p) {
           } catch (e) { console.warn('save failed', e); }
         }
         logLine('The stored calibration arrived incomplete twice: carrying on.', 'bad');
+        editFList();   // (#86: its F list may be lost too)
         if (state.improving) setTimeout(function () { if (state.improving && !state.edit && !state.q) { dropSavedImprove(); fixNext(); } render(); }, 6000);
         return true;
       }

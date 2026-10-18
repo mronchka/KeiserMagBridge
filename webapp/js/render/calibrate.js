@@ -104,7 +104,10 @@ function renderCal() {
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
   var lostRun = linkBack() && !!(state.dropS && state.dropS.cal !== 0);   // #69 (#77: until the first status line)
   setHidden('calLost', !lostRun);
-  setHidden('onb', lostRun || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
+  // #85: the bridge says it is calibrated and the page is reading that calibration (at most 3 tries)
+  var reading = !lostRun && homeListDue() && !state.homeRead && !homeListShown() && (state.homeTries || 0) < 3 && !state.homeWalk;
+  setHidden('calReading', !reading);
+  setHidden('onb', lostRun || reading || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
