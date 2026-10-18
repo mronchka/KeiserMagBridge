@@ -479,12 +479,15 @@ class Rider:
       sweep_speed        uT/s during the survey sweeps
       on_prompt          callback(rider, sim, pass, step) for scenario-specific actions; return True to
                          take over that prompt
+      press              v3.4 press mode ('#A,press', run_cal(press=True)): press 'n' press_s after the lever
+                         comes to rest at its stop; after a refused press (N,notmoved), nudge the lever 0.4 uT
+                         further and press again (4 presses at most)
     """
 
     def __init__(self, sim, react_s=0.6, overshoot=(0.1, 0.4), stop_shift=0.0, pause_s=(3.0, 8.0),
                  mid_pause=0.0, mid_s=(3.0, 6.0), mid_frac=(0.4, 0.6), rests=None, overshoot_at=None, disconnects=None,
                  continue_down=True, sweep_speed=7.0, on_prompt=None, check_tap_s=3.0, undo_after=45.0,
-                 overshoot_by=3.0):
+                 overshoot_by=3.0, press=False, press_s=1.0):
         self.sim = sim
         self.react_s, self.over = react_s, overshoot
         self.stop_shift, self.pause_s = stop_shift, pause_s
@@ -503,6 +506,9 @@ class Rider:
         self.stucks = {}
         self.stuck_moves = 0
         self.overshoot_by = overshoot_by
+        self.press, self.press_s = press, press_s
+        self.pressed = {}                # key -> (time of the last press, presses)
+        self.arrived = None              # (key, time the lever came to rest at its stop)
         self.undos = 0
         self.key = None
         self.since = 0
@@ -647,6 +653,8 @@ class Rider:
             sim.cmd('u')
             self.since = now
             return False
+        if self.press and self.planned:
+            self._press(sim, f, now, key)
         if self.planned or now < self.busy_until or now - self.since < self.react_s:
             return False
         self.planned = True
@@ -704,6 +712,38 @@ class Rider:
         else:
             sim.move_to(stop)
         return False
+
+
+    def _press(self, sim, f, now, key):
+        """v3.4 press mode: at rest at the stop (console showing the gear), press once; again if nothing
+        is being measured 6 s later (a refused press), at most 3 times per point."""
+        stop = sim.stops.get(key)
+        at_stop = (stop is not None and not sim.moving and abs(sim.L - stop) < 1e-6 and now >= self.busy_until
+                   and f.calState == fw.CAL_WAITING and not API.go_back(f))
+        if not at_stop:
+            self.arrived = None
+            return
+        if self.arrived is None or self.arrived[0] != key:
+            self.arrived = (key, now)
+        if now - self.arrived[1] < self.press_s or f.pressArmed:
+            return
+        last, n = self.pressed.get(key, (None, 0))
+        refused = last is not None and any(l == "N,notmoved" and t >= last * 1000 - 1 for t, l in f.out[-40:])
+        if refused and n < 4:
+            # "move the lever a little further, then press": a nudge in the direction of travel
+            up = key[0] in (fw.PASS_UP, fw.PASS_FIX_UP)
+            stop = stop + (0.4 if up else -0.4)
+            sim.stops[key] = stop
+            self.pressed[key] = (None, n)
+            self.arrived = None
+            self.note(f"refused: nudge {ps_name(key[0])} {key[1] + 1} to {stop:.1f}")
+            sim.move_to(stop)
+            return
+        if last is not None and (now - last < 6.0 or n >= 4):
+            return
+        self.pressed[key] = (now, n + 1)
+        self.note(f"press {ps_name(key[0])} {key[1] + 1}")
+        sim.cmd('n')
 
 
 # ====================================================================== runs and results
@@ -806,8 +846,9 @@ MACHINE = re.compile(r"^([CKFUNWPZEALJ]),|^Q,")
 
 
 def run_cal(seed=1, rpm=75, fw_kw=None, sim_kw=None, rider_kw=None, seconds=900, cal=None, f=None, start="usb",
-            label=""):
-    """One calibration from 'c' to the end (or seconds). Returns Result."""
+            label="", press=False):
+    """One calibration from 'c' to the end (or seconds). Returns Result. press: v3.4 press mode ('#A,press'
+    before 'c', and the rider presses at each point)."""
     if f is None:
         f = fw.Firmware(cal=cal, **(fw_kw or {}))
         if cal is not None:
@@ -815,8 +856,13 @@ def run_cal(seed=1, rpm=75, fw_kw=None, sim_kw=None, rider_kw=None, seconds=900,
     sim = Sim(f, rpm=rpm, seed=seed, **(sim_kw or {}))
     if f.calValid and f.cal and f.cal.get("pts"):
         pass
-    rider = Rider(sim, **(rider_kw or {}))
+    rk = dict(rider_kw or {})
+    if press:
+        rk.setdefault("press", True)
+    rider = Rider(sim, **rk)
     sim.run(2.0)                                       # pedalling before 'c'
+    if press:
+        sim.hash_line("A,press")
     sim.src = "ble" if start == "ble" else "usb"
     if sim.record:
         sim.trace.append(("c", f.ms_now, ('c', sim.src)))

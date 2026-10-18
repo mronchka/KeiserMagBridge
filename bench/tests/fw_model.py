@@ -1,4 +1,4 @@
-"""Host model of KeiserMagBridge_v3_3.ino (sample pipeline, crank learning,
+"""Host model of KeiserMagBridge_v3_4.ino (v3.3 + press to capture; sample pipeline, crank learning,
 turn detector, survey, calibration state machine, tolerances, the check,
 pause, power, Zwift packet, '#' line input, calibration file layouts).
 
@@ -139,7 +139,8 @@ K_SPAN, SPAN_MIN = 15.0, 10.0
 K_STEP_WARN = 2.5
 STEP_REJECT_UT = 0.4             # points closer than this: the same (a fixed limit: small steps only warn)
 K_FOLD, FOLD_MIN = 0.5, 0.5      # the path folds back within max(FOLD_MIN, K_FOLD x noise)
-SOFT_HOLD_TURNS = 8              # new / first spot: held this long, the noise floor alone moves on
+SOFT_HOLD_TURNS = 8              # new / first spot: held this long, a smaller move is enough:
+SOFT_HOLD_FRAC = 0.12            # max(noise floor, this x the expected step) (v3.4)
 K_ORDER_STEP, K_SHAPE_STEP, K_OFF_STEP, K_PAIR_STEP = 0.25, 0.5, 0.9, 1.0   # check floors x the local step
 K_PRIOR, PRIOR_FRAC = 6.0, 0.5
 K_ORDER = 0.8
@@ -363,6 +364,9 @@ class Firmware:
         self.backRising = False
         self.backMin = 0.0
         self.backUpOk = True
+        self.softRun = 0                 # v3.4: turns in a row within tol drift of the one before
+        self.backedMask = 0              # v3.4: points gone back to in this pass (once each)
+        self.backedPass = -1
         self.fixArmed = False
         self.downGate = False            # '#D': the reading must be above the point first
         self.downStart = DOWN_FIRST      # where this down pass started (undo stops there)
@@ -372,6 +376,9 @@ class Firmware:
         self.capSum = [0.0, 0.0, 0.0]
         self.capCount = 0
         self.autoCapture = True
+        self.pressMode = False           # v3.4: '#A,press'
+        self.pressArmed = False          # pressed: measuring this point
+        self.pressRefused = False        # the last press measured the previous point: the next one saves anyway
         self.stabRef = [0.0, 0.0, 0.0]
         self.stabSince = 0
         self.stabPct = 0
@@ -430,7 +437,6 @@ class Firmware:
         self.expUp = None                # same spot: where each point was last time (up, down)
         self.expDown = None
         self.expDownMask = 0
-        self.stuckSent = False
         self.expStep = [0.0] * (NUM_GEARS + 1)
         self.tol = {}
         # pause (v3.3)
@@ -737,12 +743,14 @@ class Firmware:
         self.turnHist = []
         self.pendingCap = False
         self.settleSince = 0
-        self.stuckSent = False
         self.behindSent = False
         self.backGate = False
         self.backRising = False
         self.behindNow = False
         self.agreeRun = 0
+        self.softRun = 0
+        self.pressArmed = False
+        self.pressRefused = False
         self.stab_reset()
 
     def cal_learn_start(self):
@@ -763,6 +771,7 @@ class Firmware:
         self.calPass = PASS_UP
         self.calDownMask = 0
         self.backUpOk = True
+        self.backedPass = -1
         self.calFromBle = self.cmdSrc == "ble"
         self.prevSaved = False
         self.capRpm = [0] * (NUM_GEARS + 1)
@@ -1313,14 +1322,19 @@ class Firmware:
         floor = self.tol["moveMin"]
         if manual:                                                     # 'n': the noise floor alone
             return dist >= floor and along >= 0.5 * floor
-        if (self.spotKind != SPOT_SAME and self.calPass == PASS_UP and self.agreeRun >= SOFT_HOLD_TURNS
-                and dist >= floor and along >= 0.5 * floor):
+        soft = max(floor, SOFT_HOLD_FRAC * step)                      # v3.4: not the noise floor alone
+        if (self.spotKind != SPOT_SAME and self.calPass == PASS_UP and self.softRun >= SOFT_HOLD_TURNS
+                and dist >= soft and along >= 0.5 * soft):
             return True                                                # the expected step is only a guess here
         return dist >= move and along >= 0.5 * move and self.cal_near_stored(mean, d, step)
 
     def cal_back_up(self):                                            # calBackUp(): True if it went back
         down = self.calPass == PASS_DOWN
-        can = self.backUpOk and (self.calStep < self.downStart if down else self.calStep >= 2)
+        if self.backedPass != self.calPass:
+            self.backedMask, self.backedPass = 0, self.calPass
+        target = self.calStep + 1 if down else self.calStep - 1
+        can = (self.backUpOk and (self.calStep < self.downStart if down else self.calStep >= 2)
+               and not (0 <= target < 32 and self.backedMask >> target & 1))   # v3.4: once per point per pass
         if not can:
             if not self.behindSent:
                 self.behindSent = True
@@ -1341,6 +1355,7 @@ class Firmware:
         self.cal_prompt()
         self.backGate = True
         self.backUpOk = False
+        self.backedMask |= 1 << bad
         return True
 
     def cal_back_along(self, avg):                                    # calBackAlong()
@@ -1468,7 +1483,8 @@ class Firmware:
             if not suspect:
                 n = len(self.turnHist)
                 m = [(self.pendingMean[k] * n + avg[k]) / (n + 1) for k in range(3)]
-                if dist3(avg, self.pendingMean) <= t["agree"] and self.cal_moved_on(m, False):
+                if dist3(avg, self.pendingMean) <= t["agree"] and (self.cal_moved_on(m, False, manual=self.pressMode)
+                                                                   or (self.pressMode and self.pressRefused and self.lastDist >= STEP_REJECT_UT)):
                     self.stabPct = 100
                     h = self.turnHist
                     if len(h) == 2:                                    # 3 held turns: refine the noise
@@ -1492,17 +1508,25 @@ class Firmware:
                 break
             self.turnHist = self.turnHist[1:]
         self.agreeRun = self.agreeRun + 1 if len(self.turnHist) == 2 else 1
+        self.softRun = (self.softRun + 1 if len(self.turnHist) == 2
+                        and dist3(self.turnHist[1], self.turnHist[0]) <= self.tol["drift"] else 0)
         mean = self.turn_hist_mean()
         moved = self.cal_moved_on(mean, len(self.turnHist) >= 2)
         if self.behindNow and self.calPass in (PASS_UP, PASS_DOWN) and self.cal_back_up():
             return
+        if self.pressMode and not self.pressArmed:                   # v3.4: nothing counts before a press
+            self.stabPct = 0
+            return
+        if self.pressMode:
+            moved = (len(self.turnHist) < 2 or self.cal_moved_on(mean, False, manual=True)
+                     or (self.pressRefused and self.lastDist >= STEP_REJECT_UT))   # never two points the same
         self.stabPct = (67 if len(self.turnHist) >= 2 else 34) if moved else 0
-        if (not moved and not self.behindNow and self.agreeRun >= BEHIND_HOLD_TURNS and not self.stuckSent
-                and self.calPass in (PASS_UP, PASS_DOWN)
-                and self.lastDist <= (0.5 * self.cal_local_step() or self.tol["moveMin"])):
-            self.stuckSent = True                                      # held, neither on nor behind: a hint, once
-            self.log("N,stuck")
-        if moved and self.autoCapture and len(self.turnHist) == 2:
+        if self.pressMode and not moved:                               # measured at the previous point: not saved
+            self.pressArmed = False
+            self.pressRefused = True                                   # a second press here saves it anyway
+            self.log("N,notmoved")
+            return
+        if moved and (self.autoCapture or self.pressMode) and len(self.turnHist) == 2:
             self.pendingMean = list(mean)
             self.pendingDir = self.cal_travel_dir(mean)
             self.pendingFirst = list(self.turnHist[0])
@@ -1522,13 +1546,20 @@ class Firmware:
         if self.calState != CAL_WAITING:
             return
         if self.crank["ok"]:
-            if not self.turnHist:
+            if not self.turnHist and not self.pressMode:
                 self.log("N,noturn")
                 return
             if ((self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN) or (self.calPass == PASS_DOWN and self.downGate))
                     and not self.fixArmed) or self.backGate or self.backRising:
                 self.log("N,notmoved")
                 return
+            if self.pressMode:                                         # measure from the next turns
+                self.pressArmed = True
+                self.turnHist = []
+                self.pendingCap = False
+                self.agreeRun = 0
+                self.stabPct = 0
+                return self.log("N,press")
             mean = self.turn_hist_mean()
             if not self.cal_moved_on(mean, False, manual=True):
                 self.log("N,notmoved")
@@ -2170,6 +2201,16 @@ class Firmware:
             return self.log("E,ok,moved")
         if cmd == "D" and n == 1:
             return self.cal_down_start()
+        if cmd == "A" and n == 2:                                       # capture mode (v3.4)
+            if f[1] == "press":
+                self.pressMode, self.pressArmed, self.autoCapture = True, False, False
+            elif f[1] == "auto":
+                self.pressMode, self.pressArmed, self.autoCapture = False, False, True
+            else:
+                return self.log("E,fail,press or auto")
+            return self.log("E,ok,capture," + ("press" if self.pressMode else "auto"))
+        if cmd == "V" and n == 1:                                       # version (v3.4)
+            return self.log("E,ok,v3.4")
         if cmd == "E" and n == 1:                                       # erase the calibration (USB only)
             if self.cmdSrc != "usb":
                 return self.log("E,fail,usb only")
@@ -2405,7 +2446,11 @@ class Firmware:
             elif self.calState != CAL_IDLE:
                 self.cal_abort("cancelled by user")
         elif ch == 'a':
-            self.autoCapture = not self.autoCapture
+            if self.pressMode:                                         # v3.4: back to auto
+                self.pressMode = self.pressArmed = False
+                self.autoCapture = True
+            else:
+                self.autoCapture = not self.autoCapture
         elif ch == 's':
             self.cal_skip_down()
         elif ch == 'v':
@@ -2439,6 +2484,10 @@ class Firmware:
             s += "H"
         if self.autoCapture:
             s += "A"
+        if self.pressMode:
+            s += "T"                                                   # v3.4: press to capture
+            if self.pressArmed and self.calState == CAL_WAITING:
+                s += "I"                                               # measuring after a press
         if self.pedalling():
             s += "R"
         if self.settleSince and self.calState == CAL_WAITING:

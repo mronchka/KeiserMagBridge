@@ -445,7 +445,7 @@ Tolerances come from the survey noise `n`, the expected step into the current po
 - **Same spot only:** the reading must also have got to within max(6 n, 0.6 × step) of where that point was in the stored calibration (along the pass; down points only where the stored calibration has one), so a pause part-way through a gear isn't taken. After 10 agreeing turns held in one place this no longer applies.
 - **Go back (`N,behind`):** agreeing turns at least max(4 n, 2 × settle, 0.2 × step) behind the previous point, or, after 6 agreeing turns, their mean at least max(1.5 n, 2 × settle) behind.
 - **Settle-back:** not learned after the last point of a pass, after a point redone by going back, or when it is over min(0.5 × step, max(2 µT, 4 n)) (the rider moving on, not the lever settling).
-- **`N,stuck`** (new reason for `N`): sent once per point when 6 agreeing turns are held within half a step of the previous point (the expected step; the noise floor if there is none) that neither move on nor sit far enough behind. A pause further on, part-way through the gear, gets no hint. Human line: "If the console already shows gear N, ease back into gear N−1 and come up to it again" (coming down: into gear N+1, then down). The page can show the same hint; nothing else changes.
+- **`N,stuck`** (new reason for `N`; **removed in v3.4**, see below): sent once per point when 6 agreeing turns are held within half a step of the previous point (the expected step; the noise floor if there is none) that neither move on nor sit far enough behind. A pause further on, part-way through the gear, gets no hint. Human line: "If the console already shows gear N, ease back into gear N−1 and come up to it again" (coming down: into gear N+1, then down). The page can show the same hint; nothing else changes.
 - **Switch points:** edge bias 0.07 × the local step. Where no down point measured the stickiness, it is the measured pairs' median ratio to the local step, else the stored ratio from the last down pass at this spot, else 1.0 × the local step.
 
 ### The check (`F`), changed
@@ -476,6 +476,69 @@ Calibration **v6** (704 bytes) is v5 (636 bytes) plus:
 - 2 bytes of padding.
 
 v4 (332 bytes) and v5 files still load. The noise is unknown (0.6 µT is used), the path length and spot id are worked out, there is no stickiness ratio, and the rpm are 0. `bench/tests/fw_model.py` mirrors the layouts in `pack_cal()` / `unpack_cal()`.
+
+## v3.4 additions [v3.4]
+
+Issues #5 (press to capture), #6 and #8 (the 2026-10-17 bike calibration). Firmware `KeiserMagBridge_v3_4/`. Every v3.3 line keeps its shape and meaning; the page in use today works unchanged with v3.4 (it never sends the new commands, so the board stays in auto-capture).
+
+### Telling v3.4 apart
+
+`#V` replies `E,ok,v3.4`. Older firmware answers `E,fail,unknown command` (v3.3) or nothing useful, so a page that wants presses sends `#V` once per connection and treats anything but `E,ok,v3.<n>` with n ≥ 4 as "no press mode". The `S` line keeps its 16 fields: a 17th would make the page in use today show "Reload the page".
+
+### Press to capture
+
+```
+#A,press        -> E,ok,capture,press    (flags: T, no A)
+#A,auto         -> E,ok,capture,auto     (flags: A, no T)   the default after power-up
+#A,<other>      -> E,fail,press or auto
+a               leaves press mode for auto (as before, 'a' toggles auto on/off when not in press mode)
+```
+
+The mode stays until it's changed or the board restarts, across calibrations and phone reconnects. A page that wants presses sends `#A,press` after `#V` on every connection.
+
+**In press mode the gear points are under the rider's control:**
+
+- Nothing is saved by itself on the up pass, the down pass, a redo (`#R`) or a resumed down pass (`#D`).
+- A **press** (`n`, button A on the board, the page's circle) is answered with `N,press`. It starts a measurement of the turns that follow, at that spot. It needs 2 turns that agree, then the check turn (as auto-capture does), so it takes about 3 pedal turns (2–3 s at 70 rpm).
+- **During the measurement**, flag `I` is set and `stab` is 34 then 67. When the point is saved, the `C` / `C,down` line comes as now, then the next prompt.
+- **A press doesn't need a turn first.** If the rider isn't pedalling (paused, flag `O`), the measurement waits for the turns. A new press while measuring starts the measurement again. `u` cancels it, and so does a go-back.
+- **"Still moving" is checked as in auto mode:** `W` lines, and after 15 s the `P` card (`cal` 5, as now).
+- **A press at the previous point's spot** is refused when its turns are measured: `N,notmoved`, and flag `I` clears. A **second press** for the same point saves it anyway, for gears that sit almost on top of each other magnetically (gears 4/5 on this bike). It still refuses (`N,notmoved` again) if the reading is closer than 0.4 µT to the previous point, because two such points would fail the whole calibration ("points N and N+1 are the same"). Board text: "Move the lever a little further, then press."
+- **A press before the go-past gate has passed** (a redo, the first point of `#D`, after a go-back: flag `B`) is refused with `N,notmoved` straight away, as `n` was.
+- **The go-back** (`N,behind`, `U`, flag `B`) still works in press mode. It's limited to once per point per pass (below).
+- **The steps around the passes are unchanged:**
+  - the cadence check (`cal` 4);
+  - the sweep (`cal` 6);
+  - the checkpoint (`cal` 7);
+  - "capture anyway" at `cal` 5.
+
+  `n` there does what it did. #4 and #7 will change the sweep and the start of the down pass.
+
+| Flag | Meaning |
+|---|---|
+| `T` | Press mode is on. |
+| `I` | Measuring after a press (`cal` 1, press mode). |
+
+So, while `cal` is 1 in press mode:
+- `T` without `I`: "move to gear N, then tap";
+- `T` with `I`: "Measuring…" (with `stab`);
+- the `C` line: "Got it".
+
+### Changed in both modes
+
+- **No `N,stuck`.** On the bike it fired after most captures, often with the rider already in the right gear, and the turns kept counting under it. The page can drop its handling, which is harmless to keep.
+- **Going back to an overshot point happens at most once per point per pass.** On the bike, gear 5 was gone back to three times. After that, `N,behind` alone (no `U`) says the turns sit behind the last point, as at point 2. The check after saving flags a point that is still off.
+- **Auto mode on a new or first spot:**
+  - **What changed:** the soft hold (save after a long hold even if the reading moved less than the expected step) now needs the reading to have moved max(noise floor, 0.12 × expected step), and to have been still (each turn within the drift tolerance of the one before) for 8 turns.
+  - **Why:** before, 8 agreeing turns since before the rider shifted, and a move of the noise floor, were enough. That saved gear 1 again as point 2 on the bike.
+- **Board text:** the prompt's last line in press mode reads "When the console shows it, press button A or send 'n': it measures the next pedal turns."
+
+### Not changed
+
+- `C`, `C,down`, `K`, `Q`, `U`, `W`, `P`, `F`, `E,ok,redo`, `E,ok,down`, `E,ok,saved`;
+- the `S` field count;
+- `cal` values;
+- the stored format (still v6).
 
 ## Beeps on the board (CLUE speaker)
 
