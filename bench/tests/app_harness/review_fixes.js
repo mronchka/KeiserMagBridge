@@ -653,7 +653,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
     await app.f('L,0,6,70,6.1,dip too shallow');
     await app.f(S({ cal: 1, flow: 4, step: 0, pass: 'u' }));
-    check('crank not found: the reason stays on screen', /Crank not found: dip too shallow/.test(app.$('calCount').textContent), app.$('calCount').textContent);
+    check('crank not found: the reason stays on screen', /Crank not found: the pedal signal was too weak/.test(app.$('calCount').textContent), app.$('calCount').textContent);
   }
   {
     // #6: the real log of the first v3.3 bike calibration: two quick Undos straight after the start of the up pass
@@ -1021,6 +1021,30 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#73 recovered runs: their own kinds, unique file names', by.a2.title === 'Stored calibration (recovered)' && by.a3.partial === true &&
       by.a3.title === 'Calibration incomplete (recovered)' && by.a4.title === 'Calibration edited (recovered)' && new Set(names).size === names.length,
       app.win.records.map((r) => r.id + ':' + r.title + ':' + r.filename).join(' | '));
+  }
+  {
+    // #77: reconnecting, before the first status line: the list stays (no walkthrough flash); #78: no dot for a finished calibration
+    const app = mk();
+    await triesCal(app);
+    app.$('glFinish').click();
+    app.M3.render();
+    check('#78 after Finish and ride the Calibrate tab has no dot', app.$('calBadge').hidden === true);
+    app.win.showView('cal'); app.M3.render();
+    app.M3.setConn('disconnected'); app.M3.setConn('connected');   // the link is back, no status line yet
+    app.M3.render();
+    check('#77 reconnecting: the last list stays, not the walkthrough', !app.$('gearList').hidden && app.$('onb').hidden,
+      'gearList ' + !app.$('gearList').hidden + ' onb ' + !app.$('onb').hidden);
+  }
+  {
+    // #77: mid up pass: the paused card stays until the first status line, then the step screen
+    const app = mk();
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    for (let p = 1; p <= 6; p++) { await app.f(S({ cal: 1, flow: 4, step: p - 1, pass: 'u' })); await app.f('C,' + p + ',' + up3(p) + ',1.0,2.0'); }
+    app.M3.setConn('disconnected'); app.M3.setConn('connected');
+    app.M3.render();
+    check('#77 reconnecting mid-calibration: "Calibration paused", no walkthrough or result card',
+      !app.$('calLost').hidden && app.$('onb').hidden && app.$('resultCard').hidden, 'calLost ' + !app.$('calLost').hidden + ' onb ' + !app.$('onb').hidden);
   }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });

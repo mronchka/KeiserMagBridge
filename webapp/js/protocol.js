@@ -720,6 +720,16 @@ function onU(p) {
   return true;
 }
 
+// #42: the board's reasons, in the rider's words
+function learnWhyText() {
+  var w = state.learnWhy || '';
+  return /no signal/.test(w) ? 'no signal from the pedal magnet'
+    : /shallow/.test(w) ? 'the pedal signal was too weak'
+    : /few turns/.test(w) ? 'not enough pedal turns'
+    : /irregular/.test(w) ? 'the pedalling was uneven'
+    : /too fast/.test(w) ? 'pedalling too fast to count'
+    : w;
+}
 // [v3.1] L,<ok>,<turns>,<rpm>,<depth>,<reason>: crank learning result
 function onL(p) {
   if (p.length < 2 || (p[1] !== '0' && p[1] !== '1')) return false;
@@ -728,7 +738,7 @@ function onL(p) {
   state.learnWhy = ok ? '' : reason || 'no reason given';
   logLine(ok ? 'Crank learned: ' + (p[2] || '?') + ' turns at ' + (p[3] || '?') + ' rpm, dip ' + (p[4] || '?') + ' µT'
     : 'Crank not found (' + (reason || 'no reason given') + '). Continuing with the hold-still method.', 'sys');
-  if (!ok) toast('Crank not found: ' + (reason || 'no reason given'));
+  if (!ok) toast('Crank not found: ' + learnWhyText());
   render();
   return true;
 }
@@ -991,7 +1001,8 @@ function onQ(p) {
         if (kr0 && !kr0.recordId) {
           try {
             kr0.recordId = saveCalRecord('run', { ok: true, span: kr0.span, minstep: kr0.minstep, minAt: kr0.minAt, edit: kr0.edit,
-              msg: (kr0.msg || 'saved') + ' (read back incomplete: ' + state.points.length + ' of ' + TOTAL_POINTS + ' points on this phone)',
+              msg: (kr0.msg || 'saved') + (state.points.length === TOTAL_POINTS ? ' (read back in pieces)'
+                : ' (read back incomplete: ' + state.points.length + ' of ' + TOTAL_POINTS + ' points on this phone)'),
               down: state.downPoints }, state.points);
             noteCalRecord(kr0.recordId, state.v33);
           } catch (e) { console.warn('save failed', e); }

@@ -102,7 +102,7 @@ function renderCal() {
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
-  var lostRun = state.conn !== 'connected' && !!(state.dropS && state.dropS.cal !== 0);   // #69
+  var lostRun = linkBack() && !!(state.dropS && state.dropS.cal !== 0);   // #69 (#77: until the first status line)
   setHidden('calLost', !lostRun);
   setHidden('onb', lostRun || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
@@ -123,7 +123,7 @@ function renderCal() {
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
   state.calFocus = active || placing || saved || ((checkRun || checkDone || checkOffer || gearsShown) && connected);
   applyCalFocus();
-  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : checkOffer || gearsShown ? 'Finish and ride' : 'Skip the rest of the gear check');
+  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : checkOffer || gearsShown ? 'Finish and ride' : 'Stop the gear check');
   if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }
 
   buildCalDots();
@@ -391,12 +391,12 @@ function renderCal() {
   $('calCount').textContent = redoing ? 'Redoing ' + pointWords(pass === 'rd' ? 'd' : 'u', step + 1)
     : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
     // (the hold-still method after the crank wasn't found: why, where 0 of 25 would be)
-    : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + state.learnWhy
+    : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + learnWhyText()
     : step + ' of ' + TOTAL_POINTS + ' positions saved';   // #33 (25 positions: the bottom, 23 gear changes, the top)
   // [v3.3] on the gear steps: stopping is fine
   var holdMethod = state.learnFailed && v3 && !redoing;
   setHidden('stopNote', !((v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking) || holdMethod));
-  var sn = holdMethod ? 'Crank not found' + (state.learnWhy ? ' (' + state.learnWhy + ')' : '') + ': the sweep is skipped, and you stop pedalling at each gear.'
+  var sn = holdMethod ? 'Crank not found' + (state.learnWhy ? ' (' + learnWhyText() + ')' : '') + ': ' + (v33 ? 'the sweep is skipped, and ' : '') + 'you stop pedalling at each gear.'
     : 'Stop pedalling to shift any time you like.';
   if ($('stopNote').textContent !== sn) $('stopNote').textContent = sn;
   var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0 && !down && !redoing && !sweeping;
@@ -493,10 +493,15 @@ function renderPointCheck(checking, s) {
   if (showRedo && $('redoBanner').textContent !== txt) $('redoBanner').textContent = txt;
 }
 
+// #77: the link is down, or back but its first status line hasn't come yet
+function linkBack() { return state.conn !== 'connected' || !state.s; }
+
 function renderBadge() {
   var b = $('calBadge');
   var calActive = state.s && state.s.cal !== 0;
-  b.hidden = state.view === 'cal' || !(calActive || (state.result && state.result.type && !state.resultHidden) || reviewItems().length);
+  var r = state.result;
+  var resultWaits = r && r.type && !state.resultHidden && !(isV33() && r.type === 'K' && r.ok);   // (#78: v3.3: the gear list has it)
+  b.hidden = state.view === 'cal' || !(calActive || resultWaits || reviewItems().length);
   var ph = diag.phase;
   setHidden('diagBadge', state.view === 'diag' || ph === 'idle' || ph === 'done' || ph === 'error');
 }
@@ -552,7 +557,7 @@ function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
     !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk ||   // #25
     !!state.improving || homeListShown() ||   // #45 (the list says it all; the file is under Saved runs)
-    (state.conn !== 'connected' && !!(state.dropS && state.dropS.cal !== 0)) ||   // #69: a dropped run
+    (linkBack() && !!(state.dropS && state.dropS.cal !== 0)) ||   // #69: a dropped run (#77: and while it comes back)
     (state.v33 && !!state.result && state.result.type === 'K' && state.result.ok && !calRunning(state.s));
 }
 

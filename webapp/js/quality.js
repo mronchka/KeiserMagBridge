@@ -172,7 +172,7 @@ function homeListShown() {
   // (while it is read again: the last one, then the new; #75: not once the reads gave up)
   if (homeListDue()) return !!state.homeRead || (!!state.homeShownBefore && (state.homeTries || 0) < 3);
   // #65: a drop: keep showing it (its buttons are off until the link is back)
-  return state.conn !== 'connected' && !!state.homeShownBefore && !state.place && !state.check && !calRunning(state.s);
+  return (state.conn !== 'connected' || !state.s) && !!state.homeShownBefore && !state.place && !state.check && !calRunning(state.s);   // (#77: until the first status line)
 }
 function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; render(); }
 
@@ -214,6 +214,7 @@ function renderGearList() {
   var keptHere = sel && sel.edges.length && sel.edges.every(function (e) { return (state.keptEdges || {})[e.pass + e.point]; });
   $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'looks good going up and coming down.') +
     (keptHere ? ' You chose to keep it as it is.' : '');
+  $('glLead').hidden = !!sel;   // #43: the why takes the lead's place
   setHidden('glImprove', !edges.length);
   var fixable = 0;   // #36: gears with something Improve can redo
   var kept = state.keptEdges || {};

@@ -206,7 +206,7 @@ function finishCheck() {
   }
   renderCheckSummary();
   var rec = rid ? findRecord(rid) : null;
-  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (' + rec.filename + ').'
+  $('rckSaved').textContent = saved && rec ? 'Saved with the calibration (under Saved runs).'
     : c.results.length ? 'Not added to a saved calibration on this phone (the bridge’s USB log has it).' : '';
 }
 
@@ -231,7 +231,7 @@ function renderCheckSummary() {
       }
     }
     var v = ok ? 'Gear ' + r.app + ' on both ✓' : 'Bridge ' + r.app + ', console ' + r.console +
-      ((c.v32 || state.v32) ? ' · the change to gear ' + edgeGear(r.app, r.console) : '');
+      ((c.v32 || state.v32) ? ' · where gear ' + edgeGear(r.app, r.console) + ' starts is off' : '');
     html += '<div class="rck-row' + (ok ? '' : ' miss') + '">' + (btn
       ? '<span class="k">' + esc(r.label) + '<span class="sub">' + v + '</span></span>' + btn
       : '<span class="k">' + esc(r.label) + '</span><span class="v">' + v + '</span>') + '</div>';
