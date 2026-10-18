@@ -134,6 +134,8 @@ body.calfocus nav, body.calfocus #autoToggle, body.calfocus #pointsCard, body.ca
 body.calfocus .view { padding-top: 6px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 10px; }
 body.calfocus #calActive { gap: 10px; flex: 1; }
 body.calfocus #calActive .cal-btns { margin-top: auto; }
+body.calfocus #calActive #confirmBtns { margin-top: auto !important; }   /* #44: Next / Yes, it matches stay at the bottom too */
+body.calfocus #calActive:has(#confirmBtns:not([hidden])) .cal-btns { margin-top: 0; }
 /* the down pass adds "Finish without the down pass": the circle makes room for it */
 /* whatever else is showing, the circle gives up that much room (so the buttons stay on screen) */
 /* (each one's real height at 393 px wide, where its text takes two lines, plus the 10 px gap) */

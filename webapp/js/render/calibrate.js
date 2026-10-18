@@ -38,7 +38,7 @@ function renderOnb() {
   var st = steps[onbIdx], last = onbIdx === steps.length - 1;
   var arts = document.querySelectorAll('#onb .art');
   for (var i = 0; i < arts.length; i++) arts[i].classList.toggle('on', arts[i].getAttribute('data-art') === st.art);
-  var key = (state.v3 ? 'crank' : 'still') + (state.v32 ? '32-' : '') + onbIdx;  // the step list switches once v3 is detected
+  var key = (steps === CAL_INTRO.still ? 'still' : 'crank' + steps.length) + '-' + onbIdx;  // the step list switches once the firmware is known (#68)
   if (key !== onbKey) {
     $('onbTitle').textContent = st.title;
     $('onbText').textContent = st.text;
@@ -102,7 +102,9 @@ function renderCal() {
   renderFlow(active, placing, saved);
   setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
-  setHidden('onb', homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
+  var lostRun = state.conn !== 'connected' && !!(state.dropS && state.dropS.cal !== 0);   // #69
+  setHidden('calLost', !lostRun);
+  setHidden('onb', lostRun || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
@@ -392,7 +394,11 @@ function renderCal() {
     : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + state.learnWhy
     : step + ' of ' + TOTAL_POINTS + ' positions saved';   // #33 (25 positions: the bottom, 23 gear changes, the top)
   // [v3.3] on the gear steps: stopping is fine
-  setHidden('stopNote', !(v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking));
+  var holdMethod = state.learnFailed && v3 && !redoing;
+  setHidden('stopNote', !((v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking) || holdMethod));
+  var sn = holdMethod ? 'Crank not found' + (state.learnWhy ? ' (' + state.learnWhy + ')' : '') + ': the sweep is skipped, and you stop pedalling at each gear.'
+    : 'Stop pedalling to shift any time you like.';
+  if ($('stopNote').textContent !== sn) $('stopNote').textContent = sn;
   var relearnHere = state.learnFailed && v3 && s.cal === 1 && step === 0 && !down && !redoing && !sweeping;
   setHidden('confirmBtns', !(confirming || relearnHere || sweeping));
   setHidden('btnConfirm', !(confirming || sweeping));
@@ -546,6 +552,7 @@ function resultCardHidden() {
   return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
     !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk ||   // #25
     !!state.improving || homeListShown() ||   // #45 (the list says it all; the file is under Saved runs)
+    (state.conn !== 'connected' && !!(state.dropS && state.dropS.cal !== 0)) ||   // #69: a dropped run
     (state.v33 && !!state.result && state.result.type === 'K' && state.result.ok && !calRunning(state.s));
 }
 

@@ -122,7 +122,7 @@ function renderFlow(active, placing, saved) {
   // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&
     !!(state.s && state.s.flags.V) &&
-    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow)) && !state.gearList && !homeListShown() && !state.homeWalk;   // (#58: Start a new calibration hides it)
+    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow)) && !state.gearList && !homeListShown() && !state.homeWalk && !state.improving;   // (#58: Start a new calibration hides it)
   setHidden('calResume', !show);
   if (show) {
     setHidden('resumeDown', !!rec.downDone);

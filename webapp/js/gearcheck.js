@@ -84,7 +84,7 @@ function renderRideCheck() {
     $('rckStart').textContent = c.flow ? 'Check a few gears' : 'Start the gear check';
     $('rckSkip').textContent = c.flow ? 'Finish and ride' : 'Skip';
   }
-  setHidden('rckMore', !(c.phase === 'done' && c.flow && connected));
+  setHidden('rckMore', !(c.phase === 'done' && c.flow && connected && (c.results.length || (c.prev || []).length)));
   if (c.phase !== 'run') return;
   $('rckQuit').textContent = c.flow ? 'Stop the gear check' : 'Skip the rest';
   var list = checkList(c), st = list[c.idx], s = state.s;
@@ -96,7 +96,7 @@ function renderRideCheck() {
   $('rckGear').className = 'gear' + (live && pedalling ? '' : ' dim');
   $('rckRing').setAttribute('aria-label', live ? 'Bridge gear ' + g : 'Bridge gear not known');
   $('rckNote').textContent = !connected ? 'Not connected' : stale ? 'Waiting for the bridge…' : !live ? 'Not calibrated'
-    : !pedalling ? 'Keep pedalling: the gear updates on each pedal turn' : '';
+    : !pedalling ? 'Keep pedalling: the gear updates each turn' : '';
   // cadence line: the green window is the pace this check wants (faster: above the last check's pace)
   var crpm = s && fin(s.cad) ? Math.round(s.cad) : 0;
   // the 'fast' check: CHECK_FASTER above the last check's pace (kept below CAD_HI so it can be met)

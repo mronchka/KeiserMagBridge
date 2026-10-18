@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.3-2026-10-18.5';
+  var APP_BUILD = 'v3.3-2026-10-18.6';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.5">
+<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.6">
 </head>
 <body>
 
@@ -203,6 +203,11 @@
     <div class="card result" id="resultCard" hidden></div>
 
     <div id="calIdle">
+      <!-- #69: the link dropped while calibrating: the bridge keeps its place -->
+      <div class="card" id="calLost" hidden role="status">
+        <h2 style="margin:0">Calibration paused</h2>
+        <p class="small muted" style="margin:6px 0 0">The connection to the bridge dropped. Reconnect: the bridge has kept your place, and the calibration carries on from there.</p>
+      </div>
       <!-- [v3.3] pick up where the last calibration stopped (first, above the walkthrough) -->
       <div class="card resume" id="calResume" hidden>
         <h2 style="margin:0">Pick up where you stopped</h2>
