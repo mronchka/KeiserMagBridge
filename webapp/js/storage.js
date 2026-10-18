@@ -42,6 +42,21 @@ function adoptOtherPagesRecords() {
 }
 function saveIndex() {
   adoptOtherPagesRecords();
+  // runs whose data another page removed (deleted, or dropped for room) leave this page's list too
+  records = records.filter(function (r) {
+    if (!r.persisted) return true;
+    try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
+  });
+  // runs whose data another page removed (deleted, or dropped for room) leave this page's list too
+  records = records.filter(function (r) {
+    if (!r.persisted) return true;
+    try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
+  });
+  // runs whose data another page removed (deleted, or dropped for room) leave this page's list too
+  records = records.filter(function (r) {
+    if (!r.persisted) return true;
+    try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
+  });
   try {
     localStorage.setItem(STORE_IDX, JSON.stringify(records.filter(function (r) { return r.persisted; })));
     return true;
@@ -187,7 +202,7 @@ function saveCalRecord(source, info, pointsIn) {
     (info.edit ? '# edit: ' + ascii(info.edit) : null),
     '# labels: point 1 = lever all the way down (Bottom); points 2-24 = where the console first shows that gear; point 25 = lever all the way up (Top)',
     // [v3.3] how each point went (#11 / #12): hold-still tries (w) and go-backs (back), e.g. "u5 w=3; d12 back=1"
-    (!stored && pointStatsText() ? '# point_stats: ' + pointStatsText() : null),
+    (!stored ? '# point_stats: ' + (pointStatsText() || 'none') : null),
     // [v3.2] down points: same gear edge as the up point, approached from above
     (downs ? '# down_points: ' + downs.length + ' of ' + DOWN_POINTS + ' (down point N = coming down, where the console first shows gear N-1; empty when not measured)' : null),
     'point,label,x_uT,y_uT,z_uT,dist_prev_uT' + (downs ? ',down_x_uT,down_y_uT,down_z_uT' : '')
@@ -378,11 +393,12 @@ function parsePointStats(text) {
   });
   return st;
 }
-// The newest saved calibration of this phone with exactly these points (as the bridge sends them,
-// to 0.1 uT): its point stats, or null. Readings that match mean it is the same calibration.
+// The saved calibration of this phone with exactly these points (as the bridge sends them, to 0.1 uT):
+// { stats, id } from the newest one that has a point_stats line (else the newest match, stats {}),
+// or null. Readings that match mean it is the same calibration.
 function savedPointStatsFor(points, down) {
   var key = function (q) { return q.point + ':' + fmt(q.x, 1) + ',' + fmt(q.y, 1) + ',' + fmt(q.z, 1); };
-  var want = points.map(key).sort().join('|'), wantDown = (down || []).map(key).sort().join('|');
+  var want = points.map(key).sort().join('|'), wantDown = (down || []).map(key).sort().join('|'), firstMatch = null;
   for (var i = 0; i < records.length; i++) {
     var r = records[i];
     if (r.type !== 'cal' || r.partial) continue;
@@ -399,9 +415,11 @@ function savedPointStatsFor(points, down) {
       if (c[2] !== '') up.push({ point: n, x: +c[2], y: +c[3], z: +c[4] });
       if (c.length >= 9 && c[6] !== '') dn.push({ point: n, x: +c[6], y: +c[7], z: +c[8] });
     });
-    if (up.map(key).sort().join('|') === want && dn.map(key).sort().join('|') === wantDown) return stats === null ? {} : parsePointStats(stats);
+    if (up.map(key).sort().join('|') !== want || dn.map(key).sort().join('|') !== wantDown) continue;
+    if (!firstMatch) firstMatch = r.id;
+    if (stats !== null) return { stats: parsePointStats(stats), id: r.id };
   }
-  return null;
+  return firstMatch ? { stats: {}, id: firstMatch } : null;
 }
 
 // The saved calibration record the gear check adds its lines to (also after a reload, via the flow record).
@@ -417,9 +435,10 @@ function forgetCalRecord() {
 }
 function calRecordId() {
   // this session's calibration result decides (no record of its own: none, never an older one);
-  // only with no result (after a reload) the remembered one
+  // with no result: the saved file that matched the bridge's calibration when it was read back;
+  // the remembered one only when nothing was read back (e.g. a reload at the checkpoint)
   var r = state.result, id = r && r.type === 'K' && r.ok ? r.recordId || null
-    : state.calRecordId || (flowRecord() || {}).recordId || null;
+    : state.calRecordId || (state.homeRead ? state.homeRecordId : (flowRecord() || {}).recordId) || null;
   return id && findRecord(id) ? id : null;
 }
 

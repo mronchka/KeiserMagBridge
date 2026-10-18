@@ -239,7 +239,8 @@ function setConn(c, msg, isErr) {
       clearTimeout(state.fTimer);           // (a readback still wanted is asked for again after reconnecting)
       state.checkpointAnswered = 0;         // an answer that may not have gone out: ask again
       state.downResumePending = false; state.dPending = 0;
-      state.homeAsked = false; state.qQuiet = false; state.qQuietF = false;   // #12: read the gear list again next time
+      // #12 / #22: the gear list is read again on the next link (another bridge, or one recalibrated meanwhile)
+      state.homeAsked = false; state.homeRead = false; state.homeTries = 0; state.qQuiet = false; state.qQuietF = false;
       if (state.qFromEdit && state.q) state.wantReadback = true;
       state.fixAfter = ''; state.qFromEdit = false; state.qJustEnded = false;
       // a redo the bridge already started carries on (its E / K may come after reconnecting); any other edit is dropped

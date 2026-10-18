@@ -6,6 +6,21 @@
 
 var GEARS = TOTAL_POINTS - 1;   // 24 gears; gear g's bottom edge is up point g, its top edge down point g+1
 var Q_TEXT = ['Good', 'Unsure', 'Needs another look'];
+// #24 / #29: plain words for the why line (no "edges" or units)
+var FLAG_WORDS = {
+  behind: 'isn\u2019t past the gear below it',
+  updown: 'is in a different place going up and coming down',
+  offpath: 'doesn\u2019t line up with the other gears',
+  pair: 'is in a different place going up and coming down, and it isn\u2019t clear which is off',
+  prior: 'moved since your last calibration'
+};
+// Up point N: where gear N starts going up; down point N: where gear N-1 starts coming down.
+function edgeWords(pass, point) {
+  if (pass === 'd') return 'Where it starts coming down (from gear ' + point + ')';
+  if (point === 1) return 'The bottom of the lever';
+  if (point === TOTAL_POINTS) return 'The top of the lever';
+  return 'Where it starts going up (from gear ' + (point - 1) + ')';
+}
 
 // How each point went while it was measured (this run): hold-still notices (W) and go-backs.
 // Keyed like the review items: 'u12' (up point 12), 'd12' (down point 12 = gear 11 coming down).
@@ -32,6 +47,7 @@ function gearQuality() {
     if (!q[gear]) return;
     q[gear].level = Math.max(q[gear].level, level);
     q[gear].why.push(why);
+    if (edge) { edge.gear = gear; edge.why = why; }   // (the review card names the gear the list marked, and why)
     if (edge && fixCanRedo(edge) && !q[gear].edges.some(function (e) { return e.pass === edge.pass && e.point === edge.point; })) q[gear].edges.push(edge);
   }
   var up = {}, dn = {};
@@ -39,9 +55,10 @@ function gearQuality() {
   state.downPoints.forEach(function (x) { dn[x.point] = x; });
   // red: the bridge's own check after saving (F lines). Down point N is gear N-1's top edge.
   (state.lastFlags || []).forEach(function (it) {
-    var gear = it.pass === 'd' ? it.point - 1 : it.point;
-    mark(gear, 2, (it.pass === 'd' ? 'Its top edge ' : 'Its bottom edge ') + (REASON_TEXT[it.reason] || 'looks wrong (' + it.reason + ')') + '.',
-      { pass: it.pass, point: it.point, reason: it.reason, gx: it.gx, gy: it.gy, gz: it.gz });
+    var gear = Math.min(GEARS, it.pass === 'd' ? it.point - 1 : it.point);   // (up point 25, the top, is gear 24's end)
+    var e = { pass: it.pass, point: it.point, reason: it.reason, gx: it.gx, gy: it.gy, gz: it.gz };
+    mark(gear, 2, edgeWords(it.pass, it.point) + ' ' + (FLAG_WORDS[it.reason] || 'looks wrong') + '.' +
+      (fixCanRedo(e) ? '' : ' It can\u2019t be redone on its own: calibrate again to change it.'), e);
   });
   // yellow: a gear much narrower than most (its two edges very close together)
   var steps = [];
@@ -49,7 +66,7 @@ function gearQuality() {
   var ms = median(steps.map(function (x) { return x.d; }).filter(fin));
   steps.forEach(function (x) {
     if (fin(x.d) && fin(ms) && x.d < 0.6 * ms) {
-      mark(x.p - 1, 1, 'It is very narrow: ' + x.d.toFixed(1) + ' µT to gear ' + x.p + ', where most gears are ' + ms.toFixed(1) + ' µT.',
+      mark(x.p - 1, 1, 'It is very narrow: the lever moves ' + Math.round(100 * x.d / ms) + '% as far to gear ' + x.p + ' as for most gears.',
         { pass: 'u', point: x.p, reason: 'narrow' });
     }
   });
@@ -59,7 +76,7 @@ function gearQuality() {
   var mg = median(gaps.map(function (x) { return x.d; }).filter(fin));
   gaps.forEach(function (x) {
     if (fin(x.d) && fin(mg) && x.d > Math.max(2 * mg, mg + 4)) {
-      mark(x.p, 1, 'Going up and coming down, its bottom edge reads ' + x.d.toFixed(1) + ' µT apart (most: ' + mg.toFixed(1) + ').',
+      mark(x.p, 1, 'It starts in quite a different place going up and coming down (' + (x.d / mg).toFixed(1) + '\u00d7 the usual difference).',
         { pass: 'u', point: x.p, reason: 'gap' });
     }
   });
@@ -67,8 +84,8 @@ function gearQuality() {
   var st = state.pointStats || {};
   Object.keys(st).forEach(function (k) {
     var pass = k.charAt(0), point = +k.slice(1), s = st[k], gear = pass === 'd' ? point - 1 : point;
-    var edge = (pass === 'd' ? 'Its top edge' : 'Its bottom edge');
-    if (s.back) mark(gear, 1, edge + ' was saved a little too far and gone back to.', { pass: pass, point: point, reason: 'back' });
+    var edge = edgeWords(pass, point);
+    if (s.back) mark(gear, 1, edge + ' was saved a little too far and had to be gone back to.', { pass: pass, point: point, reason: 'back' });
     else if (s.w >= 2) mark(gear, 1, edge + ' took ' + s.w + ' tries to settle.', { pass: pass, point: point, reason: 'unsteady' });
   });
   return q;
@@ -127,16 +144,19 @@ function finishGearList() {
 // nothing else on the Calibrate screen). The page reads the calibration back quietly when it hasn't got it.
 function homeListDue() {
   var s = state.s;
+  var rec = flowRecord();
   return state.v33 && state.conn === 'connected' && !!s && s.cal === 0 && !!s.flags.V && !state.place && !state.upSaved &&
-    !state.check && !reviewItems().length && !state.gearList && !state.homeWalk && !state.improving && !state.edit;
+    !state.check && !reviewItems().length && !state.gearList && !state.homeWalk && !state.improving && !state.edit &&
+    !(rec && rec.downDone === false);
 }
-function homeListShown() { return homeListDue() && state.points.length === TOTAL_POINTS; }
+// (#22: only once read on this link, or calibrated on it)
+function homeListShown() { return homeListDue() && !!state.homeRead && state.points.length === TOTAL_POINTS; }
 function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; render(); }
 
 var gearListKey = '';
 function renderGearList() {
   var home = !state.gearList && homeListShown();
-  if (!state.gearList && homeListDue() && state.view === 'cal' && state.points.length < TOTAL_POINTS && !state.homeAsked && !state.q) {
+  if (!state.gearList && homeListDue() && state.view === 'cal' && !state.homeRead && !state.homeAsked && !state.q) {
     state.homeAsked = true;
     requestStoredCal(true);
   }
@@ -155,7 +175,7 @@ function renderGearList() {
   lead += !bad && !unsure ? 'Every gear looks good.'
     : (bad ? bad + ' gear' + (bad === 1 ? '' : 's') + ' need' + (bad === 1 ? 's' : '') + ' another look' : '') + (bad && unsure ? ', ' : '') +
       (unsure ? unsure + ' ' + (unsure === 1 ? 'is' : 'are') + ' unsure' : '') + '. Tap a gear to see why.';
-  $('glTitle').textContent = gl.improved ? 'Your gears now' : gl.home ? 'Your calibration' : 'Calibration done';
+  $('glTitle').textContent = gl.improved ? 'Your gears now' : gl.home ? 'Your calibration' : gl.checked ? 'Your gears' : 'Calibration done';
   $('glLead').textContent = lead;
   var html = '';
   for (g = 1; g <= GEARS; g++) {
@@ -164,9 +184,11 @@ function renderGearList() {
   }
   $('glGrid').innerHTML = html;
   var sel = gl.sel && q[gl.sel];
-  $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'both edges look good.');
+  $('glWhy').textContent = !sel ? '' : 'Gear ' + gl.sel + ': ' + (sel.why.length ? sel.why.join(' ') : 'looks good going up and coming down.');
   setHidden('glImprove', !edges.length);
-  $('glImprove').textContent = gl.home ? 'Improve calibration' : 'Improve ' + (bad + unsure) + ' gear' + (bad + unsure === 1 ? '' : 's');
+  var fixable = 0;   // #36: gears with something Improve can redo
+  for (g = 1; g <= GEARS; g++) if (q[g].level && q[g].edges.length) fixable++;
+  $('glImprove').textContent = gl.home ? 'Improve calibration' : 'Improve ' + fixable + ' gear' + (fixable === 1 ? '' : 's');
   setHidden('glFinish', !!gl.home);
   setHidden('glAgain', !gl.home);
   $('glAgain').disabled = !connected;

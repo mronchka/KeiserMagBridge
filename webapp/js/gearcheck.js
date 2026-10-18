@@ -139,7 +139,7 @@ function renderRideCheck() {
     if (ready) c.askRpm = rpm;   // the pace when asked (kept while the rider picks the console's gear)
     var q = !live ? 'Waiting for the bridge’s gear…'
       : ready ? 'Does the Keiser console show gear ' + g + '?'
-      : (!near || (g !== st.gear && !steady)) && !anyway ? 'Shift until the console shows about gear ' + st.gear + '.'
+      : (!near || (g !== st.gear && !steady)) && !anyway ? 'The bridge reads gear ' + g + ' now.'
       : !paceOk ? 'A little faster: ' + rpm + ' rpm now, ' + need + ' or more.'
       : 'Hold it there…';
     if ($('rckQ').textContent !== q) $('rckQ').textContent = q;
@@ -150,6 +150,7 @@ function renderRideCheck() {
     $('rckVal').textContent = String(c.val);
     $('rckMinus').disabled = c.val <= 1;
     $('rckPlus').disabled = c.val >= 24;
+    $('rckSave').disabled = c.val === c.app;   // #28: "No" means the console shows another gear
   }
 }
 

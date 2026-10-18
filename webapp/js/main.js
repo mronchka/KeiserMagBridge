@@ -93,7 +93,7 @@ function cancelTap() {
   } else {
     cancelArmedUntil = Date.now() + 3000;
     b.classList.add('armed');
-    b.textContent = 'TAP AGAIN TO CANCEL';
+    b.textContent = 'TAP AGAIN TO STOP';
     $('topX').classList.add('armed');
     clearTimeout(cancelTimer);
     cancelTimer = setTimeout(disarmCancel, 3000);
@@ -182,7 +182,7 @@ $('rckQuit').addEventListener('click', function () { finishCheck(); render(); })
 $('rckClose').addEventListener('click', function () {
   var flow = state.check && state.check.flow;
   state.check = null;
-  if (flow && state.result && state.result.type === 'K' && state.result.ok) openGearList();   // [v3.3] back to the gear list
+  if (flow && state.result && state.result.type === 'K' && state.result.ok) { openGearList(); state.gearList.checked = true; render(); }   // [v3.3] back to the gear list
   else render();
 });
 // [v3.3] the gear list (#11)
@@ -198,6 +198,8 @@ $('glImprove').addEventListener('click', startImprove);
 $('glCheck').addEventListener('click', function () { state.gearList = null; startGearCheck(); });
 $('glFinish').addEventListener('click', finishGearList);
 $('glAgain').addEventListener('click', calibrateAgain);
+// #26: from the walkthrough back to the stored calibration's list
+$('onbHome').addEventListener('click', function () { state.homeWalk = false; render(); });
 $('rckSum').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-rck-redo]') : null;
   if (b && !b.disabled) startEdit('R', 'u', +b.getAttribute('data-rck-redo'));

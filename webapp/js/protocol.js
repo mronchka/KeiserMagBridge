@@ -249,7 +249,10 @@ function onS(p) {
     var ed0 = state.edit;
     if (ed0 && ed0.kind === 'R' && ed0.started) {
       setTimeout(function () {
-        if (state.edit === ed0 && !ed0.okd) {
+        if (state.edit === ed0 && ed0.okd) {   // saved (E,ok,saved) but its K was lost: the awaitK readback catches up
+          state.edit = null;
+          renderReview(); render();
+        } else if (state.edit === ed0 && !ed0.okd) {
           state.edit = null;
           if (state.fixAfter) redoStopped(); else if (reviewItems().length) state.fixPaused = true;
           renderReview(); render();
@@ -283,7 +286,6 @@ function onC(p) {
   if (isRedoing()) {
     // [v3.2] a redo replaces that one point and keeps the rest
     state.points = state.points.filter(function (q) { return q.point !== point; });
-    pointStatClear('u', point);
   } else {
     state.points = state.points.filter(function (q) { return q.point < point; });
     state.downPoints = [];   // an up point after the down pass started can only be a new run
@@ -310,7 +312,6 @@ function onCDown(p) {
   var pt = { point: point, x: num(p[3]), y: num(p[4]), z: num(p[5]) };
   if (!fin(pt.x) || !fin(pt.y) || !fin(pt.z)) return false;
   // Down points come 23, 22, ... 2: anything at or below this one is from before an undo.
-  if (isRedoing()) pointStatClear('d', point);
   state.downPoints = state.downPoints.filter(function (q) { return isRedoing() ? q.point !== point : q.point > point; });
   state.downPoints.push(pt);
   state.behind = null; state.overshoot = null;
@@ -344,6 +345,9 @@ function onRedoStarted(s) {
   state.edit.started = true;
   clearTimeout(state.edit.timer);   // the redo can take a while; E arrives when it is saved
   state.calEnded = true;            // not a new run: never saved as an incomplete calibration
+  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
+  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
+  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
   state.w = null; state.stuck = null; state.redo = 0; state.editErr = '';
   if (state.check && state.check.phase === 'run') finishCheck();   // keep the answers given so far
@@ -381,6 +385,9 @@ function onK(p) {
   state.result = r;
   state.resultHidden = false;
   state.awaitK = false; state.lastKAt = Date.now();
+  if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
+  if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
+  if (r.ok) state.homeRead = true;   // #12: the page has this calibration (no quiet readback needed)
   state.calEnded = true;
   state.wantReadback = false;
   logLine(r.ok
@@ -452,14 +459,21 @@ function onF(p) {
     state.fList = null;
     if (state.q && (state.q.points.length || state.q.down.length)) {
       // Q lines came but their Q,end was lost: this F list is the readback's, not a new run's
-      logLine('The stored calibration arrived without its end line.', 'bad');
       clearTimeout(state.q.timer); state.q = null;
+      if (state.qQuiet) {   // #18: the quiet readback for the gear list: no message, read again later
+        state.qQuiet = false; state.qJustEnded = false;
+        if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;
+        state.review = null;
+        render();
+        return true;
+      }
+      logLine('The stored calibration arrived without its end line.', 'bad');
       if (state.qFromEdit && !state.qRetried) { state.qRetried = true; requestStoredCal(); return true; }
       state.qJustEnded = true;
       if (!state.qFromEdit) toast('Stored calibration incomplete: try again');
     }
     if (state.qQuietF) {   // #12: the quiet readback's F list: its flags color the gear list, nothing more
-      state.qQuietF = false; state.qJustEnded = false;
+      state.qQuietF = false; state.qJustEnded = false; clearTimeout(state.qQuietT); clearTimeout(state.qQuietT); clearTimeout(state.qQuietT);
       state.review = null;
       state.lastFlags = items.slice();
       render();
@@ -602,6 +616,7 @@ function onA(p) {
   }
   state.result = { type: 'A', reason: reason || 'no reason given' };
   state.resultHidden = false;
+  onbIdx = 0;
   state.fixHold = false; state.upSaved = false;
   logLine('Calibration aborted: ' + state.result.reason, 'sys');
   state.result.recordId = savePartialCal('aborted: ' + state.result.reason);
@@ -766,12 +781,31 @@ function requestStoredCal(quiet) {
   }, 10000);
   send('k', quiet);
 }
+// The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
+function quietFList() {
+  state.qQuietF = true;
+  clearTimeout(state.qQuietT);
+  state.qQuietT = setTimeout(function () { state.qQuietF = false; }, 5000);
+}
+// The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
+function quietFList() {
+  state.qQuietF = true;
+  clearTimeout(state.qQuietT);
+  state.qQuietT = setTimeout(function () { state.qQuietF = false; }, 5000);
+}
+// The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
+function quietFList() {
+  state.qQuietF = true;
+  clearTimeout(state.qQuietT);
+  state.qQuietT = setTimeout(function () { state.qQuietF = false; }, 5000);
+}
 // The page's copy of a calibration read back from the bridge: points, down points, and how each
 // point went (from the matching saved file on this phone, if there is one).
 function adoptStoredCal(q) {
   state.points = q.points.slice(); state.downPoints = q.down.slice();
-  var st = savedPointStatsFor(q.points, q.down);
-  if (st) state.pointStats = st;
+  var m = savedPointStatsFor(q.points, q.down);
+  state.pointStats = m ? m.stats : {};   // (nothing from another attempt: only what belongs to these points)
+  state.homeRecordId = m ? m.id : null;
 }
 
 function onQ(p) {
@@ -797,9 +831,14 @@ function onQ(p) {
     if (state.qQuiet) {
       // #12: the Calibrate tab's gear list; the F list that follows gives the bridge's flags
       state.qQuiet = false;
-      if (q.points.length !== TOTAL_POINTS) { logLine('The stored calibration arrived incomplete: the gear list waits for the next read.', 'sys'); state.homeAsked = false; return true; }
+      quietFList();   // its F list follows either way: swallow it (with a time limit)
+      if (q.points.length !== TOTAL_POINTS) {
+        logLine('The stored calibration arrived incomplete: the gear list waits for the next read.', 'sys');
+        if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;   // (read it again, at most twice more on this link)
+        return true;
+      }
       adoptStoredCal(q);
-      state.homeRead = true; state.qQuietF = true;
+      state.homeRead = true;
       render();
       return true;
     }

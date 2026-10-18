@@ -126,7 +126,11 @@ body.calfocus .top-undo {
   border: 0; background: transparent; color: var(--accent); font-size: 1rem; font-weight: 500;
 }
 body.calfocus .top-undo[hidden] { display: inline-flex !important; visibility: hidden; }
-body.calfocus nav, body.calfocus #autoToggle, body.calfocus #pointsCard { display: none !important; }
+body.calfocus nav, body.calfocus #autoToggle, body.calfocus #pointsCard, body.calfocus #calMore { display: none !important; }
+.more-opts { margin-top: 4px; }
+.more-opts > summary { cursor: pointer; color: var(--muted); font-size: .9rem; font-weight: 600; padding: 10px 0; list-style-position: inside; }
+.more-opts[open] > summary { margin-bottom: 8px; }
+.more-opts > * + * { margin-top: 10px; }
 body.calfocus .view { padding-top: 6px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 10px; }
 body.calfocus #calActive { gap: 10px; flex: 1; }
 body.calfocus #calActive .cal-btns { margin-top: auto; }

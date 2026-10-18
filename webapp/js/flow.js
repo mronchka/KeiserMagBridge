@@ -102,9 +102,11 @@ function renderFlow(active, placing, saved) {
   var f = flowNow();
   setHidden('crumbs', !f);
   if (f) {
-    var t = 'STEP ' + f + ' OF 6 · <b>' + esc(FLOW_STEPS[f - 1]) + '</b>';
+    var rs = state.s && state.s.cal !== 0 && (state.s.pass === 'ru' || state.s.pass === 'rd');
+    var title = rs ? 'Redo a gear' : FLOW_STEPS[f - 1];
+    var t = 'STEP ' + f + ' OF 6 · <b>' + esc(title) + '</b>';
     if ($('crumbT').innerHTML !== t) $('crumbT').innerHTML = t;
-    $('crumbs').setAttribute('aria-label', 'Step ' + f + ' of 6: ' + FLOW_STEPS[f - 1]);
+    $('crumbs').setAttribute('aria-label', 'Step ' + f + ' of 6: ' + title);
     var segs = $('crumbSegs').children;
     for (var i = 0; i < segs.length; i++) segs[i].className = i < f - 1 || (f === 4 && saved && i === 3) ? 'done' : i === f - 1 ? 'cur' : '';
   }
@@ -185,7 +187,7 @@ function renderPlace() {
   $('gNum').textContent = fin(sw) ? String(Math.round(sw)) : '--';
   $('gZone').textContent = fin(sw) && sw > 0 ? ZONE_WORD[swZone].toLowerCase() : 'move the lever';
   $('gZone').className = 'zone-' + swZone;
-  $('gaugeSwing').setAttribute('aria-label', 'Lever swing ' + (fin(sw) ? Math.round(sw) + ' microtesla, ' + ZONE_WORD[swZone] : 'not measured yet'));
+  $('gaugeSwing').setAttribute('aria-label', 'Lever signal ' + (fin(sw) ? Math.round(sw) + ' microtesla, ' + ZONE_WORD[swZone] : 'not measured yet'));
   var dipZone = setCapsule('mDip', x ? x.dip : NaN, PLACE_ZONES.dip, x && fin(x.dip) ? x.dip.toFixed(0) + ' µT' : '--');
   var headZone = setCapsule('mHead', x ? x.head : NaN, PLACE_ZONES.head, x && fin(x.head) ? Math.round(x.head) + '%' : '--');
   // verdict
@@ -223,7 +225,12 @@ var REASON_TEXT = {
   updown: 'its up and down readings don’t agree',
   offpath: 'is off the path the other gears make',
   pair: 'its up and down readings don’t agree, and it isn’t clear which is off',
-  prior: 'moved since your last calibration'
+  prior: 'moved since your last calibration',
+  // [#11] the gear list's own reasons (Improve)
+  narrow: 'starts very close to the gear below it (that gear is very narrow)',
+  gap: 'reads far apart going up and coming down',
+  back: 'was saved a little too far and had to be gone back to',
+  unsteady: 'took several tries to settle'
 };
 function reviewItems() { return state.review ? state.review.items : []; }
 function fixKey(it) { return it.pass + it.point; }
@@ -259,7 +266,6 @@ function fixNext() {
     return;
   }
   state.fixTries[fixKey(it)] = tries + 1;
-  if (state.review.source === 'improve') state.improveLast = fixKey(it);
   startEdit('R', it.pass, it.point);
 }
 
@@ -273,7 +279,7 @@ function fixAction(act) {
     send('x');
     return;
   }
-  if (act === 'skip') { state.reviewKept[fixKey(it)] = true; fixNext(); }
+  if (act === 'skip' || !fixGuess(it)) { state.reviewKept[fixKey(it)] = true; fixNext(); }   // (no guess to use: same as Skip)
   else startEdit('G', it.pass, it.point, fixGuess(it));
   renderReview();
 }
@@ -283,7 +289,7 @@ function redoStopped() {
   var act = state.fixAfter, it = reviewItems()[0];
   state.fixAfter = '';
   if (!it) return;
-  if (act === 'skip') { state.reviewKept[fixKey(it)] = true; fixNext(); return; }
+  if (act === 'skip' || !fixGuess(it)) { state.reviewKept[fixKey(it)] = true; fixNext(); return; }   // (no guess: as Skip)
   // #G needs the board idle: wait for the status line to say so (at most ~3 s)
   var tries = 0;
   (function go() {
@@ -308,18 +314,26 @@ function renderReview() {
   if (key === reviewKey) return;   // only rewrite when something changed (keeps focus and taps intact)
   reviewKey = key;
   var why = REASON_TEXT[it.reason] || 'looks wrong (' + it.reason + ')';
+  // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
+  var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
+  // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
+  var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
+  // #23: only a gear the bridge's check flagged has a best guess; the gear list's own reasons don't
+  var guessable = !!fixGuess(it), improving = state.review && state.review.source === 'improve';
   var dis = !connected || busy ? ' disabled' : '';
-  var html = '<h2>' + esc(capFirst(words.replace(/ \(.*\)$/, ''))) + ' needs another look' +
+  var named = improving && it.gear ? 'Gear ' + it.gear : capFirst(words.replace(/ \(.*\)$/, ''));
+  var html = '<h2>' + esc(named) + ' needs another look' +
     '<button class="x-btn" type="button" data-review="dismiss" aria-label="Stop checking gears">×</button></h2>' +
-    '<p class="rv-t">The bridge checked the saved calibration: <b>' + esc(words) + '</b> ' + esc(why) + '.</p>';
-  if (tired && fixCanRedo(it)) html += '<p class="small muted">It still looks off after ' + tries + ' tries. Use the bridge’s best guess, or keep it as it is.</p>';
+    (improving && it.why ? '<p class="rv-t">' + esc(it.why) + '</p>'
+      : '<p class="rv-t">The bridge checked the saved calibration: <b>' + esc(words) + '</b> ' + esc(why) + '.</p>');
+  if (tired && fixCanRedo(it)) html += '<p class="small muted">It still looks off after ' + tries + ' tries. ' + (guessable ? 'Use the bridge’s best guess, or keep it as it is.' : 'Keep it as it is, or try it again.') + '</p>';
   else if (!busy) html += '<p class="small muted">Pedal it once more: the screen walks you through it.</p>';
   html += '<div class="btn-stack" style="margin-top:12px">' +
-    (tired
+    (tired && guessable
       ? '<button class="btn primary wide" type="button" data-review="guess"' + dis + ' aria-label="Use the bridge’s best guess for ' + esc(words) + '">Use best guess</button>'
       : '<button class="btn primary wide" type="button" data-review="redo"' + dis + ' aria-label="Redo ' + esc(words) + ' by pedalling">Redo ' + esc(words.replace(/ \(.*\)$/, '')) + '</button>') +
     '</div><div class="rv-links">' +
-    (tired ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
+    (tired || !guessable ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
     '<button class="linkbtn" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
   if (items.length > 1) html += '<p class="small muted" style="margin-top:8px">Then ' + (items.length - 1) + ' more to look at.</p>';
   if (busy) html += '<div class="rv-msg busy" role="status">' + (state.edit.kind === 'R' ? 'Starting the redo…' : 'Saving the best guess…') + '</div>';
@@ -331,12 +345,16 @@ function renderReview() {
 function renderFixLinks() {
   var it = fixInRedo();
   setHidden('fixLinks', !it || !!state.fixAfter);
+  setHidden('fixGuess', !it || !fixGuess(it));   // #23: only a gear the bridge flagged has a best guess
   $('fixGuess').disabled = state.conn !== 'connected';
   $('fixSkip').disabled = state.conn !== 'connected';
 }
 
 // Send #R (redo by pedalling) or #G (use the board's guess) for one point.
 function startEdit(kind, pass, point, g) {
+  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
+  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
+  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
   if (state.conn !== 'connected') { toast('Not connected'); return; }
   if (state.edit) { toast('Still waiting for the bridge'); return; }
   if (state.s && state.s.cal !== 0) { toast('Finish or cancel the calibration first'); return; }

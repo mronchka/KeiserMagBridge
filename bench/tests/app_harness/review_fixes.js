@@ -412,7 +412,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#11 the gear list shows the flagged gear red, and why when tapped', app.win.gearQuality()[15].level === 2 &&
       (app.$('glGrid').innerHTML.match(/class="gl-g q2[^"]*" type="button" data-gear="15"/) || []).length === 1, app.$('glLead').textContent);
     st.gearList.sel = 15; app.win.renderGearList();   // (a tap on chip 15: the DOM stub has no event targets)
-    check('#11 ...tapping gear 15 says why', /Gear 15: Its bottom edge isn.t past the gear before it/.test(app.$('glWhy').textContent), app.$('glWhy').textContent);
+    check('#11 ...tapping gear 15 says why', /Gear 15: Where it starts going up \(from gear 14\) isn.t past the gear below it/.test(app.$('glWhy').textContent), app.$('glWhy').textContent);
     app.$('glCheck').click();
     check('#10 the gear check starts with the gear the bridge flagged', st.check.list.some((c) => c.gear === 15),
       st.check.list.map((c) => c.gear + c.pace[0]).join(' '));
@@ -524,6 +524,77 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#12 ...without saving a "Stored calibration" record or a review card', app2.win.records.length === nRec && app2.$('reviewCard').hidden && !st2.review);
     app2.$('glAgain').click();
     check('#12 Calibrate again shows the walkthrough', app2.$('gearList').hidden && !app2.$('onb').hidden);
+  }
+  {
+    // pass 1 issues on the gear list (#11 / #12)
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    const csv = app.win.getCsv(app.win.calRecordId()) || '';
+    check('#37 a clean run\'s file still has its point_stats line (none)', /^# point_stats: none$/m.test(csv));
+    app.$('glCheck').click();
+    app.M3.checkAnswer(5);
+    st.check.picking = true; st.check.app = 12; st.check.val = 12; app.win.renderRideCheck();
+    check('#28 after No, Save stays off until another gear is picked', app.$('rckSave').disabled === true);
+    st.check.val = 13; app.win.renderRideCheck();
+    check('#28 ...and comes on for another gear', app.$('rckSave').disabled === false);
+    // #22: a reconnect reads the Calibrate tab's list again
+    app.$('rckQuit').click(); app.$('rckClose').click(); app.$('glFinish').click();
+    app.M3.setConn('disconnected'); app.connect();
+    await app.f(S({}));
+    app.win.showView('cal'); app.M3.render(); await app.advance(0.1);
+    check('#22 after a reconnect the Calibrate tab reads the calibration again (k)', app.cmds().filter((c) => c === 'k').length === 1 &&
+      app.$('gearList').hidden, JSON.stringify(app.cmds().slice(-2)));
+    // #17: its F list never comes: the page stops waiting for it
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + (p * 3) + '.0,1.0,2.0', 0.02);
+    for (let p = 23; p >= 2; p--) await app.f('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0', 0.02);
+    await app.f('Q,end,120.0,3.00,6', 0.02);   // ...and its F,end is lost
+    await app.f(S({}), 6);
+    check('#17 a lost quiet F list is not waited for (the next F list is not swallowed)', !st.qQuietF && !app.$('gearList').hidden);
+  }
+  {
+    // #21: Use best guess on a gear still flagged after 2 redos ends the improve pass
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,15,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    app.$('glImprove').click();
+    for (let i = 0; i < 2; i++) {                                 // two redos, still flagged
+      await app.advance(0.5);
+      await app.f('E,ok,redo');
+      await app.f(S({ cal: 1, flow: 6, step: 14, pass: 'ru' }));
+      await app.f('C,15,45.0,1.0,2.0');
+      await app.f('E,ok,saved');
+      await app.f('K,1,120.0,3.00,6,saved');
+      await app.f('F,u,15,behind,1.0,2.0,3.0');
+      await app.f('F,end,1');
+      await app.f(S({}));
+    }
+    app.win.fixAction('guess');                                   // the card's Use best guess
+    await app.f('E,ok,saved');
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,end,0');
+    await app.f(S({}));
+    check('#21 Use best guess after 2 redos ends the improve pass (back to the list)', !st.review && !!st.gearList,
+      'review ' + (st.review && st.review.items.length) + ' list ' + !!st.gearList);
+  }
+  {
+    // #20: a run deleted on another page (same origin) doesn't come back
+    const a = mk(), b = mk();
+    b.store = a.store; b.win.localStorage = a.win.localStorage;
+    addDiag(a, 1, 1000); addDiag(a, 2, 1000);
+    b.win.loadRecords();
+    b.win.removeRecord(b.win.findRecord('r1')); b.win.saveIndex();
+    addDiag(a, 3, 1000);
+    check('#20 a run deleted on the other page stays deleted', index(a).indexOf('r1') < 0, 'index ' + index(a));
   }
   {
     // crank not found: the reason stays on screen; the hold-still notice and the circle agree

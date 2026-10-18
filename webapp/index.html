@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.3-2026-10-18.2';
+  var APP_BUILD = 'v3.3-2026-10-18.3';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.2">
+<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.3">
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   </button>
   <button class="hdr-btn" id="hdrBtn" type="button" hidden>Disconnect</button>
   <!-- while calibrating: (x) Calibrate Undo -->
-  <button class="top-x" id="topX" type="button" aria-label="Cancel calibration"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span class="lbl">Tap again to cancel</span></button>
+  <button class="top-x" id="topX" type="button" aria-label="Cancel calibration"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span class="lbl">Tap again to stop</span></button>
   <div class="top-title" aria-hidden="true">Calibrate</div>
   <button class="top-undo" id="topUndo" type="button" hidden>Undo</button>
 </header>
@@ -98,16 +98,16 @@
           <path class="zn" id="gzGreat" d="M 36.1 154.9 A 96 96 0 1 1 203.9 154.9"></path>
           <path class="val fill-none" id="gVal" d="M 36.1 154.9 A 96 96 0 1 1 203.9 154.9"></path>
         </svg>
-        <div class="gauge-in"><div class="big"><span id="gNum">--</span><span class="unit">µT</span></div><div class="lbl">Lever swing · <span id="gZone">move the lever</span></div></div>
+        <div class="gauge-in"><div class="big"><span id="gNum">--</span><span class="unit">µT</span></div><div class="lbl">Lever signal · <span id="gZone">move the lever</span></div></div>
       </div>
       <div class="meters">
-      <div class="meter" role="group" aria-label="Crank dip">
-        <div class="meter-h"><span class="k">Crank dip</span><span><span class="v" id="mDipV">--</span><span class="z" id="mDipZ"></span></span></div>
+      <div class="meter" role="group" aria-label="Pedal signal">
+        <div class="meter-h"><span class="k">Pedal signal</span><span><span class="v" id="mDipV">--</span><span class="z" id="mDipZ"></span></span></div>
         <div class="capsule"><i id="mDipF"></i><b id="mDipT1"></b><b id="mDipT2"></b></div>
         <div class="meter-s">How clearly each pedal turn shows. Keep pedalling.</div>
       </div>
-      <div class="meter" role="group" aria-label="Headroom">
-        <div class="meter-h"><span class="k">Headroom</span><span><span class="v" id="mHeadV">--</span><span class="z" id="mHeadZ"></span></span></div>
+      <div class="meter" role="group" aria-label="Room before too strong">
+        <div class="meter-h"><span class="k">Room before too strong</span><span><span class="v" id="mHeadV">--</span><span class="z" id="mHeadZ"></span></span></div>
         <div class="capsule"><i id="mHeadF"></i><b id="mHeadT1"></b><b id="mHeadT2"></b></div>
         <div class="meter-s">Room left before the sensor saturates.</div>
       </div>
@@ -248,10 +248,10 @@
           <button class="btn primary big" id="onbNext" type="button">Continue</button>
           <button class="btn primary big" id="calStart" type="button" hidden>Start calibration</button>
           <button class="linkbtn onb-back" id="onbBack" type="button">Back</button>
+          <button class="linkbtn" id="onbHome" type="button" hidden>Back to your calibration</button>
         </div>
       </div>
       <div class="onb-more">
-        <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
         <p class="small" id="storedMsg" role="status" hidden style="color:var(--warn);font-weight:600;margin:0"></p>
         <p class="small muted" style="margin:0;text-align:center">Every finished calibration is saved on this phone. <button class="linkbtn" type="button" id="goSaved">See saved runs</button></p>
       </div>
@@ -323,16 +323,20 @@
       </div>
     </div>
 
-    <button class="switch-row" id="autoToggle" type="button" role="switch" aria-checked="mixed">
-      <span class="t">Auto-capture</span>
-      <span class="switch" aria-hidden="true"></span>
-    </button>
-
-    <div class="card" id="pointsCard" hidden>
-      <h2>Captured points</h2>
-      <div class="small muted">x, y, z in µT. Right column: distance from the previous point (µT).</div>
-      <div class="plist" id="plist"></div>
-    </div>
+    <!-- #34: settings and raw data for testing, out of the rider's way -->
+    <details class="more-opts" id="calMore">
+      <summary>More options</summary>
+      <button class="switch-row" id="autoToggle" type="button" role="switch" aria-checked="mixed">
+        <span class="t">Auto-capture</span>
+        <span class="switch" aria-hidden="true"></span>
+      </button>
+      <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>
+      <div class="card" id="pointsCard" hidden>
+        <h2>Captured points</h2>
+        <div class="small muted">x, y, z in µT. Right column: distance from the previous point (µT).</div>
+        <div class="plist" id="plist"></div>
+      </div>
+    </details>
   </section>
 
   <!-- DIAGNOSE -->
