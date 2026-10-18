@@ -341,11 +341,12 @@ function downPointsMissing() {
 // [v3.2] the board started a #R redo: one point of the saved calibration, by pedalling
 function onRedoStarted(s) {
   var pass = s.pass === 'rd' ? 'd' : 'u', point = s.step + 1;
+  var again = !!(state.edit && state.edit.kind === 'R' && state.edit.started && state.edit.pass === pass && state.edit.point === point);   // (after a reconnect)
   if (!state.edit || state.edit.kind !== 'R') state.edit = { kind: 'R', pass: pass, point: point };
   state.edit.started = true;
   clearTimeout(state.edit.timer);   // the redo can take a while; E arrives when it is saved
   state.calEnded = true;            // not a new run: never saved as an incomplete calibration
-  pointStatClear(pass, point);      // (#11 quality: this point's tries count afresh)
+  if (!again) pointStatClear(pass, point);   // (#11 quality: this point's tries count afresh; #49: not when picked up again)
   if (pass === 'u' && state.checkMisses) delete state.checkMisses[point];   // (#40: redone)
   if (state.keptEdges) delete state.keptEdges[pass + point];
   state.behind = null; state.capturedAt = 0; state.learnDoneAt = 0;
@@ -748,6 +749,7 @@ function onCalStarted() {
   state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
   state.pointStats = {}; state.gearList = null; state.improving = null; state.homeWalk = false; state.homeSel = 0;
   state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null;
+  state.homeRead = false; state.homeRecordId = null; state.homeAsked = false; state.homeTries = 0;   // #46
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;
@@ -776,9 +778,16 @@ function requestStoredCal(quiet) {
   state.qQuiet = quiet;
   state.q = { points: [], down: [], timer: 0 };
   state.q.timer = setTimeout(function () {
-    if (state.q) { state.q = null; state.qQuiet = false; if (!quiet) toast('No reply. The bridge may need firmware v2.'); }
+    if (state.q) { state.q = null; if (!quiet) toast('No reply. The bridge may need firmware v2.'); }
+    if (quiet && state.qQuiet) quietGiveUp();
   }, 10000);
   send('k', quiet);
+}
+// #48: the quiet readback got no (complete) answer: try again later, at most twice more on this link
+function quietGiveUp() {
+  state.qQuiet = false;
+  if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;
+  render();
 }
 // The F list after a quiet readback belongs to it (its flags colour the gear list); if it never comes, stop waiting.
 function quietFList() {
@@ -789,6 +798,11 @@ function quietFList() {
 // The page's copy of a calibration read back from the bridge: points, down points, and how each
 // point went (from the matching saved file on this phone, if there is one).
 function adoptStoredCal(q) {
+  var key = function (a) { return a.map(function (x) { return x.point + ':' + fmt(x.x, 1) + ',' + fmt(x.y, 1) + ',' + fmt(x.z, 1); }).sort().join('|'); };
+  if (key(q.points) !== key(state.points) || key(q.down) !== key(state.downPoints)) {
+    // another calibration than the page knew (or the first one it reads): nothing carried over from before
+    state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null; state.lastFlags = [];
+  }
   state.points = q.points.slice(); state.downPoints = q.down.slice();
   var m = savedPointStatsFor(q.points, q.down);
   state.pointStats = m ? m.stats : {};   // (nothing from another attempt: only what belongs to these points)
@@ -887,7 +901,7 @@ function onQ(p) {
   if (!fin(num(p[2])) || !fin(num(p[3])) || !fin(num(p[4]))) return false;
   if (!state.q) state.q = { points: [], down: [], timer: 0 }; // 'k' typed in the console
   clearTimeout(state.q.timer);
-  state.q.timer = setTimeout(function () { state.q = null; }, 10000);
+  state.q.timer = setTimeout(function () { state.q = null; if (state.qQuiet) quietGiveUp(); }, 10000);
   state.q.points = state.q.points.filter(function (x) { return x.point !== point; });
   state.q.points.push({ point: point, x: num(p[2]), y: num(p[3]), z: num(p[4]) });
   return true;

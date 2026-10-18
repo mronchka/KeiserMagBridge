@@ -17,8 +17,33 @@ function loadRecords() {
     var j = localStorage.getItem(STORE_IDX);
     var a = j ? JSON.parse(j) : [];
     records = Array.isArray(a) ? a.filter(function (r) { return r && r.id && r.filename; }) : [];
+    records = records.filter(function (r) {   // #50: listed, but its data was removed (by another page)
+      try { return localStorage.getItem(STORE_PREFIX + r.id) !== null; } catch (e) { return true; }
+    });
     records.forEach(function (r) { r.persisted = true; });
+    adoptUnlistedRecords();
   } catch (e) { records = []; }
+}
+// #50: saved data no index lists (an older page on the same origin rewrote the index without it):
+// list it again, with what its own header says.
+function adoptUnlistedRecords() {
+  var keys = [];
+  try { for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i)); } catch (e) { return; }
+  var known = {};
+  records.forEach(function (r) { known[r.id] = true; });
+  keys.forEach(function (k) {
+    if (!k || k.indexOf(STORE_PREFIX) !== 0 || known[k.slice(STORE_PREFIX.length)]) return;
+    var csv = null;
+    try { csv = localStorage.getItem(k); } catch (e) {}
+    if (!csv) return;
+    var head = function (name) { var m = new RegExp('^# ' + name + ': (.*)$', 'm').exec(csv); return m ? m[1] : ''; };
+    var type = /calibration/.test(head('record')) ? 'cal' : 'diag', ts = head('timestamp') || new Date(0).toISOString();
+    var d = new Date(ts);
+    records.push({ id: k.slice(STORE_PREFIX.length), type: type, source: 'run', ts: ts, persisted: true, size: csv.length,
+      title: type === 'cal' ? 'Calibration (recovered)' : 'Diagnostic recording (recovered)', summary: head('result') || 'recovered from this phone',
+      filename: (type === 'cal' ? 'keiser-cal-' : 'keiser-diag-') + (isFinite(d.getTime()) ? fileStamp(d) : 'recovered') + '.csv' });
+  });
+  records.sort(function (a, b) { return a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0; });
 }
 // Another page on this origin (the published page and a preview, or a second tab) may have saved
 // runs since this one loaded: keep those whose data is still there (minus what this page removed).
@@ -239,6 +264,9 @@ function appendRecordComments(id, comments, summaryAdd, replace) {
   var oldSummary = rec.summary, oldSize = rec.size;
   if (summaryAdd) rec.summary += ' · ' + summaryAdd;
   if (rec.persisted) {
+    var gone = false;   // #50: another page deleted it meanwhile: don't write it back
+    try { gone = localStorage.getItem(STORE_PREFIX + id) === null; } catch (e) {}
+    if (gone) { rec.persisted = false; saveIndex(); renderSaved(); return false; }
     // If even removing older runs doesn't make room, the stored copy (without these lines) stays
     // listed as it is stored, and the new lines are kept for this session only.
     var dropped = [];
