@@ -139,8 +139,8 @@
     <!-- [v3.2] confirm ride: app-only walkthrough comparing the bridge's gear with the console -->
     <div class="card rck" id="rideCheck" role="region" aria-label="Gear check" hidden>
       <div class="rck" id="rckOffer">
-        <h2>Check a few gears</h2>
-        <p>Ride for about a minute and compare the bridge's gear with the Keiser console at four gears.</p>
+        <h2 id="rckOfferTitle">Check a few gears</h2>
+        <p id="rckOfferText">Ride for about a minute and compare the bridge's gear with the Keiser console at four gears.</p>
         <p class="small muted">Watts will read a little below the console on purpose: the bridge uses Keiser's measured power scale. So only the gear is checked.</p>
         <button class="btn primary big" id="rckStart" type="button">Start the gear check</button>
         <button class="btn text" id="rckSkip" type="button">Skip</button>
@@ -179,6 +179,7 @@
         <h2 id="rckDoneTitle">Gear check</h2>
         <div id="rckSum"></div>
         <p class="small muted" id="rckSaved"></p>
+        <button class="btn wide" id="rckMore" type="button" hidden>Check a few more gears</button>
         <button class="btn primary wide" id="rckClose" type="button">Done</button>
       </div>
     </div>

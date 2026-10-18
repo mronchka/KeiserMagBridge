@@ -33,7 +33,7 @@ function flowNow() {
   // Whenever the board is calibrating, its own step wins (a #D after the gear check is step 5, not 6).
   if (s && state.v33 && s.cal !== 0 && s.flow >= 1 && s.flow <= 6) return s.flow;
   if (state.place) return 1;
-  if (state.check && (state.check.phase === 'run' || state.check.phase === 'done') && state.check.flow) return 6;
+  if (state.check && state.check.flow) return 6;   // the finish card, the check and its summary
   if (state.upSaved) return 4;
   return 0;
 }
@@ -112,7 +112,7 @@ function renderFlow(active, placing, saved) {
   if (placing) renderPlace();
   setHidden('upSaved', !saved);
   // a silent link at the checkpoint: say so (the circle's "Waiting for the bridge" note isn't on screen here)
-  var cpWait = saved && state.conn === 'connected' && Date.now() - state.sAt > WAIT_NOTE_MS;
+  var cpWait = saved && state.conn === 'connected' && bridgeQuiet();
   $('upContinue').disabled = state.conn !== 'connected' || cpWait;
   var cpText = cpWait ? 'Waiting for the bridge…' : 'Continue down';
   if ($('upContinue').textContent !== cpText) $('upContinue').textContent = cpText;
@@ -120,7 +120,7 @@ function renderFlow(active, placing, saved) {
   // (only while the bridge says it is calibrated: not for a new, erased or different bridge)
   var rec = flowRecord(), show = !active && !placing && !saved && state.v33 && state.conn === 'connected' && !!rec &&
     !!(state.s && state.s.flags.V) &&
-    (!rec.downDone || !rec.checkDone) && !(state.check && state.check.phase === 'run');
+    (!rec.downDone || !rec.checkDone) && !(state.check && (state.check.phase === 'run' || state.check.flow));
   setHidden('calResume', !show);
   if (show) {
     setHidden('resumeDown', !!rec.downDone);

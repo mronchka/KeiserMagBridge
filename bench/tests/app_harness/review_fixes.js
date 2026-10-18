@@ -69,6 +69,8 @@ function addDiag(app, i, size) {
     summary: 's', filename: 'keiser-diag-' + i + '.csv' }, 'x'.repeat(size));
 }
 const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r) => r.id);
+// after the down pass the finish card offers step 6: tap "Check a few gears"
+const start6 = (app) => { const c = app.M3.state.check; if (c && c.phase === 'offer') app.$('rckStart').click(); };
 
 (async function main() {
   // ---------------------------------------------------------------- saved runs
@@ -120,6 +122,7 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
+    start6(app);
     while (st.check && st.check.phase === 'run') app.M3.checkAnswer(5);
     const older = app.win.records[0].id, olderCsv = app.win.getCsv(older);
     st.points = st.points.slice(0, 20);                          // as after a reload: the page didn't see the up pass
@@ -199,7 +202,9 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
   {
     const app = mk();
     await app.upPass();
-    await app.advance(4);                                        // the link goes quiet at the checkpoint
+    await app.advance(4);                                        // quiet just after the save: the bridge writes its flash
+    check('4 s of quiet right after a save: no "Waiting for the bridge" yet (#13)', !app.$('upContinue').disabled);
+    await app.advance(3);                                        // still quiet: now it says so
     check('silence at the Saved checkpoint: Continue down says it is waiting', app.$('upContinue').disabled &&
       /Waiting/.test(app.$('upContinue').textContent), app.$('upContinue').textContent);
     await app.f(S({ cal: 7, flow: 4, step: 22, pass: 'd' }));
@@ -303,8 +308,8 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
-    check('two drops in a row: the down pass\'s K is still taken as v3.3 (step 6, down points kept)',
-      st.result.down === 22 && !!st.check && st.check.phase === 'run', 'down ' + st.result.down + ' check ' + (st.check && st.check.phase));
+    check('two drops in a row: the down pass\'s K is still taken as v3.3 (finish card, down points kept)',
+      st.result.down === 22 && !!st.check && st.check.phase === 'offer' && st.check.flow, 'down ' + st.result.down + ' check ' + (st.check && st.check.phase));
   }
   {
     const app = mk(); const st = app.M3.state;
@@ -360,6 +365,7 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({}));
+    start6(app);
     app.M3.checkAnswer(6); app.M3.checkAnswer(12); app.M3.checkAnswer(14); app.M3.checkAnswer(19);   // two mismatches
     app.M3.setConn('disconnected');
     check('a drop on the gear check summary leaves focus mode (the Reconnect card fits)', !st.calFocus);
@@ -376,6 +382,79 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     const sum = app.$('rckSum').innerHTML;
     check('after a Redo from the gear check summary it comes back: that row Redone, the other still offered',
       st.check && st.check.phase === 'done' && /Redone/.test(sum) && /data-rck-redo="14"/.test(sum), sum.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 160));
+  }
+  // ---------------------------------------------------------------- GitHub issues from the first v3.3 bike calibration
+  {
+    // #2: the bottom (point 1) stays on screen as saved for ~2.5 s
+    const app = mk();
+    await app.f(S({}));
+    await app.f(S({ cal: 1, flow: 4, step: 0, pass: 'u' }));
+    await app.f('C,1,1.0,1.0,2.0', 0.1);
+    await app.f(S({ cal: 1, flow: 4, step: 1, pass: 'u' }), 1.5);   // the board already asks for gear 2
+    check('#2 the bottom shows as saved for over 1.5 s', /Bottom saved/.test(app.$('calSub').textContent), app.$('calSub').textContent);
+    await app.f(S({ cal: 1, flow: 4, step: 1, pass: 'u' }), 1.2);
+    check('#2 ...then the gear 2 prompt', !/saved/.test(app.$('calSub').textContent), app.$('calHead').textContent);
+  }
+  {
+    // #9 / #10: after the down pass: a finish card; the checks start with the gears the calibration is least sure of
+    const app = mk(); const st = app.M3.state;
+    await app.upPass(['u,15']);
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    await app.f('K,1,120.0,3.00,6,saved');
+    await app.f('F,u,15,behind,1.0,2.0,3.0');
+    await app.f('F,end,1');
+    await app.f(S({}));
+    st.review = null; app.win.maybeOfferCheck();                     // (the flagged gear left as it is)
+    check('#9 the finish card: Check a few gears / Finish and ride, no start screen', st.check && st.check.phase === 'offer' &&
+      app.$('calIdle').hidden && app.$('calResume').hidden && app.$('rckSkip').textContent === 'Finish and ride');
+    check('#10 the gear check starts with the gear the bridge flagged', st.check.list.some((c) => c.gear === 15),
+      st.check.list.map((c) => c.gear + c.pace[0]).join(' '));
+    app.$('rckStart').click();
+    while (st.check.phase === 'run') app.M3.checkAnswer(st.check.list[st.check.idx].gear === 15 ? 14 : 5);
+    check('#10 the summary offers "Check a few more gears"', app.$('rckMore').hidden === false);
+    app.$('rckMore').click();
+    check('#10 ...which leaves out the gears that matched and keeps the earlier answers', st.check.phase === 'run' && st.check.prev.length === 4);
+    app.$('rckQuit').click();
+    app.$('rckClose').click();
+    const app2 = mk(); const st2 = app2.M3.state;
+    await app2.upPass();
+    app2.$('upContinue').click();
+    await app2.downPass(23, 2);
+    await app2.f('K,1,120.0,3.00,6,saved');
+    await app2.f('F,end,0');
+    await app2.f(S({}));
+    app2.$('rckSkip').click();
+    check('#9 Finish and ride: off to the Ride tab, nothing left to resume', st2.view === 'ride' && !st2.check &&
+      (app2.win.flowRecord() || {}).checkDone === true);
+  }
+  {
+    // crank not found: the reason stays on screen; the hold-still notice and the circle agree
+    const app = mk();
+    await app.f(S({}));
+    await app.f(S({ cal: 3, flow: 2, pass: 'u' }));
+    await app.f('L,0,6,70,6.1,dip too shallow');
+    await app.f(S({ cal: 1, flow: 4, step: 0, pass: 'u' }));
+    check('crank not found: the reason stays on screen', /Crank not found: dip too shallow/.test(app.$('calCount').textContent), app.$('calCount').textContent);
+  }
+  {
+    // #6: the real log of the first v3.3 bike calibration: two quick Undos straight after the start of the up pass
+    const { readLog } = require('./harness');
+    const path = require('path');
+    const log = readLog(path.join(__dirname, '..', '..', 'logs', '2026-10-17_v3_3_cal.log'));
+    const app = loadApp({ search: '' }); app.connect(); const st = app.M3.state;
+    const seen = {};
+    for (const [t, text] of log) {
+      if (t > 260) break;
+      await app.feed(t, text);
+      if (/^C,1,/.test(text) && seen.c1t === undefined) seen.c1t = t;
+      if (seen.c1t && t >= seen.c1t + 1.5 && seen.c1 === undefined) seen.c1 = app.$('calSub').textContent;   // 1.5 s later
+      if (t >= 240.04 && t < 240.1) seen.afterUndo = st.points.length;
+      if (t >= 241.14 && t < 241.2) seen.retaken = st.points.map((p) => p.point).join(',');
+    }
+    check('#6 replay: the bottom taken just after the sweep shows as saved', /Bottom saved/.test(seen.c1 || ''), seen.c1);
+    check('#6 replay: two quick Undos leave no points, the bottom is taken again cleanly',
+      seen.afterUndo === 0 && seen.retaken === '1' && app.errors.length === 0, JSON.stringify(seen));
   }
   // ---------------------------------------------------------------- Bluetooth link
   {
@@ -470,7 +549,7 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f('K,1,120.0,3.00,6,saved');   // ... and its F,end is lost
     await app.f(S({}));
     await app.advance(6);
-    check('the F,end after the down pass is lost: step 6 starts anyway', !!st.check && st.check.phase === 'run', st.check && st.check.phase);
+    check('the F,end after the down pass is lost: the finish card comes anyway', !!st.check && st.check.phase === 'offer', st.check && st.check.phase);
   }
   {
     const app = mk(); const st = app.M3.state;
@@ -494,7 +573,7 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     st.resultHidden = true; app.win.renderResult();   // the result card's (x)
     app.win.fixAction('skip');
     if (!st.review) { st.editErr = ''; app.win.maybeOfferCheck(); }
-    check('dismissing the result card does not stop step 6', !!st.check && st.check.phase === 'run');
+    check('dismissing the result card does not stop the finish card (step 6)', !!st.check && st.check.phase === 'offer');
   }
   // ---------------------------------------------------------------- gear check
   {
@@ -505,8 +584,10 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f('K,1,120.0,3.00,6,saved');
     await app.f('F,end,0');
     await app.f(S({ gear: 1, flags: 'V', cad: '0.0', src: '-' }));
-    for (let i = 0; i < 100; i++) await app.f(S({ gear: 1, flags: 'V', cad: '0.0', src: '-' }), 0.25);   // 25 s rest
-    for (let i = 0; i < 16; i++) await app.f(S({ gear: 1, cad: '75.0' }), 0.25);                          // 4 s pedalling at gear 1
+    start6(app);
+    const far = st.check.list[0].gear > 12 ? 1 : 24;   // a gear far from the first check's
+    for (let i = 0; i < 100; i++) await app.f(S({ gear: far, flags: 'V', cad: '0.0', src: '-' }), 0.25);   // 25 s rest
+    for (let i = 0; i < 16; i++) await app.f(S({ gear: far, cad: '75.0' }), 0.25);   // 4 s pedalling there
     check('gear check: a rest does not count toward "ask anyway"', !st.check.askGear, 'asked at gear ' + st.check.askGear);
     const rid = app.win.calRecordId();
     st.check.activeMs = 1e9;
@@ -534,6 +615,7 @@ const index = (app) => JSON.parse(app.store['m3bridge.records'] || '[]').map((r)
     await app.f(S({}));
     check('readback after #D: linked to the result, down count from the bridge', !!st.result.recordId && st.result.down === 22,
       'recordId ' + st.result.recordId + ' down ' + st.result.down);
+    start6(app);
     if (st.check && st.check.phase === 'run') while (st.check.phase === 'run') app.M3.checkAnswer(5);
     check('...and the gear check is saved with it', /# gear_check:/.test(app.win.getCsv(st.result.recordId) || ''), app.$('rckSaved').textContent);
   }

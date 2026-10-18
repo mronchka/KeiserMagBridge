@@ -13,6 +13,7 @@ var TOTAL_POINTS = 25;
 var MARGINAL_UT = 1.5;
 var STALE_MS = 5000;      // Bluetooth text can stall for over a second on the real board
 var WAIT_NOTE_MS = 2500;  // calibration: show the small 'Waiting for the bridge' note after this much silence
+var SAVE_WAIT_MS = 6000;  // ... right after a capture or a save: the bridge writes its flash (2-5 s) and sends nothing (#13)
 var LOG_MAX = 600;
 var RX_BUF_MAX = 2048;
 
@@ -58,6 +59,7 @@ var D_RAW_SHOWN = 10;
 var T_RAW_SHOWN = 10;
 var LEARN_DONE_MS = 1400; // after crank learning: keep the finished (green) bar on screen this long
 var CAPTURE_FLASH_MS = 1000; // [v3] after each captured point: show the ring green at 3/3 this long
+var BOTTOM_FLASH_MS = 2500;  // ... the bottom (point 1) longer: it is taken moments after the sweep (#2)
 // [v3.2] down pass: down points 23 .. 2 (step 22 .. 1); point 24 has no down reading
 var DOWN_FIRST_STEP = 22;
 var DOWN_POINTS = 22;

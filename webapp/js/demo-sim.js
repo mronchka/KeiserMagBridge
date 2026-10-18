@@ -212,7 +212,7 @@ function Simulator(startCalibrated) {
     } else if (DEMO_V3) {
       // [v3] riding, with a short stop every ~40 s. During the gear check (step 6) the rider
       // shifts toward the wanted gear, a gear every 1.5 s, holds it, and pedals faster when asked.
-      var want = state.check && state.check.phase === 'run' && !state.check.picking ? RIDE_CHECKS[state.check.idx] : null;
+      var want = state.check && state.check.phase === 'run' && !state.check.picking ? checkList(state.check)[state.check.idx] : null;
       pedal = want ? true : (t % 160) < 136;
       if (want) {
         if (t % 6 === 0 && gear !== want.gear) gear += want.gear > gear ? 1 : -1;

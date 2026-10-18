@@ -107,6 +107,7 @@ $('topX').addEventListener('click', function () {
   else if (state.upSaved) $('upLater').click();
   else if (state.check && state.check.phase === 'run') $('rckQuit').click();
   else if (state.check && state.check.phase === 'done') $('rckClose').click();
+  else if (state.check && state.check.phase === 'offer') $('rckSkip').click();
 });
 $('topUndo').addEventListener('click', function () { if (!$('btnUndo').disabled) send('u'); });
 
@@ -152,10 +153,18 @@ $('rckStart').addEventListener('click', function () {
   var c = state.check;
   if (!c) return;
   c.phase = 'run'; c.idx = 0; c.results = []; c.picking = false; c.v32 = c.v32 || !!state.v32;
+  if (!c.list) c.list = pickChecks();
   render();
   try { $('rideCheck').scrollIntoView({ block: 'start' }); } catch (e) {}
 });
-$('rckSkip').addEventListener('click', function () { state.check = null; state.checkDone = true; render(); });
+// [v3.3] "Finish and ride" on the finish card: done, off to the Ride tab
+$('rckSkip').addEventListener('click', function () {
+  var c = state.check;
+  state.check = null; state.checkDone = true;
+  if (c && c.flow) { setFlowRecord({ checkDone: true }); showView('ride'); }
+  render();
+});
+$('rckMore').addEventListener('click', function () { if (state.check) startGearCheck(state.check); });
 $('rckYes').addEventListener('click', function () { var c = state.check; if (c && c.askGear) checkAnswer(c.askGear); });
 $('rckNo').addEventListener('click', function () {
   var c = state.check;

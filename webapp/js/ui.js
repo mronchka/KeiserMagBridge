@@ -3,6 +3,13 @@
 // Classic script sharing the page's global scope; index.html loads the files in order (see its loader).
 'use strict';
 
+// While calibrating: has the bridge been quiet long enough to say so? Right after a capture or a save
+// it writes its flash (1.7-2.6 s, up to about 5 s seen) and sends no status lines, so that wait is longer.
+function bridgeQuiet() {
+  var saving = Math.max(state.capturedAt || 0, state.lastKAt || 0) >= state.sAt - 1500;
+  return Date.now() - state.sAt > (saving ? SAVE_WAIT_MS : WAIT_NOTE_MS);
+}
+
 // Status lines pause while a recording is being sent, so that is not "stale".
 function isStale() {
   if (!state.s) return true;

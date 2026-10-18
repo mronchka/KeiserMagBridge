@@ -290,10 +290,12 @@ function onC(p) {
   state.points.push(pt);
   state.behind = null; state.overshoot = null;
   state.capturedAt = Date.now(); state.capturedPoint = point; state.capturedDown = false;   // renderCal: green 3/3 flash
+  // (the bottom longer: it is taken moments after the sweep, and the rider must see it was)
+  state.capturedFlashMs = point === 1 && !isRedoing() ? BOTTOM_FLASH_MS : CAPTURE_FLASH_MS;
   if (state.w && state.w.point === point) state.w.resolved = true;   // settled and captured
   if (state.stuck && state.stuck.point === point) state.stuck = null;
   if (state.redo === point) state.redo = 0;                            // redone
-  setTimeout(render, CAPTURE_FLASH_MS + 50);
+  setTimeout(render, state.capturedFlashMs + 50);
   try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
   renderPoints();
   render();
@@ -310,7 +312,7 @@ function onCDown(p) {
   state.downPoints = state.downPoints.filter(function (q) { return isRedoing() ? q.point !== point : q.point > point; });
   state.downPoints.push(pt);
   state.behind = null; state.overshoot = null;
-  state.capturedAt = Date.now(); state.capturedPoint = point; state.capturedDown = true;
+  state.capturedAt = Date.now(); state.capturedPoint = point; state.capturedDown = true; state.capturedFlashMs = CAPTURE_FLASH_MS;
   if (state.w && state.w.point === point) state.w.resolved = true;
   if (state.stuck && state.stuck.point === point) state.stuck = null;
   if (state.redo === point && state.redoPass === 'd') state.redo = 0;
@@ -461,6 +463,7 @@ function onF(p) {
     }
     if (items.length !== count) logLine('Check list: expected ' + count + ' flagged point' + (count === 1 ? '' : 's') + ', received ' + items.length + '.', 'bad');
     var flagged = items.filter(function (it) { return !state.reviewKept[it.pass + it.point]; });
+    state.lastFlags = items.slice();
     // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
     // after an edit (wantReadback) carries on with the guided fixes.
     var stored = state.qJustEnded && !state.qFromEdit;
@@ -624,6 +627,7 @@ function onL(p) {
   if (p.length < 2 || (p[1] !== '0' && p[1] !== '1')) return false;
   var ok = p[1] === '1', reason = p.slice(5).join(',').trim();
   state.learnFailed = !ok;
+  state.learnWhy = ok ? '' : reason || 'no reason given';
   logLine(ok ? 'Crank learned: ' + (p[2] || '?') + ' turns at ' + (p[3] || '?') + ' rpm, dip ' + (p[4] || '?') + ' µT'
     : 'Crank not found (' + (reason || 'no reason given') + '). Continuing with the hold-still method.', 'sys');
   if (!ok) toast('Crank not found: ' + (reason || 'no reason given'));
@@ -705,7 +709,7 @@ function onCalStarted() {
   state.checkDone = false;
   if (state.edit) { clearTimeout(state.edit.timer); state.edit = null; }
   state.result = null; state.resultHidden = false; state.noAutoCheck = false; state.stopSent = false;
-  state.downResumePending = false; state.qRetried = false; state.awaitK = false;
+  state.downResumePending = false; state.qRetried = false; state.awaitK = false; state.lastFlags = [];
   forgetCalRecord();
   state.calEnded = false;
   state.partialSaved = -1;

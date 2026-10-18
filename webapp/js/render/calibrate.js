@@ -17,7 +17,7 @@ var CAL_INTRO = {
     { art: 'check', title: 'A quick cadence check', text: 'First it learns your pedal stroke. Then check the rpm matches your Keiser console.' },
     { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear, then hold it. The circle turns green when it’s saved.' },
     { art: 'ring', title: 'Bottom to top', text: 'Start with the lever all the way down and work up. It takes a few minutes.' },
-    { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, come back down the same way: stop where the console first shows each lower gear. You can finish early.' }
+    { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, come back down the same way: move the lever down until the console first shows each lower gear. You can finish early.' }
   ],
   still: [
     { art: 'ring', title: 'Bottom to top', text: 'You’ll set the lever at each gear, starting all the way down and working up.' },
@@ -95,11 +95,12 @@ function renderCal() {
   var active = calRunning(s);   // [v3.3] cal 7 (checkpoint) shows the Saved card, not the circle
   var checkRun = !active && !!state.check && state.check.phase === 'run';   // [v3.2] gear check running
   var checkDone = !active && !!state.check && state.check.phase === 'done' && !!state.check.flow;   // [v3.3] its summary
+  var checkOffer = !active && !!state.check && state.check.phase === 'offer' && !!state.check.flow;   // [v3.3] the finish card
   if (active && state.place) closePlace(false);   // the calibration started: step 1 is over
   var placing = !!state.place && !active, saved = !!state.upSaved && !active;
   renderFlow(active, placing, saved);
-  setHidden('calWait', !(active && !transferActive() && Date.now() - state.sAt > WAIT_NOTE_MS));
-  setHidden('calIdle', active || checkRun || checkDone || placing || saved);
+  setHidden('calWait', !(active && !transferActive() && bridgeQuiet()));
+  setHidden('calIdle', active || checkRun || checkDone || checkOffer || placing || saved);
   setHidden('calActive', !active);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
   if (state.result) setHidden('resultCard', resultCardHidden());
@@ -115,9 +116,9 @@ function renderCal() {
 
   setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
-  state.calFocus = active || placing || saved || ((checkRun || checkDone) && connected);
+  state.calFocus = active || placing || saved || ((checkRun || checkDone || checkOffer) && connected);
   applyCalFocus();
-  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : 'Skip the rest of the gear check');
+  $('topX').setAttribute('aria-label', active ? 'Cancel calibration' : placing ? 'Back' : saved ? 'Later' : checkDone ? 'Close' : checkOffer ? 'Finish and ride' : 'Skip the rest of the gear check');
   if (!active) { setHidden('topUndo', true); if (cancelArmedUntil) disarmCancel(); return; }
 
   buildCalDots();
@@ -139,7 +140,7 @@ function renderCal() {
   var pGear = down || pass === 'rd' ? step : step + 1;   // the gear named in the prompt
   var stab = Math.round(s.stab);
   var turns = Math.max(0, Math.min(3, Math.round(stab / 100 * 3)));
-  var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < CAPTURE_FLASH_MS;
+  var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < (state.capturedFlashMs || CAPTURE_FLASH_MS);
   var justLearned = !learning && !confirming && step === 0 && !down && !redoing && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
   // [v3.3] the flow step from the bridge; paused (O) is calm, and replaces the amber "keep pedalling"
   var v33 = state.v33, flow = v33 ? s.flow : 0;
@@ -152,6 +153,7 @@ function renderCal() {
   var bFlash = v32 && !mustPass && state.bClearAt && now - state.bClearAt < B_CLEAR_MS && !flash;
   renderPointCheck(checking, s);
   if (paused || sweeping) setHidden('holdBanner', true);
+  var holdNote = !$('holdBanner').hidden;   // "Hold the lever still": the circle says the same
 
   // disc look: learn | confirm | grey | blue | green | amber
   var look, head, sub;
@@ -204,6 +206,7 @@ function renderCal() {
       head = 'Hold still';
       sub = s.cal === 2 ? 'Saving…' : auto ? 'Saves when the ring fills' : 'Tap CAPTURE when ready';
     }
+    if (holdNote) { head = 'Hold the lever still'; sub = 'It saves once the reading settles'; }
   } else {
     look = 'grey';
     var n = step + 1;
@@ -216,10 +219,10 @@ function renderCal() {
       sub = 'Keep pedalling';
     } else if (redoing) {
       head = 'Now ' + (upw ? 'up' : 'down') + ' to gear ' + pGear;
-      sub = 'Stop where the console FIRST shows ' + pGear + ', then hold it there';
+      sub = 'Move the lever until the console FIRST shows ' + pGear + ', then hold';
     } else if (overshot) {
       head = 'Now ' + (upw ? 'up' : 'down') + ' to gear ' + pGear;
-      sub = 'Stop where the console FIRST shows ' + pGear + ', then hold it there';
+      sub = 'Move the lever until the console FIRST shows ' + pGear + ', then hold';
     } else if (down) {
       head = 'Shift down to ' + pGear;
       sub = (step >= DOWN_FIRST_STEP && !state.downPoints.length ? 'Now back down. ' : 'Keep pedalling. ') +
@@ -227,8 +230,8 @@ function renderCal() {
     } else if (step === 0) { head = 'Lever all the way down'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
     else if (step >= TOTAL_POINTS - 1 && v32 && crankMode) { head = 'Working out the top'; sub = 'From gears 23 and 24. Keep pedalling'; }
     else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
-    else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Stop where the Keiser console FIRST shows ' + n + ', then hold it there'; }
-    else { head = 'Shift up to ' + n; sub = 'Stop as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
+    else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Move the lever until the console FIRST shows ' + n + ', then hold'; }
+    else { head = 'Shift up to ' + n; sub = 'Stop the lever as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
   }
   $('calHead').textContent = head;
   $('calSub').textContent = sub;
@@ -382,6 +385,8 @@ function renderCal() {
   setHidden('calCount', noPoint);
   $('calCount').textContent = redoing ? 'Redoing ' + pointWords(pass === 'rd' ? 'd' : 'u', step + 1)
     : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
+    // (the hold-still method after the crank wasn't found: why, where 0 of 25 would be)
+    : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + state.learnWhy
     : step + ' of ' + TOTAL_POINTS;
   // [v3.3] on the gear steps: stopping is fine
   setHidden('stopNote', !(v33 && (flow === 4 || flow === 5) && !redoing && !paused && !checking));
@@ -535,7 +540,7 @@ function renderPoints() {
 }
 
 function resultCardHidden() {
-  return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.phase === 'done' && state.check.flow)) ||
+  return calRunning(state.s) || !!(state.check && (state.check.phase === 'run' || state.check.flow)) ||
     !!state.upSaved || !!state.resultHidden || !!state.place;
 }
 
