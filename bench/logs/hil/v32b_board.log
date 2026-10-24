@@ -1,193 +1,40 @@
          0  E,ok,inject on
-         0  X,142.8,156.1,2.4,92,0.59
-     16865  X,161.2,156.1,2.4,92,0.59
-     17626  X,160.7,156.1,2.7,92,0.59
-     18369  X,160.5,156.1,2.7,92,0.59
-     19130  X,160.5,156.1,2.5,92,0.59
-     19873  X,160.5,156.1,2.4,92,0.59
-     20615  X,160.7,156.1,2.4,92,0.59
-     21376  X,160.7,156.1,2.2,92,0.59
-     22119  X,160.8,156.1,2.6,92,0.59
-     22880  X,160.6,156.1,2.2,92,0.59
-     23623  X,160.9,156.1,2.2,92,0.59
-     24365  X,160.5,156.1,2.7,92,0.59
-     25126  X,160.7,156.1,2.2,92,0.59
-     25869  X,160.5,156.1,2.8,92,0.59
-     26630  X,159.9,156.1,2.8,92,0.59
-     27373  X,160.2,156.1,2.5,92,0.59
-     28115  X,160.4,156.1,2.1,92,0.59
-     28877  X,160.4,156.1,2.1,92,0.59
-     29619  X,160.3,156.1,2.1,92,0.59
-     30380  X,160.2,156.1,2.8,92,0.59
-     31123  X,160.4,156.1,2.0,92,0.59
-     31865  X,160.4,156.1,2.1,92,0.59
-     32626  X,160.4,156.1,2.1,92,0.59
-     33369  X,160.3,156.1,2.7,92,0.59
-     34130  X,160.5,156.1,2.6,92,0.59
-     34873  X,160.5,156.1,2.6,92,0.59
-     35615  X,160.5,156.1,2.6,92,0.59
-     36376  X,160.4,156.1,2.1,92,0.59
-     37138  X,160.6,156.1,2.3,92,0.59
-     37880  X,160.2,156.1,2.3,92,0.59
-     38623  X,160.2,156.1,2.3,92,0.59
-     39365  X,160.7,156.1,2.5,92,0.59
-     40126  X,160.5,156.1,2.6,92,0.59
-     40869  X,160.7,156.1,2.6,92,0.59
-     41630  X,160.7,156.1,2.3,92,0.59
-     42373  X,160.6,156.1,2.4,92,0.59
-     43115  X,160.9,156.1,2.1,92,0.59
-     43876  X,160.6,156.1,2.1,92,0.59
-     44619  X,160.5,156.1,2.2,92,0.59
-     45380  X,160.9,156.1,2.5,92,0.59
-     46123  X,161.2,156.1,2.5,92,0.59
-     46884  X,160.8,156.1,2.5,92,0.59
-     47626  X,161.3,156.1,2.6,92,0.59
-     48369  X,161.4,156.1,2.2,92,0.59
-     49130  X,161.5,156.1,3.4,92,0.59
-     49873  X,161.3,156.1,3.4,92,0.59
-     50615  X,161.2,156.1,2.2,92,0.59
-     51376  X,160.9,156.1,2.0,92,0.59
-     52119  X,161.2,156.1,2.0,92,0.59
-     52881  X,161.4,156.1,2.2,92,0.59
-     53623  X,161.1,156.1,2.1,92,0.59
-     54365  X,161.2,156.1,2.4,92,0.59
-     55126  X,161.1,156.1,2.4,92,0.59
-     55888  X,160.7,156.1,2.6,92,0.59
-     56630  X,160.9,156.1,2.2,92,0.59
-     57373  X,161.2,156.1,2.6,92,0.59
-     58115  X,160.7,156.1,2.6,92,0.59
-     58876  X,160.9,156.1,2.2,92,0.59
-     59638  X,160.8,156.1,2.9,92,0.59
-     60380  X,160.9,156.1,2.3,92,0.59
-     61142  X,160.5,156.1,2.3,92,0.59
-     61884  X,160.7,156.1,2.7,92,0.59
-     62626  X,160.6,156.1,2.2,92,0.59
-     63388  X,160.6,156.1,2.4,92,0.59
-     64130  X,160.6,156.1,2.4,92,0.59
-     64892  X,160.6,156.1,2.2,92,0.59
-     65634  X,160.9,156.1,2.0,92,0.59
-     66376  X,160.7,156.1,2.5,92,0.59
-     67138  X,161.1,156.1,2.5,92,0.59
-     67880  X,161.0,156.1,2.1,92,0.59
-     68642  X,160.9,156.1,15.2,92,0.59
-     69384  X,161.1,156.1,15.2,92,0.59
-     70126  X,161.2,156.1,2.4,92,0.59
-     70888  X,161.2,156.1,2.3,92,0.59
-     71630  X,160.8,156.1,2.3,92,0.59
-     72392  X,161.0,156.1,2.3,92,0.59
-     73134  X,161.1,156.1,2.4,92,0.59
-     73880  X,161.0,156.1,2.2,92,0.59
-     74638  X,161.0,156.1,2.5,92,0.59
-     75381  X,161.2,156.1,2.5,92,0.59
-     76142  X,160.8,156.1,15.2,92,0.59
-     76884  X,160.8,156.1,2.6,92,0.59
-     77646  X,160.8,156.1,2.4,92,0.59
-     78388  X,160.5,156.1,2.4,92,0.59
-     79130  X,160.9,156.1,2.4,92,0.59
-     79892  X,160.8,156.1,2.5,92,0.59
-     80635  X,160.8,156.1,2.5,92,0.59
      80635  
      80654  === Calibration started (hold button 3 s or send 'x' to abort, 'u' to undo) ===
      80654  Pedal steadily, any comfortable pace, so the bridge can learn your crank (5-15 s).
-     81396  X,160.6,156.1,2.5,92,0.59
-     82138  X,160.0,156.1,3.2,92,0.59
-     82900  X,160.3,156.1,2.9,92,0.59
-     83642  X,160.5,156.1,3.4,92,0.59
-     84384  X,159.7,156.1,3.4,92,0.59
-     85126  X,149.6,156.1,22.4,91,0.59
-     85888  X,154.1,156.1,105.0,91,0.59
-     86650  X,160.4,156.1,105.0,91,0.59
-     87392  X,160.9,156.1,106.9,91,0.59
-     88134  X,161.4,156.1,107.1,91,0.59
-     88896  X,160.4,156.1,107.0,91,0.59
-     89638  X,151.3,156.1,107.0,91,0.59
-     90380  X,150.1,156.1,106.3,91,0.59
-     90439  Crank: dip depth 59.4 uT, 6 turns (6 regular) at 70 rpm in 10.0 s: ok.
+     90419  Crank: dip depth 59.4 uT, 6 turns (6 regular) at 70 rpm in 10.0 s: ok.
      90439  L,1,6,70,59.4,ok
      90439  Crank learned. Check that the cadence matches the Keiser console:
      90439  press button A or send 'n' if it does, send 'l' to learn again.
-     91142  X,146.0,156.1,58.5,91,1.15
-     91904  X,150.9,156.1,58.5,91,1.15
-     92646  X,158.2,156.1,55.2,91,3.87
-     93388  X,160.5,156.1,58.0,91,3.87
-     94130  X,161.4,156.1,58.4,91,1.15
-     94893  X,161.6,156.1,58.3,91,0.96
-     95634  X,159.2,156.1,59.3,91,0.75
-     96396  X,150.5,156.1,59.5,91,0.75
-     97138  X,149.4,156.1,59.3,91,0.59
-     97900  X,146.5,156.1,59.3,91,0.59
-     98642  X,151.7,156.1,59.4,91,0.59
-     99404  X,157.5,156.1,57.9,91,0.52
-    100146  X,160.5,156.1,59.7,91,0.52
-    100908  X,161.5,156.1,58.4,91,0.52
-    101650  X,160.9,156.1,59.4,91,0.50
-    102392  X,160.9,156.1,60.4,91,0.50
-    103037  Cadence confirmed.
+    103056  Cadence confirmed.
     103056  Noise 0.53 uT from 20 still turns.
     103056  
     103056  [SWEEP UP] Keep pedalling. Lever all the way down, then slowly push it up as far as you can still pedal, then press button A or send 'n'.
     103056  
-    103076  [SWEEP DOWN] Keep pedalling. Slowly back down to the bottom, then press button A or send 'n'.
-    103076  Sweep: path 0.0 uT (signal weak), first spot.
+    103056  [SWEEP DOWN] Keep pedalling. Slowly back down to the bottom, then press button A or send 'n'.
+    103056  Sweep: path 0.0 uT (signal weak), first spot.
     103076  Z,0.53,0.0,first,-1.0,weak
     103076  
     103076  [UP 1/24] Keep pedalling, any steady pace. Push the gear lever ALL THE WAY DOWN and hold it there.
     103076  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    103154  X,159.0,156.1,58.3,91,0.50
-    103896  X,150.4,156.1,60.3,91,0.46
-    104638  X,149.9,156.1,57.8,91,0.46
     105380    captured (-80.6, 49.5, -121.5) uT
     105380  C,1,-80.6,49.5,-121.5
     105380  
     105380  [UP 2/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 2, then hold it there.
     105380  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    105400  X,149.0,156.1,57.9,91,0.46
-    106142  X,145.4,156.1,57.9,91,0.46
-    106884  X,153.0,156.1,59.3,91,0.91
-    107646  X,155.7,156.1,59.6,91,0.91
-    108388  X,158.7,156.1,58.1,91,0.69
-    109150  X,160.7,156.1,58.1,91,0.69
-    109892  X,160.5,156.1,59.7,91,0.69
-    110263  
-    110263  If the console already shows gear 2, ease back into gear 1 and come up to it again.
-    110263  N,stuck
-    110654  X,161.2,156.1,59.7,91,0.69
-    111396  X,160.4,156.1,57.0,91,0.69
-    112138  X,150.3,156.1,61.0,91,0.69
-    112900  X,139.8,156.1,66.3,91,0.76
-    113643  X,136.8,156.3,69.8,91,0.82
-    114404  X,137.8,156.3,61.2,91,1.37
     115068  
     115068  Point 2: the reading is still changing - hold the lever still.
     115068  W,2,0.9,1.6
-    115146  X,138.0,156.3,59.6,91,1.37
-    115888  X,137.2,156.3,59.4,91,1.37
-    116650  X,135.4,156.3,59.4,91,1.37
-    116650    captured (-62.1, 41.3, -118.7) uT
-    116650  C,2,-62.1,41.3,-118.7
-    116650  
+    116669    captured (-62.1, 41.3, -118.7) uT
+    116669  C,2,-62.1,41.3,-118.7
+    116669  
     116669  [UP 3/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 3, then hold it there.
     116669  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    117392  X,138.8,156.3,58.9,92,1.37
-    118154  X,143.2,156.3,56.9,91,0.39
-    118896  X,144.9,156.3,58.4,91,0.33
-    119658  X,145.9,156.3,58.9,91,0.30
-    120400  X,146.7,156.3,58.1,91,0.30
-    121142  X,141.6,156.4,60.1,92,0.30
-    121905  X,136.8,156.7,66.9,92,0.30
-    122666  X,132.4,156.9,65.0,92,0.37
-    123408  X,128.6,157.2,62.4,92,1.61
-    124150  X,125.7,157.3,62.1,92,2.62
-    124912  X,124.2,157.3,57.5,92,2.62
     125458    captured (-42.5, 35.0, -114.6) uT
     125458  C,3,-42.5,35.0,-114.6
     125458  
     125458  [UP 4/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 4, then hold it there.
     125458  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    125654  X,123.0,157.3,58.5,92,2.62
-    126396  X,129.3,157.3,48.4,92,4.38
-    127158  X,140.8,157.3,37.8,91,4.38
-    127900  X,144.6,157.3,47.7,91,4.38
     128623  
     128642  Gear 3 was saved a little too far up. Shift DOWN into gear 2, then back up to where the console FIRST shows gear 3.
     128642  N,behind
@@ -195,356 +42,133 @@
     128642  
     128642  [UP 3/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 3, then hold it there.
     128642  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    128642  X,144.0,157.3,58.8,91,2.62
-    129404  X,141.1,157.3,58.8,91,2.62
-    129423  Now come back to the point and hold it there.
-    130146  X,137.3,157.3,62.2,91,3.07
-    130908  X,142.2,157.3,65.2,91,6.22
-    131650  X,144.1,157.3,61.2,91,6.22
-    131748  N,behind
-    132392  X,144.5,157.3,59.6,91,3.07
-    133154  X,144.9,157.3,57.6,91,2.41
-    133916  X,145.4,157.3,59.3,91,1.53
-    134658  X,146.1,157.3,57.1,91,0.37
-    135400  X,147.8,157.3,58.5,91,0.37
-    136162  X,148.4,157.3,59.7,91,0.36
-    136904  X,148.4,157.3,56.4,91,0.36
-    137646  X,148.3,157.3,59.2,91,0.36
-    138408  X,145.9,157.3,57.3,91,0.37
-    139150  X,140.5,157.3,66.4,91,0.49
-    139912  X,138.7,157.3,66.9,92,0.51
-    140654  X,137.8,157.3,58.5,92,0.68
+    129443  Now come back to the point and hold it there.
+    131767  N,behind
     141044  
     141044  Point 3: the reading is still changing - hold the lever still.
-    141064  W,3,1.0,1.6
-    141396  X,137.9,157.3,60.5,92,0.68
-    142158  X,136.9,157.3,58.2,92,0.68
+    141044  W,3,1.0,1.6
     142607    captured (-52.4, 38.0, -117.1) uT
     142607  C,3,-52.4,38.0,-117.1
     142607  
-    142626  [UP 4/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 4, then hold it there.
+    142607  [UP 4/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 4, then hold it there.
     142626  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    142900  X,136.8,157.3,58.6,91,0.68
-    143662  X,135.1,157.3,57.5,91,0.44
-    144404  X,132.1,157.3,58.8,92,0.44
-    145146  X,129.3,157.3,59.5,92,0.43
-    145908  X,129.4,157.3,59.3,92,0.36
-    146650  X,127.4,157.3,62.5,92,0.36
-    147412  X,126.8,157.3,64.7,92,0.43
-    148154  X,125.9,157.4,61.5,92,0.56
-    148896  X,123.7,157.4,61.5,92,0.56
-    149658  X,124.4,157.5,60.0,92,1.35
     149658  
     149658  Point 4: the reading is still changing - hold the lever still.
     149658  W,4,1.1,1.6
-    150400  X,123.3,157.5,60.3,92,1.35
-    151142  X,124.3,157.5,58.5,92,1.35
     151240    captured (-37.8, 34.0, -113.3) uT
     151240  C,4,-37.8,34.0,-113.3
     151240  
     151240  [UP 5/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 5, then hold it there.
     151240  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    151904  X,128.1,157.5,58.9,92,1.35
-    152646  X,129.1,157.5,59.2,92,1.07
-    153408  X,129.5,157.5,59.4,92,0.81
-    154169  X,129.9,157.5,60.3,92,0.81
-    154912  X,129.9,157.5,57.7,92,0.68
-    155654  X,129.8,157.5,57.1,92,0.68
-    155908  
-    155927  If the console already shows gear 5, ease back into gear 4 and come up to it again.
-    155927  N,stuck
-    156397  X,128.8,157.5,56.9,92,0.59
-    157158  X,124.3,157.6,60.8,92,0.81
-    157900  X,124.5,157.7,59.7,92,0.92
-    158662  X,124.1,157.7,55.3,92,1.15
-    159404  X,122.5,157.7,59.5,92,0.92
-    159873    captured (-35.9, 33.4, -111.6) uT
-    159873  C,5,-35.9,33.4,-111.6
-    159873  
+    159892    captured (-35.9, 33.4, -111.6) uT
+    159892  C,5,-35.9,33.4,-111.6
+    159892  
     159892  [UP 6/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 6, then hold it there.
     159892  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    160146  X,119.7,157.7,58.5,92,0.92
-    160908  X,117.4,157.7,58.2,92,0.78
-    161650  X,117.2,157.7,59.0,92,0.78
-    162392  X,120.5,157.7,59.0,92,0.46
-    163154  X,123.4,157.7,56.6,92,0.38
-    163896  X,121.5,157.7,56.6,92,0.38
-    164658  X,121.0,157.7,57.0,92,0.38
-    165400  X,125.4,157.8,63.0,92,0.38
-    166162  X,125.0,157.8,59.7,92,0.44
     166357  
     166357  Point 6: the reading is still changing - hold the lever still.
-    166357  W,6,0.4,0.8
-    166907  X,125.1,157.8,58.6,92,0.38
-    167646  X,124.4,157.8,59.0,92,0.40
+    166377  W,6,0.4,0.8
     167978    captured (-31.1, 32.3, -110.8) uT
     167978  C,6,-31.1,32.3,-110.8
     167978  
     168000  [UP 7/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 7, then hold it there.
     168000  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    168408  X,122.7,157.8,56.8,92,0.40
-    169150  X,120.8,157.8,58.4,92,0.40
-    169912  X,117.9,157.8,56.8,92,0.40
-    170654  X,114.6,157.8,56.4,92,0.40
-    171396  X,120.8,157.8,59.2,92,0.40
-    172158  X,120.2,157.8,58.9,92,0.55
-    172919  X,119.7,157.8,58.9,92,0.55
-    173662  X,123.6,157.9,61.8,92,0.55
-    174404  X,124.1,157.9,58.8,92,0.63
     174599    captured (-28.2, 32.0, -110.4) uT
     174599  C,7,-28.2,32.0,-110.4
     174599  
     174599  [UP 8/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 8, then hold it there.
     174599  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    175166  X,123.9,157.9,59.1,92,0.63
-    175908  X,122.9,157.9,59.7,92,0.63
-    176669  X,121.4,157.9,57.4,92,0.63
-    177412  X,117.8,157.9,58.4,92,0.73
-    178154  X,112.5,157.9,58.8,92,0.66
-    178916  X,115.1,157.9,59.8,92,0.66
-    179658  X,119.8,157.9,58.9,92,0.77
-    180419  X,119.3,157.9,58.9,92,0.77
     180419  
     180419  Point 8: the reading is still changing - hold the lever still.
     180419  W,8,0.4,0.8
-    181162  X,121.7,157.9,57.3,92,0.77
-    181904  X,122.8,157.9,56.7,92,0.66
     182099    captured (-26.1, 31.8, -109.8) uT
     182099  C,8,-26.1,31.8,-109.8
     182099  
     182099  [UP 9/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 9, then hold it there.
     182099  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    182666  X,122.6,157.9,58.8,92,0.66
-    183408  X,120.9,157.9,58.5,92,0.54
-    184169  X,118.0,157.9,57.9,92,0.54
-    184912  X,112.7,157.9,58.8,92,0.54
-    185654  X,108.4,158.0,61.1,92,0.54
-    186416  X,113.7,158.0,60.2,92,0.58
     187138    captured (-20.2, 31.1, -108.7) uT
     187138  C,9,-20.2,31.1,-108.7
     187138  
     187138  [UP 10/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 10, then hold it there.
     187138  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    187158  X,118.8,158.0,57.6,92,0.70
-    187919  X,116.9,158.0,57.6,92,0.70
-    188662  X,121.1,158.0,58.7,92,0.70
-    189423  X,120.4,158.0,58.4,92,0.70
-    190146  X,118.7,158.0,57.9,92,0.70
-    190908  X,115.7,158.0,57.8,92,0.63
-    191650  X,109.1,158.0,60.9,92,0.63
-    192412  X,107.2,158.0,61.2,92,0.63
-    193154  X,118.0,158.0,58.4,92,0.63
-    193916  X,116.5,158.0,58.4,92,0.63
-    193955    captured (-16.5, 31.1, -108.1) uT
-    193955  C,10,-16.5,31.1,-108.1
-    193955  
+    193935    captured (-16.5, 31.1, -108.1) uT
+    193935  C,10,-16.5,31.1,-108.1
+    193935  
     193955  [UP 11/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 11, then hold it there.
     193955  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    194658  X,119.7,158.0,58.1,92,0.63
-    195420  X,120.2,158.0,52.9,92,0.62
-    196162  X,119.2,158.0,57.9,92,0.62
-    196923  X,118.2,158.0,58.3,92,0.62
-    197666  X,114.9,158.0,56.1,92,0.58
-    198408  X,109.3,158.0,61.3,92,0.58
-    199169  X,105.1,158.1,60.7,92,0.58
-    199912  X,108.4,158.1,58.1,92,0.56
-    200595    captured (-10.5, 30.7, -107.7) uT
-    200595  C,11,-10.5,30.7,-107.7
-    200595  
-    200595  [UP 12/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
-    200595  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    200673  X,117.5,158.1,57.2,92,0.38
-    201416  X,118.4,158.1,57.2,92,0.38
-    202158  X,116.3,158.1,58.3,92,0.38
-    202919  X,119.8,158.1,57.0,92,0.56
-    203662  X,117.8,158.1,57.7,92,0.86
-    204423  X,114.7,158.1,58.4,92,0.56
-    205166  X,110.7,158.1,57.4,92,0.56
-    205634  
-    205634  If the console already shows gear 12, ease back into gear 11 and come up to it again.
-    205634  N,stuck
-    205927  X,105.2,158.1,58.5,92,0.67
-    206669  X,106.9,158.1,62.7,92,0.79
-    207412  X,118.2,158.1,59.5,92,0.84
-    208173  X,118.4,158.1,59.5,92,0.84
+    200615    captured (-10.5, 30.7, -107.7) uT
+    200615  C,11,-10.5,30.7,-107.7
+    200615  
+    200615  [UP 12/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
+    200615  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
     208194  
     208194  Point 12: the reading is still changing - hold the lever still.
     208194  W,12,1.4,1.8
-    208916  X,118.3,158.1,57.9,92,0.84
-    209678  X,117.3,158.1,58.5,92,0.79
-    209892    captured (-4.6, 30.6, -107.3) uT
-    209892  C,12,-4.6,30.6,-107.3
-    209892  
-    209892  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
-    209892  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    210419  X,114.0,158.1,57.1,92,0.84
-    211162  X,107.6,158.1,57.8,92,0.84
-    211923  X,101.8,158.1,57.4,92,0.84
-    212666  X,114.3,158.1,57.8,92,0.62
-    213427  X,118.5,158.1,57.8,92,0.62
-    214169  X,118.8,158.1,58.6,92,0.49
-    214912  X,115.5,158.1,57.7,92,0.47
-    215673  X,111.9,158.1,55.3,92,0.49
-    216416  X,108.2,158.1,52.8,92,0.49
+    209912    captured (-4.6, 30.6, -107.3) uT
+    209912  C,12,-4.6,30.6,-107.3
+    209912  
+    209912  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
+    209912  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
     216923  
     216923  Gear 12 was saved a little too far up. Shift DOWN into gear 11, then back up to where the console FIRST shows gear 12.
     216923  N,behind
     216923  U,11
-    216943  
+    216923  
     216943  [UP 12/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
     216943  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    217177  X,105.7,158.1,59.5,92,0.62
     217763  Now come back to the point and hold it there.
-    217919  X,107.8,158.1,60.0,92,0.95
-    218662  X,118.6,158.1,60.7,92,1.53
-    219423  X,117.5,158.1,60.7,92,1.53
-    220166  X,119.2,158.1,59.8,92,1.53
     220322  
     220322  Point 12: the reading is still changing - hold the lever still.
     220322  W,12,1.0,1.3
-    220927  X,116.8,158.1,57.2,92,1.53
-    221670  X,114.6,158.1,58.8,92,0.95
     222021    captured (-5.3, 30.7, -107.3) uT
     222021  C,12,-5.3,30.7,-107.3
     222021  
     222021  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
     222021  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    222412  X,109.6,158.1,56.6,92,0.71
-    223173  X,105.0,158.1,57.2,92,0.66
-    223916  X,103.9,158.1,56.7,92,0.66
-    224658  X,116.8,158.1,58.6,92,0.66
-    225419  X,117.0,158.1,58.6,92,0.66
-    226162  X,118.5,158.1,57.8,92,0.66
-    226923  X,115.2,158.2,58.3,92,0.57
-    227236  
-    227255  Gear 12 was saved a little too far up. Shift DOWN into gear 11, then back up to where the console FIRST shows gear 12.
-    227255  N,behind
-    227255  U,11
-    227255  
-    227255  [UP 12/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
-    227255  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    227666  X,111.3,158.2,58.0,92,0.66
-    228115  Now come back to the point and hold it there.
-    228427  X,106.7,158.2,55.2,92,0.68
-    229169  X,105.4,158.2,57.6,92,0.68
-    229931  X,115.1,158.2,59.4,92,0.68
-    230673  X,117.5,158.2,59.4,92,0.68
-    231435  X,117.8,158.2,60.1,92,0.70
-    232178  X,118.0,158.2,59.0,92,0.67
-    232392  
-    232392  Point 12: the reading is still changing - hold the lever still.
-    232392  W,12,0.4,0.8
-    232919  X,115.6,158.2,58.8,92,0.67
-    233681  X,113.0,158.2,58.0,92,0.52
-    234052    captured (-6.9, 30.6, -107.1) uT
-    234052  C,12,-6.9,30.6,-107.1
-    234052  
-    234052  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
-    234052  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    234423  X,107.5,158.2,58.1,92,0.52
-    235185  X,103.3,158.2,58.9,92,0.52
-    235927  X,112.4,158.2,59.1,92,0.56
-    236669  X,118.9,158.2,59.1,92,0.56
-    237412  X,117.1,158.2,59.5,92,0.56
-    237509  
-    237509  Point 13: the reading is still changing - hold the lever still.
-    237529  W,13,1.1,2.0
-    238173  X,117.2,158.2,58.4,92,0.53
-    238916  X,113.5,158.2,57.4,92,0.56
+    227236  N,behind
     239287    captured (-4.1, 30.3, -106.8) uT
     239287  C,13,-4.1,30.3,-106.8
     239287  
     239287  [UP 14/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 14, then hold it there.
     239287  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    239677  X,109.3,158.2,57.8,92,0.58
-    240419  X,102.1,158.2,58.1,92,0.61
-    241181  X,109.7,158.2,55.7,92,0.61
-    241923  X,117.7,158.2,55.7,92,0.61
-    242666  X,118.7,158.2,56.3,92,0.61
-    243427  X,114.2,158.2,61.4,92,0.61
-    244169  X,107.4,158.2,57.8,92,0.71
-    244677    captured (-1.7, 30.6, -106.2) uT
-    244677  C,14,-1.7,30.6,-106.2
-    244677  
+    244660    captured (-1.7, 30.6, -106.2) uT
+    244660  C,14,-1.7,30.6,-106.2
+    244660  
     244677  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
     244677  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    244912  X,100.8,158.2,56.2,92,0.61
-    245673  X,117.1,158.2,56.8,92,0.61
-    246435  X,115.7,158.2,56.8,92,0.61
-    247177  X,115.8,158.2,56.9,92,0.80
     247412    captured (-0.7, 30.2, -105.9) uT
     247412  C,15,-0.7,30.2,-105.9
     247412  
     247412  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
     247412  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    247919  X,111.4,158.2,56.4,92,0.80
-    248681  X,104.6,158.2,57.2,92,0.80
-    249423  X,102.3,158.2,59.0,92,0.80
-    250146  
-    250146  Point 16: the reading is still changing - hold the lever still.
-    250146  W,16,1.0,1.5
-    250166  X,118.6,158.2,57.9,92,0.62
-    250927  X,118.0,158.2,57.9,92,0.62
-    251689  X,114.3,158.2,57.1,92,0.78
-    251982    captured (1.4, 30.5, -105.7) uT
-    251982  C,16,1.4,30.5,-105.7
-    251982  
-    252001  [UP 17/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 17, then hold it there.
-    252001  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    252431  X,106.0,158.2,56.8,92,0.78
-    253193  X,99.8,158.2,58.7,92,0.62
-    253935  X,117.4,158.2,56.5,92,0.78
-    254697  X,115.8,158.2,56.5,92,0.78
-    255439  X,114.8,158.2,57.7,92,0.80
-    256181  X,107.4,158.2,58.3,92,0.78
-    256923  X,102.6,158.2,58.1,92,0.80
-    257685  X,119.4,158.2,58.1,92,0.80
-    257705  
-    257724  If the console already shows gear 17, ease back into gear 16 and come up to it again.
-    257724  N,stuck
-    258427  X,117.0,158.2,58.5,92,0.80
-    259189  X,108.8,158.2,56.5,92,0.64
+    251064  
+    251064  Point 16: the reading is still changing - hold the lever still.
+    251064  W,16,1.0,1.3
+    252958    captured (1.4, 30.5, -105.6) uT
+    252958  C,16,1.4,30.5,-105.6
+    252958  
+    252958  [UP 17/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 17, then hold it there.
+    252958  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
     259736  Undo: back to point 16.
     259736  U,15
     259736  
     259755  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
     259755  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    259931  X,99.0,158.2,57.6,92,0.64
-    260693  X,118.7,158.2,57.8,92,0.59
-    261435  X,118.5,158.2,57.8,92,0.59
-    261884  Undo: back to point 15.
-    261884  U,14
-    261884  
+    261865  Undo: back to point 15.
+    261865  U,14
+    261865  
     261884  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
     261884  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    262177  X,113.0,158.2,58.6,92,0.59
-    262939  X,103.1,158.2,56.6,92,0.55
-    263173  Undo: back to point 14.
-    263173  U,13
-    263173  
+    263154  Undo: back to point 14.
+    263154  U,13
+    263154  
     263173  [UP 14/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 14, then hold it there.
     263173  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    263681  X,111.2,158.2,58.2,92,0.55
-    264443  X,116.4,158.2,58.2,92,0.55
-    265185  X,115.3,158.2,58.3,92,0.52
     265458    captured (1.4, 30.7, -105.4) uT
     265458  C,14,1.4,30.7,-105.4
     265458  
     265458  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
     265458  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    265930  X,109.5,158.2,57.5,92,0.52
-    266689  X,99.5,158.2,57.4,92,0.54
-    267431  X,117.7,158.2,55.8,92,0.65
-    268194  X,118.1,158.2,55.8,92,0.65
-    268935  X,114.0,158.2,58.2,92,0.62
-    269677  X,105.3,158.2,59.0,92,0.62
-    270439  X,103.1,158.2,57.3,92,0.54
-    271201  X,119.3,158.2,57.3,92,0.54
-    271201  
-    271201  If the console already shows gear 15, ease back into gear 14 and come up to it again.
-    271201  N,stuck
-    271943  X,118.8,158.2,58.8,92,0.54
-    272686  X,114.8,158.2,52.4,92,0.62
     273017  
     273037  Gear 14 was saved a little too far up. Shift DOWN into gear 13, then back up to where the console FIRST shows gear 14.
     273037  N,behind
@@ -552,331 +176,80 @@
     273037  
     273037  [UP 14/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 14, then hold it there.
     273037  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    273427  X,108.7,158.2,61.1,92,0.62
-    274189  X,100.1,158.2,60.9,92,0.62
-    274931  X,117.2,158.2,57.3,92,0.54
-    275693  X,116.6,158.2,57.3,92,0.54
-    276435  X,115.0,158.2,57.3,92,0.54
-    277177  X,108.0,158.2,58.4,92,0.54
     277666  Now come back to the point and hold it there.
-    277944  X,103.3,158.2,51.5,92,1.37
-    278681  X,116.2,158.2,54.6,92,1.37
-    279423  X,117.7,158.2,54.6,92,1.37
-    280186  X,119.9,158.2,55.9,92,0.54
-    280947  X,117.0,158.2,58.0,92,0.54
-    281689  X,111.9,158.2,59.0,92,0.94
-    282431  X,102.5,158.2,61.6,92,0.94
-    283193  X,108.1,158.2,59.3,92,1.12
-    283935  X,118.5,158.2,59.3,92,1.12
-    284677  X,118.2,158.2,58.4,92,0.94
-    285439  X,114.3,158.2,58.1,92,0.94
-    286181  X,108.2,158.2,57.6,92,0.94
-    286669  
-    286669  If the console already shows gear 14, ease back into gear 13 and come up to it again.
-    286669  N,stuck
-    286923  X,101.3,158.2,58.1,92,0.90
-    287685  X,114.1,158.2,58.5,92,0.88
-    288427  X,114.9,158.2,58.5,92,0.88
-    289189  X,115.7,158.2,57.0,92,0.80
-    289931  X,109.2,158.2,60.4,92,0.80
-    290673  X,101.4,158.2,59.6,92,0.88
-    291298  
-    291298  Point 14: the reading is still changing - hold the lever still.
-    291298  W,14,0.9,1.7
-    291435  X,111.0,158.2,59.2,92,0.88
-    292177  X,114.5,158.2,59.2,92,0.88
-    292939  X,115.3,158.2,56.4,92,0.50
+    291318  
+    291318  Point 14: the reading is still changing - hold the lever still.
+    291318  W,14,0.9,1.7
     293193    captured (-1.6, 30.2, -105.3) uT
     293193  C,14,-1.6,30.2,-105.3
     293193  
     293193  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
     293193  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    293681  X,109.4,158.2,58.5,92,0.48
-    294423  X,101.5,158.2,58.5,92,0.48
-    295185  X,108.6,158.2,59.8,92,0.48
-    295927  X,118.6,158.2,59.8,92,0.48
-    296689  X,118.4,158.2,58.3,92,0.48
-    297431  X,114.3,158.2,57.1,92,0.48
-    297763    captured (-0.8, 30.5, -106.0) uT
-    297763  C,15,-0.8,30.5,-106.0
-    297763  
-    297763  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
-    297763  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    298173  X,108.7,158.2,58.8,92,0.45
-    298935  X,99.7,158.2,57.7,92,0.49
-    299677  X,114.5,158.2,56.8,92,0.61
-    300439  X,114.8,158.2,56.8,92,0.61
-    301181  X,115.2,158.2,56.9,92,0.61
-    301923  X,108.3,158.2,57.1,92,0.49
-    302685  X,98.5,158.2,61.1,92,0.49
-    303427  X,119.9,158.2,61.1,92,0.49
-    304189  X,117.0,158.2,62.3,92,0.61
-    304931  X,110.7,158.2,57.8,92,0.73
+    297744    captured (-0.8, 30.5, -106.0) uT
+    297744  C,15,-0.8,30.5,-106.0
+    297744  
+    297744  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
+    297744  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
     305341    captured (6.0, 30.8, -104.7) uT
     305341  C,16,6.0,30.8,-104.7
     305341  
-    305361  [UP 17/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 17, then hold it there.
-    305361  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    305693  X,98.4,158.2,57.3,92,0.61
-    306435  X,111.1,158.2,59.4,92,0.56
-    307177  X,118.4,158.2,59.4,92,0.56
-    307939  X,115.4,158.2,58.3,92,0.76
-    308681  X,109.4,158.2,57.5,92,1.12
-    309423  X,98.0,158.2,58.2,92,0.76
-    310185  X,118.8,158.2,57.6,92,0.73
-    310927  X,117.8,158.2,57.6,92,0.73
-    311689  X,108.3,158.2,59.5,92,0.73
-    312451  X,97.6,158.2,61.3,92,1.12
-    313193  X,120.2,158.2,61.3,92,1.12
-    313935  X,115.4,158.2,61.1,92,1.34
-    314697  X,107.7,158.2,58.5,92,1.63
-    315205  
-    315205  Point 17: the reading is still changing - hold the lever still.
-    315205  W,17,0.8,1.5
-    315439  X,98.1,158.2,57.3,92,1.63
-    316181  X,122.2,158.2,57.3,92,1.63
-    316943  X,117.4,158.2,58.0,92,1.63
+    305341  [UP 17/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 17, then hold it there.
+    305341  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
+    315185  
+    315185  Point 17: the reading is still changing - hold the lever still.
+    315185  W,17,0.8,1.5
     317158    captured (14.1, 31.6, -104.5) uT
     317158  C,17,14.1,31.6,-104.5
     317158  
     317177  [UP 18/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 18, then hold it there.
     317177  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    317686  X,109.4,158.2,56.0,92,1.63
-    318427  X,96.2,158.2,58.8,92,1.37
-    319189  X,121.4,158.2,56.9,92,1.13
-    319931  X,118.6,158.2,56.9,92,1.13
-    320693  X,109.6,158.2,57.8,92,0.69
-    321435  X,96.9,158.2,58.4,92,0.40
-    322177  X,121.1,158.2,57.3,92,0.69
-    322939  X,117.6,158.2,57.3,93,0.69
-    323681  X,108.0,158.2,62.1,92,0.69
-    324443  X,98.0,158.2,62.4,92,0.69
-    325185  X,124.2,158.2,62.4,92,0.69
-    325927  X,118.6,158.2,58.6,92,0.69
     326201    captured (20.3, 32.3, -104.1) uT
     326201  C,18,20.3,32.3,-104.1
     326201  
     326201  [UP 19/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 19, then hold it there.
     326201  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    326690  X,110.0,158.2,57.9,92,0.69
-    327431  X,97.5,158.2,55.5,92,0.69
-    328173  X,123.7,158.2,55.4,92,0.86
-    328935  X,115.7,158.2,55.4,93,0.86
-    329677  X,98.2,158.2,57.0,92,0.86
-    330439  X,124.0,158.2,57.0,92,0.86
-    331201  X,113.4,158.2,60.1,93,0.86
-    331923  X,93.9,158.2,59.6,93,0.86
-    332685  X,120.4,158.2,59.6,93,0.86
-    333427  X,111.2,158.2,56.5,92,0.65
-    333955    captured (22.6, 32.4, -102.7) uT
-    333955  C,19,22.6,32.4,-102.7
-    333955  
+    333974    captured (22.6, 32.4, -102.7) uT
+    333974  C,19,22.6,32.4,-102.7
+    333974  
     333974  [UP 20/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 20, then hold it there.
     333974  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    334189  X,102.7,158.2,57.3,92,0.86
-    334931  X,120.7,158.2,57.3,92,0.86
-    335673  X,110.1,158.2,51.2,92,1.00
-    336435  X,98.2,158.2,51.2,92,1.32
-    337177  X,121.1,158.2,51.2,92,1.32
     337197  
     337197  Gear 19 was saved a little too far up. Shift DOWN into gear 18, then back up to where the console FIRST shows gear 19.
     337197  N,behind
     337197  U,18
-    337216  
+    337197  
     337216  [UP 19/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 19, then hold it there.
     337216  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    337939  X,117.0,158.2,57.5,92,1.32
     338193  Now come back to the point and hold it there.
-    338681  X,107.3,158.2,56.3,92,1.00
-    339423  X,100.8,158.2,56.8,92,1.00
-    340186  X,120.8,158.2,56.8,92,1.00
-    340927  X,114.1,158.2,61.5,92,1.70
-    341689  X,94.4,158.2,62.1,92,2.47
-    342431  X,123.1,158.2,62.1,92,2.47
     342470  N,behind
-    343193  X,114.6,158.2,59.1,93,1.70
-    343935  X,96.6,158.2,57.8,92,1.09
-    344677  X,123.0,158.2,57.7,92,1.09
-    345439  X,114.9,158.2,57.7,93,1.09
-    346181  X,95.4,158.2,58.7,92,1.09
-    346944  X,122.7,158.2,58.7,92,1.09
-    347685  X,111.7,158.2,56.7,93,0.80
-    348427  X,98.3,158.2,58.7,92,0.80
-    349169  X,118.9,158.2,58.7,92,0.80
-    349931  X,110.2,158.2,58.1,92,0.80
-    350693  X,100.0,158.2,58.2,92,0.76
-    351435  X,120.6,158.2,58.2,92,0.76
-    352197  X,108.7,158.2,57.0,92,0.80
-    352939  X,109.6,158.2,53.4,92,0.89
-    353701  X,119.1,158.2,53.4,92,0.89
-    354443  X,113.6,158.2,48.1,92,1.43
-    355185  X,98.1,158.2,61.2,92,1.82
-    355927  X,120.4,158.2,60.9,92,2.31
-    356692  X,118.1,158.2,60.9,92,2.31
-    357431  X,102.4,158.2,62.4,92,3.13
-    358193  X,118.0,158.2,58.7,92,3.13
-    358935  X,119.7,158.2,58.7,92,3.13
-    359677  X,102.8,158.2,57.7,92,3.13
-    360439  X,118.1,158.2,56.7,92,3.13
-    361201  X,115.6,158.2,56.7,93,3.13
-    361943  X,98.4,158.2,57.2,92,1.10
-    362685  X,123.6,158.2,57.8,92,1.07
-    363427  X,114.3,158.2,57.8,93,1.07
-    364189  X,95.1,158.2,58.7,92,0.66
-    364951  X,119.8,158.2,58.7,92,0.66
-    365693  X,111.8,158.2,57.9,92,0.65
-    366435  X,100.3,158.2,59.0,92,0.41
-    367197  X,120.9,158.2,59.0,93,0.41
-    367939  X,106.4,158.2,59.0,92,0.36
-    368701  X,116.3,158.2,58.0,92,0.36
-    369443  X,115.1,158.2,58.0,93,0.36
-    370205  X,103.5,158.2,53.0,92,0.36
-    370947  X,114.0,158.2,59.5,92,0.41
-    371708  X,120.3,158.2,59.5,92,0.41
-    372451  X,106.9,158.2,55.4,92,0.81
-    373193  X,114.0,158.2,57.4,93,0.97
-    373955  X,117.2,158.2,57.4,92,0.97
-    374697  X,101.9,158.2,57.0,92,0.97
-    375458  X,119.9,158.2,59.5,92,0.97
-    376201  X,115.2,158.2,59.5,93,0.97
-    376943  X,97.7,158.2,57.6,92,1.27
-    377705  X,121.2,158.2,57.6,92,1.27
-    378447  X,112.5,158.2,63.1,92,1.27
-    379208  X,95.7,158.2,61.4,92,1.27
-    379951  X,118.7,158.2,61.4,93,1.27
-    380693  X,108.2,158.2,56.3,93,0.97
-    381455  X,113.9,158.2,57.3,92,0.93
-    382216  X,116.9,158.2,57.3,93,0.93
-    382958  X,98.0,158.2,57.8,92,0.92
-    383701  X,123.1,158.2,57.8,92,0.92
-    384462  X,112.7,158.2,56.7,93,0.92
-    385224  X,95.3,158.2,57.2,92,0.47
-    385966  X,119.3,158.2,57.2,92,0.47
-    386708  X,108.6,158.2,60.2,92,0.47
-    387470  X,113.1,158.2,57.4,93,0.40
-    388212  X,114.5,158.2,57.4,93,0.40
-    388974  X,93.7,158.2,61.1,92,0.40
-    389716  X,119.1,158.2,61.1,93,0.40
-    390458  X,108.7,158.2,56.2,92,0.40
-    391220  X,108.5,158.2,49.4,92,0.63
-    391962  X,119.0,158.2,49.4,92,0.63
-    392724  X,106.1,158.2,56.6,92,0.77
-    393466  X,116.7,158.2,58.1,92,0.77
-    394208  X,116.1,158.2,58.1,92,0.77
-    394970  X,96.1,158.2,58.4,92,0.77
-    395712  X,119.9,158.2,58.4,92,0.77
-    396455  X,111.3,158.2,60.8,92,1.09
-    397216  X,107.7,158.2,58.6,92,0.77
-    397958  X,117.3,158.2,58.6,93,0.77
-    398720  X,99.2,158.2,59.1,93,0.49
-    399462  X,122.2,158.2,59.1,93,0.49
-    400224  X,112.7,158.2,57.7,93,0.49
-    400966  X,96.0,158.2,57.6,92,0.49
-    401708  X,120.2,158.2,57.6,93,0.49
-    402470  X,105.8,158.2,70.8,92,0.58
-    403212  X,118.9,158.2,58.0,92,0.58
-    403955  X,113.0,158.2,58.0,93,0.58
-    404716  X,92.0,158.2,61.6,93,0.58
-    405458  X,120.1,158.2,61.6,93,0.58
-    406220  X,107.7,158.2,61.7,93,0.60
-    406962  X,120.0,158.2,58.1,93,0.90
-    407705  X,113.9,158.2,58.1,93,0.90
-    408154    captured (21.5, 31.8, -102.5) uT
-    408154  C,19,21.5,31.8,-102.5
-    408154  
-    408154  [UP 20/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 20, then hold it there.
-    408154  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    408466  X,93.8,158.2,57.1,93,0.90
-    409208  X,121.7,158.2,57.1,93,0.90
-    409970  X,103.0,158.2,59.2,93,0.90
-    410712  X,124.1,158.2,58.1,93,0.90
-    411474  X,111.3,158.2,58.1,93,0.90
-    412216  X,109.4,158.2,59.5,93,0.90
-    412958  X,114.5,158.2,59.5,93,0.90
-    413720  X,91.3,158.2,60.6,93,0.90
-    414462  X,120.3,158.2,60.6,93,0.90
-    415224  X,97.6,158.2,61.5,93,0.90
-    415966  X,125.8,158.2,61.5,93,0.90
-    416708  X,111.4,158.2,59.9,93,1.10
+    408134    captured (21.5, 31.8, -102.5) uT
+    408134  C,19,21.5,31.8,-102.5
+    408134  
+    408134  [UP 20/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 20, then hold it there.
+    408134  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
     417314  
     417314  Point 20: the reading is still changing - hold the lever still.
     417314  W,20,0.5,0.9
-    417470  X,113.0,158.2,57.2,93,0.85
-    418212  X,115.2,158.2,57.2,93,0.85
-    418974  X,91.6,158.2,57.9,92,0.85
-    419716  X,123.1,158.2,57.9,93,0.85
     419931    captured (25.3, 32.9, -102.2) uT
     419931  C,20,25.3,32.9,-102.2
     419931  
     419951  [UP 21/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 21, then hold it there.
     419951  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    420478  X,103.8,158.2,59.1,92,0.85
-    421220  X,125.7,158.2,59.5,93,0.47
-    421962  X,113.4,158.2,59.5,93,0.47
-    422724  X,102.2,158.2,59.4,93,0.47
-    423466  X,120.9,158.2,59.4,93,0.47
-    424228  X,99.8,158.2,58.2,93,0.47
-    424970  X,126.7,158.2,58.2,92,0.47
-    425732  X,109.9,158.2,57.5,93,0.47
-    426474  X,113.0,158.2,59.3,93,0.64
-    427216  X,115.5,158.2,59.3,93,0.64
-    427646  
-    427646  If the console already shows gear 21, ease back into gear 20 and come up to it again.
-    427646  N,stuck
-    427978  X,91.5,158.2,60.4,93,0.66
-    428723  X,121.5,158.2,60.4,93,0.66
-    429462  X,101.1,158.2,63.0,93,0.88
-    430224  X,128.0,158.2,63.0,93,0.88
-    430966  X,112.9,158.2,59.8,93,1.23
-    431728  X,111.7,158.2,57.9,93,1.23
-    432470  X,119.6,158.2,57.9,93,1.23
     432783    captured (30.4, 34.1, -102.5) uT
     432783  C,21,30.4,34.1,-102.5
     432783  
     432802  [UP 22/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 22, then hold it there.
     432802  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    433232  X,95.0,158.2,57.8,93,0.88
-    433974  X,126.9,158.2,57.8,93,0.88
-    434736  X,111.5,158.2,58.1,93,1.09
-    435478  X,122.8,158.2,58.4,92,1.47
-    436220  X,116.4,158.2,58.4,93,1.47
-    436982  X,104.9,158.2,57.3,92,1.93
-    437724  X,117.8,158.2,57.3,93,1.93
-    438486  X,92.4,158.2,65.1,92,1.48
-    439228  X,127.2,158.2,65.1,93,1.48
-    439970  X,97.2,158.2,60.0,92,1.48
-    440732  X,127.2,158.2,60.0,93,1.48
-    441474  X,107.0,158.2,58.4,92,1.48
     442177    captured (33.0, 35.3, -102.0) uT
     442177  C,22,33.0,35.3,-102.0
     442177  
     442177  [UP 23/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 23, then hold it there.
     442177  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    442216  X,130.8,158.2,57.3,92,1.76
-    442978  X,116.4,158.2,57.3,93,1.76
-    443740  X,113.3,158.2,60.1,92,1.76
-    444482  X,118.9,158.2,60.1,93,1.76
-    445224  X,91.9,158.2,59.1,92,1.48
-    445966  X,125.8,158.2,59.1,93,1.48
-    446728  X,98.7,158.2,58.3,92,1.28
-    447470  X,125.6,158.2,58.3,93,1.28
-    448232  X,110.3,158.2,59.6,92,1.08
-    448975  X,134.2,158.2,59.6,92,1.08
-    449736  X,117.3,158.2,64.9,93,1.08
-    450478  X,118.9,158.2,59.2,92,1.08
-    451240  X,119.1,158.2,59.2,93,1.08
     451708    captured (35.7, 36.1, -102.0) uT
     451708  C,23,35.7,36.1,-102.0
     451708  
     451708  [UP 24/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 24, then hold it there.
     451708  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    451982  X,97.0,158.2,60.3,92,1.08
-    452726  X,119.8,158.2,60.3,93,1.08
-    453486  X,91.1,158.2,56.9,92,1.32
-    454228  X,126.1,158.2,56.9,93,1.32
-    454990  X,104.9,158.2,54.2,92,1.34
-    455732  X,129.0,158.2,57.4,92,1.56
-    456474  X,120.0,158.2,57.4,93,1.56
     456866  
     456866  Gear 23 was saved a little too far up. Shift DOWN into gear 22, then back up to where the console FIRST shows gear 23.
     456866  N,behind
@@ -884,1328 +257,39 @@
     456866  
     456866  [UP 23/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 23, then hold it there.
     456866  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    457236  X,95.2,158.2,60.3,92,1.56
-    457978  X,126.9,158.2,60.3,92,1.56
     458095  Now come back to the point and hold it there.
-    458720  X,113.2,158.2,61.0,92,1.56
-    459482  X,125.3,158.2,57.3,92,1.56
-    460224  X,118.8,158.2,57.3,93,1.56
-    460986  X,94.5,158.2,58.2,92,1.56
-    461728  X,128.0,158.2,58.2,92,1.56
-    462490  X,106.6,158.2,58.2,92,1.43
-    463232  X,131.4,158.2,58.2,92,1.43
-    463974  X,115.3,158.2,57.5,93,0.79
-    464736  X,115.8,158.2,58.4,92,0.79
-    465479  X,118.5,158.2,58.4,93,0.79
-    466240  X,90.9,158.2,61.3,92,0.79
-    466982  X,128.3,158.2,61.3,93,0.79
-    467724  X,102.2,158.2,62.2,92,0.79
-    468486  X,134.4,158.2,62.2,92,0.79
-    469228  X,115.9,158.2,60.7,93,1.02
-    469873  
-    469873  Point 23: the reading is still changing - hold the lever still.
+    469892  
+    469892  Point 23: the reading is still changing - hold the lever still.
     469892  W,23,1.0,1.4
-    469970  X,123.5,158.2,58.1,92,1.02
-    470732  X,118.6,158.2,58.1,93,1.02
-    471476  X,107.7,158.2,58.6,92,1.02
-    472236  X,120.7,158.2,58.6,93,1.02
     472626    captured (35.7, 36.0, -102.0) uT
     472626  C,23,35.7,36.0,-102.0
     472626  
     472626  [UP 24/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 24, then hold it there.
     472626  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    472978  X,90.6,158.2,58.9,92,1.02
-    473740  X,127.8,158.2,58.9,92,1.02
-    474482  X,108.2,158.2,61.6,92,0.99
-    475224  X,132.0,158.2,61.6,92,0.99
-    475986  X,116.2,158.2,56.0,93,0.99
-    476494  
-    476513  Gear 23 was saved a little too far up. Shift DOWN into gear 22, then back up to where the console FIRST shows gear 23.
-    476513  N,behind
-    476513  U,22
-    476513  
-    476513  [UP 23/24] Keep pedalling, any steady pace. Redo: first move the lever DOWN below this gear. Move the lever up to where the Keiser console FIRST shows gear 23, then hold it there.
-    476513  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    476728  X,107.1,158.2,57.4,92,0.99
-    477490  X,122.8,158.2,57.4,92,0.99
-    477744  Now come back to the point and hold it there.
-    478232  X,99.9,158.2,56.9,92,0.99
-    478974  X,130.8,158.2,56.9,92,0.99
-    479736  X,113.5,158.2,60.7,93,1.10
-    480478  X,123.5,158.2,62.2,92,1.50
-    481240  X,119.9,158.2,62.2,93,1.50
-    481982  X,94.6,158.2,60.6,92,1.73
-    482726  X,129.0,158.2,60.6,92,1.73
-    483486  X,117.3,158.2,58.2,92,1.73
-    484248  X,101.1,158.2,58.9,92,1.50
-    484990  X,126.8,158.2,58.9,93,1.50
-    485732  X,106.0,158.2,58.6,92,1.10
-    486494  X,127.9,158.2,57.9,92,0.80
-    487255  X,118.6,158.2,57.9,93,0.80
-    487998  X,94.5,158.2,58.5,92,0.69
-    488759  X,125.3,158.2,58.5,92,0.69
-    489501  X,93.6,158.2,60.6,92,0.69
-    490244  X,126.4,158.2,60.6,93,0.69
-    490380    captured (33.9, 35.7, -102.5) uT
-    490380  C,23,33.9,35.7,-102.5
-    490380  
-    490380  [UP 24/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 24, then hold it there.
-    490380  It captures and beeps once 3 pedal turns agree. You can stop pedalling any time.
-    491005  X,112.8,158.2,60.1,92,0.69
-    491748  X,128.2,158.2,60.4,92,0.80
-    492509  X,118.1,158.2,60.4,93,0.80
-    493251  X,100.8,158.2,58.2,93,0.98
-    494013  X,125.8,158.2,58.2,93,0.98
-    494287    captured (36.0, 36.0, -102.4) uT
-    494287  C,24,36.0,36.0,-102.4
-    494287  Top point worked out from gears 23 and 24.
-    494287  C,25,36.7,36.1,-102.4
-    494287  
-    494287  === Up pass saved. Path 124.8 uT, smallest step 0.64 uT (around gear 24). Saved. ===
-    494287  Warning: some gears are very close together magnetically. Mounting the board closer to the magnets will improve resolution.
-    494287  K,1,124.8,0.64,24,saved
-    494287  Up pass saved. Press button A or send 'n' to come back DOWN through the gears now, or 's' to stop here ('#D' does the down pass later).
-    494365  X,131.3,158.2,60.0,93,1.12
-    494365  Check: all points fit.
-    494365  F,end,0
-    498115  X,128.8,158.2,59.4,92,1.12
-    501787  X,120.1,158.2,63.8,93,1.05
-    502529  X,124.2,159.4,59.6,92,1.05
-    503291  X,118.9,159.4,59.6,93,1.05
-    504033  X,120.1,159.5,59.3,92,1.03
-    504794  X,119.3,159.5,59.3,92,1.03
-    505537  X,115.8,159.5,58.5,92,1.03
-    506279  X,120.3,159.5,58.5,93,1.03
-    507041  X,102.7,159.5,59.3,92,0.82
-    507783  X,119.4,159.5,59.3,93,0.82
-    508544  X,98.5,159.5,58.9,92,0.81
-    509287  X,118.4,159.5,58.9,93,0.81
-    510048  X,97.5,159.5,59.2,92,0.54
-    510791  X,117.2,159.5,59.2,93,0.54
-    511533  X,98.9,159.5,52.3,92,0.54
-    512294  X,118.3,159.5,52.3,93,0.54
-    513037  X,92.1,159.5,55.3,92,0.54
-    513779  X,125.9,159.5,55.3,93,0.54
-    514541  X,102.5,159.5,59.8,92,0.81
-    515283  X,129.9,159.5,59.8,93,0.81
-    516044  X,113.2,159.5,58.5,93,0.54
-    516787  X,122.6,159.5,58.8,92,0.54
-    517529  X,117.6,159.5,58.8,93,0.54
-    518291  X,94.5,159.5,60.6,92,0.54
-    519052  X,125.2,159.5,60.6,93,0.54
-    519794  X,112.8,159.5,58.8,92,2.19
-    520537  X,124.6,159.5,57.5,92,1.57
-    521279  X,116.1,159.5,57.5,93,1.57
-    522041  X,102.6,159.5,58.0,92,1.57
-    522783  X,120.8,159.5,58.0,93,1.57
-    523544  X,103.5,159.5,56.6,92,1.57
-    524288  X,128.2,159.5,59.7,92,1.57
-    525029  X,116.5,159.5,59.7,93,1.57
-    525791  X,99.7,159.5,57.6,92,1.63
-    526533  X,121.9,159.5,57.6,92,1.63
-    527294  X,94.4,159.5,60.0,93,1.63
-    528037  X,125.6,159.5,60.0,93,1.63
-    528798  X,96.7,159.5,67.7,93,1.63
-    529541  X,125.3,159.5,67.7,93,1.63
-    530302  X,98.4,159.5,60.6,93,1.63
-    531044  X,126.1,159.5,60.6,93,1.63
-    531806  X,108.9,159.5,57.1,92,1.50
-    532548  X,130.8,159.5,57.3,92,1.41
-    533310  X,113.8,159.5,57.3,93,1.41
-    534052  X,128.9,159.5,57.3,93,1.41
-    534794  X,101.7,159.5,57.0,93,1.50
-    535537  X,123.9,159.5,57.0,93,1.50
-    536298  X,79.3,159.5,59.4,93,1.41
-    537060  X,80.2,159.5,59.4,95,1.41
-    537802  X,83.9,159.5,59.4,95,1.41
-    538544  X,86.2,159.5,59.4,95,1.41
+    476494  N,behind
+    503896  
+    503896  Point 24: the reading is still changing - hold the lever still.
+    503896  W,24,0.8,1.6
+    506787    captured (40.2, 37.3, -101.4) uT
+    506787  C,24,40.2,37.3,-101.4
+    506787  Top point worked out from gears 23 and 24.
+    506787  C,25,41.5,37.7,-101.2
+    506787  
+    506787  === Up pass saved. Path 129.9 uT, smallest step 1.09 uT (around gear 14). Saved. ===
+    506787  Warning: some gears are very close together magnetically. Mounting the board closer to the magnets will improve resolution.
+    506787  K,1,129.9,1.09,14,saved
+    506787  Up pass saved. Press button A or send 'n' to come back DOWN through the gears now, or 's' to stop here ('#D' does the down pass later).
+    506865  Check: all points fit.
+    506865  F,end,0
     538681  Paused: pedal to continue.
-    539306  X,88.3,159.5,59.4,95,1.41
-    540068  X,88.7,159.5,59.4,94,1.41
-    540810  X,89.3,159.5,59.4,94,1.41
-    541552  X,89.6,159.5,59.4,94,1.41
-    542314  X,90.1,159.5,59.4,94,1.41
-    543056  X,90.4,159.5,59.4,94,1.41
-    543818  X,112.8,159.5,59.4,93,1.41
     544404  Resumed.
-    544560  X,120.3,159.5,61.1,93,1.41
-    545302  X,114.2,159.5,61.1,93,1.41
-    546064  X,127.3,159.5,55.6,93,1.41
-    546806  X,111.1,159.5,55.6,93,1.41
-    547548  X,127.2,159.5,59.5,93,1.07
-    548310  X,115.8,159.5,59.5,93,1.07
-    549052  X,113.4,159.5,60.1,93,1.41
-    549814  X,116.7,159.5,60.1,93,1.41
-    550556  X,99.4,159.5,58.9,93,1.07
-    551298  X,121.2,159.5,58.9,93,1.07
-    552060  X,91.4,159.5,59.7,93,0.71
-    552802  X,124.5,159.5,59.7,93,0.71
-    553564  X,105.2,159.5,60.1,93,0.52
-    554306  X,131.1,159.5,60.1,93,0.52
-    555068  X,114.0,159.5,59.5,93,0.51
-    555811  X,123.3,159.5,57.9,93,0.51
-    556552  X,116.4,159.5,57.9,93,0.51
-    557314  X,102.2,159.5,59.0,93,0.49
-    558056  X,117.8,159.5,59.0,93,0.49
-    558818  X,90.3,159.5,59.3,93,0.49
-    559560  X,124.4,159.5,59.3,93,0.49
-    560302  X,97.6,159.5,60.4,93,0.41
-    561064  X,123.7,159.5,60.4,93,0.41
-    561806  X,106.0,159.5,59.8,93,0.27
-    562548  X,130.1,159.5,59.8,93,0.27
-    563310  X,105.9,159.5,59.3,93,0.41
-    564052  X,130.7,159.5,59.3,93,0.41
-    564814  X,99.0,159.5,61.3,93,0.61
-    565556  X,124.3,159.5,61.3,93,0.61
-    566318  X,97.6,159.5,59.8,93,0.61
-    567060  X,125.0,159.5,59.8,93,0.61
-    567802  X,106.7,159.5,56.6,93,1.00
-    568565  X,129.0,159.5,60.8,93,1.02
-    569307  X,114.1,159.5,60.8,93,1.02
-    570068  X,120.6,159.5,59.3,92,1.24
-    570811  X,116.2,159.5,59.3,93,1.24
-    571552  X,104.1,159.5,60.1,93,1.24
-    572314  X,116.4,159.5,60.1,93,1.24
-    573056  X,93.3,159.5,59.5,93,1.24
-    573818  X,115.7,159.5,59.5,93,1.24
-    574560  X,101.5,159.5,66.3,93,1.24
-    575302  X,116.1,159.5,66.3,93,1.24
-    576064  X,115.7,159.5,57.5,93,1.24
-    576806  X,115.7,159.5,57.5,93,1.24
-    577568  X,105.5,159.5,55.0,92,1.24
-    578310  X,121.2,159.5,55.0,93,1.24
-    579052  X,91.0,159.5,59.9,93,1.24
-    579814  X,125.7,159.5,59.9,93,1.24
-    580556  X,107.0,159.5,58.9,92,1.20
-    581298  X,129.2,159.5,58.9,93,1.20
-    582060  X,113.3,159.5,57.3,93,1.20
-    582802  X,121.9,159.5,59.4,93,1.20
-    583564  X,115.8,159.5,59.4,93,1.20
-    584306  X,109.2,159.5,58.8,92,1.17
-    585048  X,116.4,159.5,58.8,93,1.17
-    585810  X,96.8,159.5,58.3,92,0.64
-    586552  X,114.6,159.5,58.3,93,0.64
-    587314  X,105.0,159.5,59.5,92,0.64
-    588056  X,114.8,159.5,59.5,93,0.64
-    588798  X,111.3,159.5,61.8,93,0.64
-    589560  X,111.7,159.5,61.8,93,0.64
-    590302  X,108.2,159.5,61.8,93,0.64
-    591064  X,113.8,159.5,61.8,94,0.64
     591611  Paused: pedal to continue.
-    591806  X,120.5,159.5,61.8,93,0.64
     592177  Resumed.
-    592548  X,87.5,159.5,64.1,93,0.64
-    593310  X,112.8,159.5,64.1,93,0.64
-    594052  X,130.9,159.5,64.1,93,0.64
-    594814  X,103.1,159.5,64.7,93,1.17
-    595556  X,114.2,159.5,64.7,93,1.17
-    596299  X,114.8,159.5,57.7,93,1.22
-    597060  X,74.7,159.5,57.7,94,1.22
-    597802  X,73.4,159.5,57.7,95,1.22
-    598564  X,73.5,159.5,57.7,95,1.22
     599013  Paused: pedal to continue.
-    599306  X,89.5,159.5,57.7,94,1.22
-    600068  X,123.9,159.5,57.7,93,1.22
     600302  Resumed.
-    600810  X,93.2,159.5,58.8,93,1.22
-    601552  X,124.5,159.5,58.8,93,1.22
-    602314  X,96.2,159.5,58.7,93,1.45
-    603056  X,122.9,159.5,58.7,93,1.45
-    603818  X,97.8,159.5,58.7,93,1.45
-    604560  X,125.4,159.5,58.7,93,1.45
-    605302  X,102.3,159.5,59.8,93,1.45
-    606064  X,127.7,159.5,59.8,93,1.45
-    606806  X,106.2,159.5,58.7,93,1.22
-    607568  X,130.4,159.5,58.7,93,1.22
-    608310  X,112.3,159.5,59.5,93,0.44
-    609072  X,126.6,159.5,59.2,93,0.44
-    609814  X,113.9,159.5,59.2,93,0.44
-    610556  X,119.5,159.5,59.8,93,0.44
-    611318  X,113.4,159.5,59.8,93,0.44
-    612061  X,126.8,159.5,59.1,93,0.44
-    612802  X,110.4,159.5,59.1,93,0.44
-    613564  X,129.4,159.5,59.1,93,0.44
-    614306  X,107.5,159.5,61.0,93,0.89
-    615068  X,129.4,159.5,61.0,93,0.89
-    615810  X,109.9,159.5,61.9,93,1.12
-    616552  X,128.8,159.5,60.8,93,1.17
-    617314  X,86.6,159.5,60.8,93,1.17
-    618058  X,94.6,159.5,60.8,94,1.17
-    618798  X,94.1,159.5,60.8,94,1.17
-    619562  X,93.3,159.5,60.8,94,1.17
     619562  Paused: pedal to continue.
-    620302  X,102.4,159.5,60.8,94,1.17
-    621064  X,107.8,159.5,60.8,93,1.17
     621611  Resumed.
-    621806  X,118.7,159.5,56.3,93,1.17
-    622568  X,116.1,159.5,56.3,93,1.17
-    623310  X,122.7,159.5,53.8,93,1.36
-    624052  X,117.1,159.5,53.8,93,1.36
-    624814  X,120.4,159.5,59.3,93,1.36
-    625556  X,115.2,159.5,59.3,93,1.36
-    626318  X,132.2,159.5,61.1,93,1.36
-    627062  X,107.6,159.5,61.1,93,1.36
-    627802  X,126.4,159.5,61.1,93,1.36
-    628564  X,99.1,159.5,61.6,93,1.36
-    629310  X,126.4,159.5,61.6,93,1.36
-    630068  X,94.8,159.5,60.9,93,1.36
-    630810  X,128.2,159.5,60.9,93,1.36
-    631552  X,110.1,159.5,60.0,92,1.36
-    632314  X,134.2,159.5,60.1,92,1.67
-    633076  X,117.7,159.5,60.1,93,1.67
-    633818  X,101.5,159.5,59.6,92,1.19
-    634562  X,128.8,159.5,59.6,92,1.19
-    635302  X,110.2,159.5,57.5,92,1.67
-    636064  X,116.9,159.5,56.8,92,1.67
-    636826  X,127.3,159.5,56.8,92,1.67
-    637568  X,108.1,159.5,59.0,92,1.67
-    638330  X,123.3,159.5,57.0,92,1.67
-    639052  X,125.5,159.5,57.0,92,1.67
-    639814  X,102.9,159.5,56.8,92,1.15
-    640576  X,130.1,159.5,57.0,92,0.83
-    641318  X,120.6,159.5,57.0,93,0.83
-    642060  X,95.7,159.5,57.5,92,0.75
-    642822  X,133.6,159.5,57.5,92,0.75
-    643564  X,116.0,159.5,58.8,93,0.71
-    644306  X,95.6,159.5,54.6,92,0.71
-    645068  X,131.1,159.5,54.6,92,0.71
-    645810  X,120.8,159.5,59.6,92,0.71
-    646552  X,103.5,159.5,56.7,92,0.71
-    647314  X,124.8,159.5,57.8,92,0.71
-    648076  X,124.9,159.5,57.8,92,0.71
-    648819  X,106.1,159.5,57.6,92,0.71
-    649560  X,119.3,159.5,58.0,92,0.71
-    650302  X,126.5,159.5,58.0,92,0.71
-    651064  X,110.0,159.5,57.9,92,0.71
-    651806  X,110.8,159.5,57.8,92,0.71
-    652568  X,125.0,159.5,57.8,92,0.71
-    653310  X,116.2,159.5,55.8,92,0.71
-    654072  X,97.2,159.5,58.5,92,0.71
-    654814  X,127.9,159.5,57.4,92,0.90
-    655556  X,121.9,159.5,57.4,92,0.90
-    656318  X,106.0,159.5,57.0,92,0.90
-    657060  X,115.6,159.5,57.5,92,0.90
-    657802  X,124.3,159.5,57.5,92,0.90
-    658564  X,115.8,159.5,57.8,92,0.90
-    659306  X,98.3,159.5,58.5,92,0.71
-    660068  X,125.7,159.5,55.0,92,0.71
-    660810  X,118.3,159.5,55.0,92,0.71
-    661572  X,107.0,159.5,55.0,92,0.71
-    662314  X,105.5,159.5,57.9,92,0.53
-    663056  X,121.2,159.5,57.9,92,0.53
-    663818  X,115.9,159.5,56.9,92,0.40
-    664560  X,98.0,159.5,57.2,92,0.53
-    665323  X,122.8,159.5,57.9,92,0.53
-    666065  X,119.9,159.5,57.9,92,0.53
-    666806  X,107.0,159.5,58.3,92,0.49
-    667568  X,114.9,159.5,55.2,92,0.49
-    668310  X,121.9,159.5,55.2,92,0.49
-    669072  X,112.0,159.5,54.8,92,0.49
-    669814  X,97.8,159.5,59.1,92,0.49
-    670576  X,123.6,159.5,58.7,92,0.51
-    671318  X,120.4,159.5,58.7,92,0.51
-    672060  X,110.6,159.5,58.2,92,0.49
-    672804  X,98.1,159.5,58.5,92,0.51
-    673564  X,123.8,159.5,58.5,92,0.51
-    674306  X,116.6,159.5,57.9,92,0.52
-    675068  X,102.4,159.5,54.7,92,0.52
-    675810  X,116.7,159.5,54.8,92,0.52
-    676552  X,119.2,159.5,54.8,92,0.52
-    677314  X,116.3,159.5,58.4,92,0.62
-    678076  X,109.1,159.5,56.8,92,0.67
-    678818  X,99.6,159.5,57.9,92,0.70
-    679560  X,123.2,159.5,58.5,92,0.70
-    680302  X,118.8,159.5,58.5,92,0.70
-    681068  X,111.5,159.5,57.0,92,0.70
-    681806  X,98.9,159.5,58.9,92,0.67
-    682569  X,122.0,159.5,56.9,92,0.67
-    683310  X,119.0,159.5,56.9,92,0.67
-    684072  X,113.4,159.5,53.5,92,1.09
-    684814  X,103.5,159.5,57.6,92,1.09
-    685576  X,105.9,159.5,57.6,92,0.66
-    686319  X,121.2,159.5,57.6,92,0.66
-    687060  X,119.5,159.5,57.8,92,1.09
-    687822  X,113.0,159.5,57.1,92,1.09
-    688564  X,101.1,159.5,57.8,92,1.09
-    689306  X,114.3,159.5,57.6,92,0.98
-    690069  X,118.3,159.5,57.6,92,0.98
-    690810  X,114.9,159.5,58.6,92,0.55
-    691552  X,105.7,159.5,59.0,92,0.47
-    692314  X,107.9,159.5,54.7,92,0.55
-    693076  X,120.4,159.5,54.7,92,0.55
-    693818  X,117.2,159.5,57.7,92,0.55
-    694560  X,111.4,159.5,54.8,92,0.55
-    695322  X,103.9,159.5,58.5,92,0.47
-    696064  X,106.9,159.5,58.4,92,0.69
-    696806  X,120.8,159.5,57.2,92,0.75
-    697568  X,119.9,159.5,57.2,92,0.75
-    698310  X,115.0,159.5,59.3,92,0.78
-    699072  X,108.4,159.5,56.0,92,0.75
-    699814  X,100.2,159.5,57.8,92,0.75
-    700556  X,118.5,159.5,58.1,92,0.69
-    701318  X,117.5,159.5,58.1,92,0.69
-    702060  X,116.0,159.5,57.9,92,0.69
-    702802  X,111.3,159.5,58.5,92,0.53
-    703564  X,101.2,159.5,57.6,92,0.50
-    704326  X,113.2,159.5,56.3,92,0.50
-    705068  X,118.6,159.5,56.3,92,0.50
-    705810  X,119.5,159.5,54.7,92,0.53
-    706572  X,116.9,159.5,55.3,92,0.53
-    707314  X,114.1,159.5,60.3,92,1.18
-    708076  X,107.7,159.5,58.1,92,1.18
-    708820  X,102.3,159.5,57.2,92,1.18
-    709560  X,110.4,159.5,57.2,92,1.18
-    710322  X,120.1,159.5,58.5,92,0.97
-    711064  X,116.5,159.5,58.5,92,0.97
-    711826  X,119.3,159.5,57.3,92,0.57
-    712568  X,115.8,159.5,57.8,92,0.47
-    713310  X,109.5,159.5,56.3,92,0.31
-    714072  X,104.3,159.5,58.4,92,0.25
-    714814  X,110.3,159.5,54.3,92,0.25
-    715576  X,119.6,159.5,53.5,92,0.25
-    716318  X,119.7,159.5,53.5,92,0.25
-    717060  X,119.3,159.5,58.4,92,0.25
-    717822  X,119.4,159.5,55.8,92,1.55
-    718564  X,116.5,159.5,58.3,92,1.55
-    719306  X,113.0,159.5,58.2,92,1.55
-    720068  X,107.8,159.5,57.7,92,1.55
-    720810  X,105.6,159.5,58.7,92,1.09
-    721572  X,112.4,159.5,58.1,92,0.70
-    722314  X,120.1,159.5,58.6,92,0.43
-    723076  X,118.1,159.5,58.6,92,0.43
-    723818  X,120.1,159.5,58.6,92,0.43
-    724580  X,118.5,159.5,55.7,92,0.43
-    725322  X,117.1,159.5,56.4,92,0.43
-    726064  X,115.9,159.5,58.3,92,0.43
-    726826  X,113.3,159.5,59.1,92,0.43
-    727568  X,110.4,159.5,58.0,92,0.43
-    728310  X,106.5,159.5,58.8,92,0.62
-    729072  X,108.8,159.5,56.7,92,0.62
-    729819  X,119.0,159.5,57.4,92,0.69
-    730576  X,117.2,159.5,57.4,92,0.69
-    731318  X,120.4,159.5,56.0,92,0.42
-    732080  X,119.8,159.5,56.5,92,0.69
-    732822  X,118.1,159.5,56.7,92,0.71
-    733583  X,116.8,159.5,58.2,92,0.71
-    734326  X,114.3,159.5,58.7,92,0.71
-    735070  X,110.3,159.5,57.6,92,0.52
-    735830  X,107.1,159.5,58.1,92,0.42
-    736572  X,108.7,159.5,56.7,92,0.42
-    737333  X,116.3,159.5,58.0,92,0.42
-    738076  X,119.2,159.5,57.7,92,0.42
-    738818  X,117.4,159.5,57.7,92,0.42
-    739580  X,120.7,159.5,58.6,92,0.42
-    740322  X,120.0,159.5,55.9,92,0.42
-    741083  X,120.3,159.5,54.0,92,0.42
-    741826  X,119.0,159.5,58.1,92,0.55
-    742587  X,117.9,159.5,58.2,92,0.62
-    743330  X,114.6,159.5,56.5,92,0.62
-    744072  X,112.3,159.5,57.7,92,0.62
-    744833  X,108.6,159.5,59.3,92,0.62
-    745595  X,112.3,159.5,56.9,92,0.61
-    746337  X,119.7,159.5,58.3,92,0.61
-    747080  X,117.7,159.5,58.3,92,0.61
-    747842  X,121.5,159.5,57.9,92,0.61
-    748583  X,120.4,159.5,57.2,92,0.52
-    749326  X,117.8,159.5,58.4,92,0.52
-    750087  X,115.2,159.5,57.7,92,0.49
-    750830  X,110.7,159.5,54.3,92,0.52
-    751591  X,110.9,159.5,58.5,92,0.61
-    752333  X,116.8,159.5,58.3,92,0.54
-    753095  X,120.1,159.5,58.5,92,0.49
-    753837  X,119.2,159.5,58.5,92,0.49
-    754580  X,121.8,159.5,58.9,92,0.49
-    755341  X,122.8,159.5,58.8,92,0.41
-    756083  X,122.7,159.5,57.6,92,0.41
-    756826  X,121.6,159.5,61.1,92,0.41
-    757588  X,120.6,159.5,58.0,92,0.41
-    758330  X,118.7,159.5,58.7,92,0.41
-    759091  X,115.1,159.5,59.2,92,0.41
-    759833  X,111.9,159.5,58.8,92,0.59
-    760595  X,116.8,159.5,58.7,92,0.59
-    761337  X,121.2,159.5,57.5,92,0.59
-    762099  X,121.2,159.5,53.9,92,0.59
-    762841  X,121.6,159.5,53.9,92,0.59
-    763603  X,119.9,159.5,56.8,92,0.78
-    764345  X,124.2,159.5,57.0,92,0.57
-    765107  X,125.9,159.5,58.5,92,0.57
-    765849  X,125.8,159.5,59.9,92,0.52
-    766611  X,124.7,159.5,58.5,92,0.57
-    767353  X,124.2,159.5,58.4,92,0.52
-    768095  X,122.3,159.5,58.9,92,0.50
-    768857  X,122.7,159.5,55.8,92,0.50
-    769599  X,122.3,159.5,55.4,92,0.52
-    770341  X,121.6,159.5,58.5,92,0.56
-    771103  X,117.9,159.5,57.2,92,0.56
-    771845  X,115.6,159.5,58.8,92,0.56
-    772608  X,120.1,159.5,58.6,92,0.59
-    773349  X,122.1,159.5,57.6,92,0.59
-    774091  X,120.5,159.5,57.6,92,0.59
-    774854  X,126.6,159.5,58.9,92,0.58
-    775615  X,128.3,159.5,56.2,92,0.58
-    776357  X,128.6,159.5,54.7,92,0.59
-    777099  X,127.9,159.5,59.5,92,0.74
-    777861  X,127.0,159.5,57.0,92,0.74
-    778603  X,125.6,159.5,58.9,92,0.58
-    779365  X,122.9,159.5,58.1,92,0.58
-    780107  X,118.1,159.5,55.9,92,0.98
-    780849  X,121.6,159.5,59.0,92,0.62
-    781611  X,124.5,159.5,56.6,92,0.52
-    782353  X,123.6,159.5,56.6,92,0.52
-    783115  X,123.5,159.5,55.5,92,0.52
-    783857  X,124.7,159.5,55.7,92,0.62
-    784599  X,128.1,159.5,59.2,92,0.98
-    785361  X,129.9,159.5,56.1,92,0.98
-    786103  X,131.3,159.5,56.7,92,0.75
-    786865  X,130.3,159.5,58.3,92,0.75
-    787607  X,129.2,159.5,59.0,92,0.75
-    788349  X,129.8,159.5,57.2,92,0.51
-    789111  X,131.1,159.5,52.6,92,0.51
-    789873  X,131.2,159.5,55.8,92,0.51
-    790615  X,131.1,159.5,59.1,92,0.51
-    791357  X,130.6,159.5,58.6,92,0.51
-    792119  X,129.2,159.5,57.7,92,0.51
-    792861  X,125.9,159.5,59.2,92,0.51
-    793623  X,125.0,159.5,58.4,92,0.51
-    794365  X,123.5,159.5,56.6,92,0.38
-    795126  X,126.0,159.5,55.9,92,0.38
-    795869  X,129.9,159.5,56.2,92,0.38
-    796611  X,131.8,159.5,55.6,92,0.38
-    797373  X,133.6,159.5,56.5,92,2.28
-    798115  X,134.6,159.5,53.9,92,2.50
-    798857  X,133.9,159.5,58.5,92,2.50
-    799619  X,135.0,159.5,57.2,92,2.50
-    800361  X,135.4,159.5,58.9,92,2.50
-    801103  X,136.0,159.5,58.6,92,0.72
-    801865  X,134.6,159.5,58.7,92,0.63
-    802607  X,136.9,159.5,57.1,92,0.58
-    803369  X,140.3,159.5,54.1,91,0.58
-    804130  X,144.1,159.5,55.4,91,0.63
-    804873  X,144.3,159.5,57.6,91,0.58
-    805634  X,146.5,159.5,56.9,91,0.72
-    806376  X,146.8,159.5,57.2,91,0.90
-    807138  X,148.2,159.5,56.9,91,0.90
-    807841  X,145.1,159.5,65.6,91,1.25
-    808642  X,149.9,159.5,51.6,91,1.25
-    809365  X,148.9,159.5,60.1,91,0.90
-    809365  X,148.9,159.5,60.1,100,0.90
-    810888  X,151.4,159.5,59.1,91,1.25
-    811630  X,151.1,159.5,64.3,91,3.13
-    812392  X,150.8,159.5,59.3,91,3.13
-    813134  X,150.6,159.5,57.5,91,3.13
-    813896  X,150.9,159.5,59.5,91,0.79
-    814638  X,150.1,159.5,56.9,91,0.70
-    815380  X,147.4,159.5,59.0,91,0.68
-    816142  X,145.2,159.5,57.4,91,0.57
-    816884  X,141.9,159.5,59.1,91,0.57
-    817626  X,140.3,159.5,58.8,91,0.58
-    818388  X,140.7,159.5,56.9,91,0.58
-    819130  X,141.6,159.5,59.0,91,0.68
-    819892  X,142.1,159.5,59.4,91,0.58
-    820635  X,142.0,159.5,58.9,91,0.75
-    821396  X,142.2,159.5,55.8,91,0.75
-    822138  X,141.8,159.5,59.4,91,0.75
-    822900  X,142.0,159.5,57.9,91,0.74
-    823642  X,141.9,159.5,58.0,91,0.74
-    824384  X,141.8,159.5,58.9,91,0.39
-    825146  X,140.7,159.5,58.5,91,0.45
-    825888  X,139.3,159.5,58.5,91,0.45
-    826650  X,139.1,159.5,59.1,91,0.38
-    827392  X,139.4,159.5,59.4,91,0.28
-    828154  X,139.7,159.5,60.2,91,0.36
-    828896  X,141.9,159.5,55.3,91,0.38
-    829638  X,145.7,159.5,58.4,91,0.38
-    830400  X,148.3,159.5,56.3,91,0.38
-    831144  X,149.6,159.5,57.9,91,0.36
-    831904  X,151.1,159.5,66.5,91,0.38
-    832646  X,151.2,159.5,57.0,91,0.38
-    833388  X,151.7,159.5,59.5,91,0.38
-    834150  X,151.1,159.5,59.4,91,0.38
-    834892  X,151.2,159.5,57.8,91,0.53
-    835634  X,150.3,159.5,58.2,91,0.40
-    836396  X,141.1,159.5,64.0,92,0.53
-    837139  X,155.0,159.5,64.0,92,0.53
-    837880  X,153.2,159.5,64.0,92,0.53
-    838642  X,152.8,159.5,64.0,92,0.53
     839287  Paused: pedal to continue.
-    839384  X,153.3,159.5,64.0,92,0.53
-    840146  X,152.3,159.5,64.0,92,0.53
-    840888  X,153.6,159.5,64.0,92,0.53
-    841650  X,156.4,159.5,64.0,92,0.53
-    842394  X,158.3,159.5,64.0,92,0.53
-    843134  X,152.6,159.5,64.0,92,0.53
-    843896  X,152.0,159.5,64.0,92,0.53
-    844638  X,152.6,159.5,64.0,92,0.53
-    845400  X,152.6,159.5,64.0,92,0.53
-    846162  X,152.3,159.5,64.0,92,0.53
-    846884  X,152.2,159.5,64.0,92,0.53
-    847646  X,151.9,159.5,64.0,92,0.53
-    848388  X,152.4,159.5,64.0,92,0.53
-    849150  X,152.2,159.5,64.0,92,0.53
-    849892  X,152.6,159.5,64.0,92,0.53
-    850654  X,152.5,159.5,64.0,92,0.53
-    851396  X,152.8,159.5,64.0,92,0.53
-    852158  X,152.8,159.5,64.0,92,0.53
-    852900  X,152.0,159.5,64.0,92,0.53
-    853642  X,151.4,159.5,64.0,92,0.53
-    854404  X,149.7,159.5,64.0,92,0.53
-    855146  X,149.7,159.5,64.0,92,0.53
-    855908  X,146.9,159.5,64.0,92,0.53
-    856650  X,145.4,159.5,64.0,92,0.53
-    857412  X,145.0,159.5,64.0,92,0.53
-    858154  X,144.7,159.5,64.0,92,0.53
-    858896  X,142.2,159.5,64.0,92,0.53
-    859658  X,140.8,159.5,64.0,92,0.53
-    860400  X,140.5,159.5,64.0,92,0.53
-    861162  X,140.8,159.5,64.0,92,0.53
-    861904  X,141.0,159.5,64.0,92,0.53
-    862646  X,141.4,159.5,64.0,92,0.53
-    863388  X,141.3,159.5,64.0,92,0.53
-    864150  X,141.2,159.5,64.0,92,0.53
-    864912  X,140.8,159.5,64.0,92,0.53
-    865654  X,141.3,159.5,64.0,92,0.53
-    866396  X,141.6,159.5,64.0,92,0.53
-    867138  X,141.1,159.5,64.0,92,0.53
-    867900  X,141.3,159.5,64.0,92,0.53
-    868662  X,140.9,159.5,64.0,92,0.53
-    869404  X,141.1,159.5,64.0,92,0.53
-    870146  X,141.4,159.5,64.0,92,0.53
-    870908  X,141.1,159.5,64.0,92,0.53
-    871650  X,141.7,159.5,64.0,92,0.53
-    872412  X,141.1,159.5,64.0,92,0.53
-    873154  X,141.2,159.5,64.0,92,0.53
-    873896  X,141.2,159.5,64.0,92,0.53
-    874658  X,141.4,159.5,64.0,92,0.53
-    875419  X,141.2,159.5,64.0,92,0.53
-    876162  X,141.3,159.5,64.0,92,0.53
-    876904  X,141.1,159.5,64.0,92,0.53
-    877646  X,141.4,159.5,64.0,92,0.53
-    878408  X,141.6,159.5,64.0,92,0.53
-    879150  X,141.3,159.5,64.0,92,0.53
-    879912  X,141.6,159.5,64.0,92,0.53
-    880654  X,141.3,159.5,64.0,92,0.53
-    881396  X,141.6,159.5,64.0,92,0.53
-    882158  X,141.4,159.5,64.0,92,0.53
-    882900  X,141.1,159.5,64.0,92,0.53
-    883662  X,141.0,159.5,64.0,92,0.53
-    884404  X,140.8,159.5,64.0,92,0.53
-    885146  X,140.6,159.5,64.0,92,0.53
-    885908  X,141.0,159.5,64.0,92,0.53
-    886650  X,140.8,159.5,64.0,92,0.53
-    887412  X,141.3,159.5,64.0,92,0.53
-    888154  X,141.0,159.5,64.0,92,0.53
-    888896  X,141.0,159.5,64.0,92,0.53
-    889658  X,140.7,159.5,64.0,92,0.53
-    890400  X,140.7,159.5,64.0,92,0.53
-    891162  X,140.9,159.5,64.0,92,0.53
-    891904  X,140.7,159.5,64.0,92,0.53
-    892666  X,140.6,159.5,64.0,92,0.53
-    893410  X,140.8,159.5,64.0,92,0.53
-    894169  X,140.9,159.5,64.0,92,0.53
-    894913  X,140.8,159.5,64.0,92,0.53
-    895654  X,140.5,159.5,64.0,92,0.53
-    896416  X,140.8,159.5,64.0,92,0.53
-    897158  X,141.0,159.5,64.0,92,0.53
-    897900  X,141.2,159.5,64.0,92,0.53
-    898662  X,141.0,159.5,64.0,92,0.53
-    899404  X,141.0,159.5,64.0,92,0.53
-    900146  X,141.0,159.5,64.0,92,0.53
-    900908  X,141.0,159.5,64.0,92,0.53
-    901650  X,140.8,159.5,64.0,92,0.53
-    902412  X,140.8,159.5,64.0,92,0.53
-    903154  X,141.3,159.5,64.0,92,0.53
-    903896  X,141.1,159.5,64.0,92,0.53
-    904658  X,140.7,159.5,64.0,92,0.53
-    905400  X,140.7,159.5,64.0,92,0.53
-    906162  X,140.7,159.5,64.0,92,0.53
-    906904  X,140.6,159.5,64.0,92,0.53
-    907646  X,141.2,159.5,64.0,92,0.53
-    908408  X,140.6,159.5,64.0,92,0.53
-    909150  X,140.9,159.5,64.0,92,0.53
-    909912  X,140.4,159.5,64.0,92,0.53
-    910654  X,140.4,159.5,64.0,92,0.53
-    911416  X,140.5,159.5,64.0,92,0.53
-    912158  X,140.5,159.5,64.0,92,0.53
-    912900  X,141.0,159.5,64.0,92,0.53
-    913662  X,140.7,159.5,64.0,92,0.53
-    914404  X,140.8,159.5,64.0,92,0.53
-    915146  X,140.9,159.5,64.0,92,0.53
-    915908  X,140.8,159.5,64.0,92,0.53
-    916650  X,140.7,159.5,64.0,92,0.53
-    917412  X,140.7,159.5,64.0,92,0.53
-    918154  X,140.4,159.5,64.0,92,0.53
-    918916  X,141.1,159.5,64.0,92,0.53
-    919658  X,140.9,159.5,64.0,92,0.53
-    920400  X,140.8,159.5,64.0,92,0.53
-    921162  X,140.4,159.5,64.0,92,0.53
-    921904  X,140.6,159.5,64.0,92,0.53
-    922646  X,140.8,159.5,64.0,92,0.53
-    923408  X,140.6,159.5,64.0,92,0.53
-    924150  X,140.9,159.5,64.0,92,0.53
-    924912  X,140.6,159.5,64.0,92,0.53
-    925654  X,140.6,159.5,64.0,92,0.53
-    926396  X,140.8,159.5,64.0,92,0.53
-    927158  X,141.2,159.5,64.0,92,0.53
-    927900  X,141.2,159.5,64.0,92,0.53
-    928662  X,140.7,159.5,64.0,92,0.53
-    929404  X,140.9,159.5,64.0,92,0.53
-    930166  X,141.1,159.5,64.0,92,0.53
-    930908  X,141.1,159.5,64.0,92,0.53
-    931650  X,141.1,159.5,64.0,92,0.53
-    932412  X,141.0,159.5,64.0,92,0.53
-    933154  X,140.9,159.5,64.0,92,0.53
-    933916  X,140.8,159.5,64.0,92,0.53
-    934658  X,141.0,159.5,64.0,92,0.53
-    935422  X,140.7,159.5,64.0,92,0.53
-    936162  X,140.9,159.5,64.0,92,0.53
-    936923  X,141.3,159.5,64.0,92,0.53
-    937666  X,141.3,159.5,64.0,92,0.53
-    938408  X,140.8,159.5,64.0,92,0.53
-    939169  X,141.0,159.5,64.0,92,0.53
-    939912  X,141.2,159.5,64.0,92,0.53
-    940673  X,141.0,159.5,64.0,92,0.53
-    941416  X,141.2,159.5,64.0,92,0.53
-    942158  X,141.1,159.5,64.0,92,0.53
-    942919  X,140.8,159.5,64.0,92,0.53
-    943662  X,141.0,159.5,64.0,92,0.53
-    944423  X,141.0,159.5,64.0,92,0.53
-    945166  X,141.1,159.5,64.0,92,0.53
-    945908  X,141.1,159.5,64.0,92,0.53
-    946669  X,141.2,159.5,64.0,92,0.53
-    947412  X,141.0,159.5,64.0,92,0.53
-    948174  X,141.2,159.5,64.0,92,0.53
-    948916  X,140.9,159.5,64.0,92,0.53
-    949658  X,141.1,159.5,64.0,92,0.53
-    950419  X,141.0,159.5,64.0,92,0.53
-    951162  X,141.0,159.5,64.0,92,0.53
-    951923  X,140.8,159.5,64.0,92,0.53
-    952666  X,141.1,159.5,64.0,92,0.53
-    953408  X,141.2,159.5,64.0,92,0.53
-    954169  X,141.2,159.5,64.0,92,0.53
-    954913  X,141.1,159.5,64.0,92,0.53
-    955673  X,141.0,159.5,64.0,92,0.53
-    956416  X,141.4,159.5,64.0,92,0.53
-    957158  X,141.1,159.5,64.0,92,0.53
-    957919  X,141.1,159.5,64.0,92,0.53
-    958662  X,141.1,159.5,64.0,92,0.53
-    959404  X,140.8,159.5,64.0,92,0.53
-    960166  X,141.6,159.5,64.0,92,0.53
-    960908  X,141.2,159.5,64.0,92,0.53
-    961669  X,141.0,159.5,64.0,92,0.53
-    962412  X,140.7,159.5,64.0,92,0.53
-    963154  X,140.9,159.5,64.0,92,0.53
-    963916  X,141.3,159.5,64.0,92,0.53
-    964658  X,141.4,159.5,64.0,92,0.53
-    965419  X,140.8,159.5,64.0,92,0.53
-    966162  X,141.4,159.5,64.0,92,0.53
-    966923  X,141.4,159.5,64.0,92,0.53
-    967666  X,141.1,159.5,64.0,92,0.53
-    968408  X,141.4,159.5,64.0,92,0.53
-    969169  X,141.8,159.5,64.0,92,0.53
-    969912  X,141.1,159.5,64.0,92,0.53
-    970673  X,140.9,159.5,64.0,92,0.53
-    971416  X,141.4,159.5,64.0,92,0.53
-    972177  X,141.0,159.5,64.0,92,0.53
-    972920  X,141.2,159.5,64.0,92,0.53
-    973662  X,141.4,159.5,64.0,92,0.53
-    974423  X,141.3,159.5,64.0,92,0.53
-    975185  X,140.7,159.5,64.0,92,0.53
-    975927  X,140.8,159.5,64.0,92,0.53
-    976669  X,140.8,159.5,64.0,92,0.53
-    977431  X,140.9,159.5,64.0,92,0.53
-    978176  X,141.2,159.5,64.0,92,0.53
-    978935  X,141.6,159.5,64.0,92,0.53
-    979677  X,141.6,159.5,64.0,92,0.53
-    980439  X,141.6,159.5,64.0,92,0.53
-    981181  X,141.4,159.5,64.0,92,0.53
-    981923  X,141.5,159.5,64.0,92,0.53
-    982685  X,141.3,159.5,64.0,92,0.53
-    983427  X,141.2,159.5,64.0,92,0.53
-    984189  X,141.2,159.5,64.0,92,0.53
-    984931  X,141.0,159.5,64.0,92,0.53
-    985673  X,140.9,159.5,64.0,92,0.53
-    986435  X,141.0,159.5,64.0,92,0.53
-    987177  X,141.0,159.5,64.0,92,0.53
-    987919  X,141.1,159.5,64.0,92,0.53
-    988681  X,141.1,159.5,64.0,92,0.53
-    989423  X,140.7,159.5,64.0,92,0.53
-    990185  X,141.0,159.5,64.0,92,0.53
-    990927  X,141.1,159.5,64.0,92,0.53
-    991689  X,140.9,159.5,64.0,92,0.53
-    992431  X,140.5,159.5,64.0,92,0.53
-    993173  X,140.8,159.5,64.0,92,0.53
-    993935  X,141.3,159.5,64.0,92,0.53
-    994679  X,140.9,159.5,64.0,92,0.53
-    995439  X,140.8,159.5,64.0,92,0.53
-    996181  X,140.8,159.5,64.0,92,0.53
-    996923  X,141.0,159.5,64.0,92,0.53
-    997686  X,141.2,159.5,64.0,92,0.53
-    998427  X,140.9,159.5,64.0,92,0.53
-    999189  X,141.2,159.5,64.0,92,0.53
-    999931  X,140.7,159.5,64.0,92,0.53
-   1000673  X,141.1,159.5,64.0,92,0.53
-   1001435  X,141.0,159.5,64.0,92,0.53
-   1002177  X,141.4,159.5,64.0,92,0.53
-   1002939  X,141.3,159.5,64.0,92,0.53
-   1003681  X,141.3,159.5,64.0,92,0.53
-   1004423  X,141.5,159.5,64.0,92,0.53
-   1005185  X,141.0,159.5,64.0,92,0.53
-   1005927  X,141.1,159.5,64.0,92,0.53
-   1006689  X,141.3,159.5,64.0,92,0.53
-   1007431  X,141.6,159.5,64.0,92,0.53
-   1008173  X,141.8,159.5,64.0,92,0.53
-   1008935  X,141.4,159.5,64.0,92,0.53
-   1009677  X,141.3,159.5,64.0,92,0.53
-   1010439  X,141.3,159.5,64.0,92,0.53
-   1011181  X,141.4,159.5,64.0,92,0.53
-   1011923  X,141.2,159.5,64.0,92,0.53
-   1012685  X,141.2,159.5,64.0,92,0.53
-   1013447  X,141.6,159.5,64.0,92,0.53
-   1014189  X,141.0,159.5,64.0,92,0.53
-   1014931  X,141.0,159.5,64.0,92,0.53
-   1015693  X,141.0,159.5,64.0,92,0.53
-   1016435  X,141.0,159.5,64.0,92,0.53
-   1017197  X,140.7,159.5,64.0,92,0.53
-   1017939  X,140.4,159.5,64.0,92,0.53
-   1018701  X,141.4,159.5,64.0,92,0.53
-   1019443  X,141.6,159.5,64.0,92,0.53
-   1020185  X,141.6,159.5,64.0,92,0.53
-   1020927  X,141.0,159.5,64.0,92,0.53
-   1021689  X,141.3,159.5,64.0,92,0.53
-   1022451  X,141.0,159.5,64.0,92,0.53
-   1023193  X,141.0,159.5,64.0,92,0.53
-   1023935  X,140.8,159.5,64.0,92,0.53
-   1024677  X,141.1,159.5,64.0,92,0.53
-   1025439  X,141.0,159.5,64.0,92,0.53
-   1026181  X,141.4,159.5,64.0,92,0.53
-   1026943  X,141.5,159.5,64.0,92,0.53
-   1027685  X,141.3,159.5,64.0,92,0.53
-   1028428  X,141.4,159.5,64.0,92,0.53
-   1029189  X,141.4,159.5,64.0,92,0.53
-   1029951  X,141.5,159.5,64.0,92,0.53
-   1030693  X,141.4,159.5,64.0,92,0.53
-   1031435  X,141.6,159.5,64.0,92,0.53
-   1032177  X,141.6,159.5,64.0,92,0.53
-   1032939  X,141.7,159.5,64.0,92,0.53
-   1033681  X,141.3,159.5,64.0,92,0.53
-   1034443  X,141.1,159.5,64.0,92,0.53
-   1035185  X,141.4,159.5,64.0,92,0.53
-   1035927  X,141.6,159.5,64.0,92,0.53
-   1036689  X,141.9,159.5,64.0,92,0.53
-   1037451  X,141.2,159.5,64.0,92,0.53
-   1038193  X,141.4,159.5,64.0,92,0.53
-   1038935  X,141.3,159.5,64.0,92,0.53
-   1039677  X,141.2,159.5,64.0,92,0.53
-   1040439  X,140.9,159.5,64.0,92,0.53
-   1041181  X,141.3,159.5,64.0,92,0.53
-   1041943  X,141.1,159.5,64.0,92,0.53
-   1042687  X,141.3,159.5,64.0,92,0.53
-   1043428  X,140.8,159.5,64.0,92,0.53
-   1044189  X,140.7,159.5,64.0,92,0.53
-   1044931  X,140.5,159.5,64.0,92,0.53
-   1045693  X,140.8,159.5,64.0,92,0.53
-   1046435  X,140.6,159.5,64.0,92,0.53
-   1047177  X,141.0,159.5,64.0,92,0.53
-   1047939  X,140.7,159.5,64.0,92,0.53
-   1048681  X,141.1,159.5,64.0,92,0.53
-   1049443  X,140.7,159.5,64.0,92,0.53
-   1050185  X,141.0,159.5,64.0,92,0.53
-   1050927  X,140.9,159.5,64.0,92,0.53
-   1051689  X,140.8,159.5,64.0,92,0.53
-   1052451  X,141.0,159.5,64.0,92,0.53
-   1053193  X,141.1,159.5,64.0,92,0.53
-   1053935  X,140.9,159.5,64.0,92,0.53
-   1054697  X,140.8,159.5,64.0,92,0.53
-   1055439  X,140.9,159.5,64.0,92,0.53
-   1056181  X,140.5,159.5,64.0,92,0.53
-   1056943  X,140.8,159.5,64.0,92,0.53
-   1057685  X,140.6,159.5,64.0,92,0.53
-   1058447  X,140.9,159.5,64.0,92,0.53
-   1059189  X,141.0,159.5,64.0,92,0.53
-   1059931  X,140.9,159.5,64.0,92,0.53
-   1060693  X,141.1,159.5,64.0,92,0.53
-   1061435  X,141.1,159.5,64.0,92,0.53
-   1062197  X,141.0,159.5,64.0,92,0.53
-   1062939  X,140.7,159.5,64.0,92,0.53
-   1063681  X,140.8,159.5,64.0,92,0.53
-   1064443  X,140.7,159.5,64.0,92,0.53
-   1065185  X,140.9,159.5,64.0,92,0.53
-   1065947  X,140.4,159.5,64.0,92,0.53
-   1066689  X,140.5,159.5,64.0,92,0.53
-   1067451  X,141.2,159.5,64.0,92,0.53
-   1068193  X,141.1,159.5,64.0,92,0.53
-   1068935  X,141.2,159.5,64.0,92,0.53
-   1069697  X,140.9,159.5,64.0,92,0.53
-   1070439  X,140.7,159.5,64.0,92,0.53
-   1071181  X,141.2,159.5,64.0,92,0.53
-   1071943  X,141.2,159.5,64.0,92,0.53
-   1072685  X,141.1,159.5,64.0,92,0.53
-   1073447  X,141.0,159.5,64.0,92,0.53
-   1074189  X,140.9,159.5,64.0,92,0.53
-   1074933  X,140.9,159.5,64.0,92,0.53
-   1075693  X,140.8,159.5,64.0,92,0.53
-   1076435  X,141.3,159.5,64.0,92,0.53
-   1077197  X,141.3,159.5,64.0,92,0.53
-   1077939  X,140.7,159.5,64.0,92,0.53
-   1078701  X,141.0,159.5,64.0,92,0.53
-   1079443  X,141.3,159.5,64.0,92,0.53
-   1080205  X,141.6,159.5,64.0,92,0.53
-   1080947  X,141.4,159.5,64.0,92,0.53
-   1081689  X,141.2,159.5,64.0,92,0.53
-   1082451  X,141.5,159.5,64.0,92,0.53
-   1083193  X,141.2,159.5,64.0,92,0.53
-   1083955  X,142.0,159.5,64.0,92,0.53
-   1084697  X,141.7,159.5,64.0,92,0.53
-   1085458  X,141.2,159.5,64.0,92,0.53
-   1086201  X,141.4,159.5,64.0,92,0.53
-   1086962  X,141.4,159.5,64.0,92,0.53
-   1087705  X,141.4,159.5,64.0,92,0.53
-   1088447  X,141.3,159.5,64.0,92,0.53
-   1089208  X,141.0,159.5,64.0,92,0.53
-   1089970  X,141.1,159.5,64.0,92,0.53
-   1090712  X,141.3,159.5,64.0,92,0.53
-   1091455  X,140.6,159.5,64.0,92,0.53
-   1092216  X,141.3,159.5,64.0,92,0.53
-   1092958  X,141.0,159.5,64.0,92,0.53
-   1093701  X,141.2,159.5,64.0,92,0.53
-   1094462  X,141.6,159.5,64.0,92,0.53
-   1095205  X,141.6,159.5,64.0,92,0.53
-   1095966  X,141.1,159.5,64.0,92,0.53
-   1096708  X,141.2,159.5,64.0,92,0.53
-   1097470  X,141.3,159.5,64.0,92,0.53
-   1098212  X,141.4,159.5,64.0,92,0.53
-   1098955  X,141.1,159.5,64.0,92,0.53
-   1099716  X,141.3,159.5,64.0,92,0.53
-   1100458  X,141.3,159.5,64.0,92,0.53
-   1101201  X,140.9,159.5,64.0,92,0.53
-   1101962  X,141.4,159.5,64.0,92,0.53
-   1102724  X,141.3,159.5,64.0,92,0.53
-   1103466  X,141.5,159.5,64.0,92,0.53
-   1104208  X,141.2,159.5,64.0,92,0.53
-   1104951  X,141.4,159.5,64.0,92,0.53
-   1105712  X,141.4,159.5,64.0,92,0.53
-   1106455  X,141.3,159.5,64.0,92,0.53
-   1107216  X,141.2,159.5,64.0,92,0.53
-   1107958  X,141.3,159.5,64.0,92,0.53
-   1108701  X,141.1,159.5,64.0,92,0.53
-   1109462  X,141.0,159.5,64.0,92,0.53
-   1110205  X,140.8,159.5,64.0,92,0.53
-   1110966  X,140.8,159.5,64.0,92,0.53
-   1111708  X,141.3,159.5,64.0,92,0.53
-   1112470  X,141.1,159.5,64.0,92,0.53
-   1113212  X,141.2,159.5,64.0,92,0.53
-   1113955  X,141.4,159.5,64.0,92,0.53
-   1114716  X,141.1,159.5,64.0,92,0.53
-   1115458  X,141.4,159.5,64.0,92,0.53
-   1116220  X,141.5,159.5,64.0,92,0.53
-   1116962  X,141.3,159.5,64.0,92,0.53
-   1117705  X,141.2,159.5,64.0,92,0.53
-   1118466  X,140.8,159.5,64.0,92,0.53
-   1119208  X,140.8,159.5,64.0,92,0.53
-   1119970  X,141.3,159.5,64.0,92,0.53
-   1120712  X,141.2,159.5,64.0,92,0.53
-   1121455  X,141.1,159.5,64.0,92,0.53
-   1122216  X,141.3,159.5,64.0,92,0.53
-   1122958  X,141.0,159.5,64.0,92,0.53
-   1123720  X,141.2,159.5,64.0,92,0.53
-   1124465  X,141.2,159.5,64.0,92,0.53
-   1125224  X,141.7,159.5,64.0,92,0.53
-   1125966  X,141.6,159.5,64.0,92,0.53
-   1126728  X,141.7,159.5,64.0,92,0.53
-   1127470  X,141.4,159.5,64.0,92,0.53
-   1128212  X,141.5,159.5,64.0,92,0.53
-   1128974  X,141.3,159.5,64.0,92,0.53
-   1129736  X,141.0,159.5,64.0,92,0.53
-   1130478  X,141.4,159.5,64.0,92,0.53
-   1131220  X,141.6,159.5,64.0,92,0.53
-   1131982  X,141.2,159.5,64.0,92,0.53
-   1132724  X,141.1,159.5,64.0,92,0.53
-   1133486  X,141.2,159.5,64.0,92,0.53
-   1134228  X,141.4,159.5,64.0,92,0.53
-   1134990  X,141.5,159.5,64.0,92,0.53
-   1135732  X,141.5,159.5,64.0,92,0.53
-   1136474  X,141.1,159.5,64.0,92,0.53
-   1137236  X,141.2,159.5,64.0,92,0.53
-   1137978  X,140.9,159.5,64.0,92,0.53
-   1138720  X,141.0,159.5,64.0,92,0.53
-   1139465  X,141.2,159.5,64.0,92,0.53
-   1140224  X,141.0,159.5,64.0,92,0.53
-   1140986  X,140.7,159.5,64.0,92,0.53
-   1141728  X,140.4,159.5,64.0,92,0.53
-   1142490  X,140.6,159.5,64.0,92,0.53
-   1143232  X,140.6,159.5,64.0,92,0.53
-   1143994  X,140.7,159.5,64.0,92,0.53
-   1144736  X,140.7,159.5,64.0,92,0.53
-   1145498  X,140.6,159.5,64.0,92,0.53
-   1146240  X,140.4,159.5,64.0,92,0.53
-   1146982  X,140.7,159.5,64.0,92,0.53
-   1147744  X,140.7,159.5,64.0,92,0.53
-   1148486  X,140.9,159.5,64.0,92,0.53
-   1149228  X,140.6,159.5,64.0,92,0.53
-   1149990  X,140.7,159.5,64.0,92,0.53
-   1150751  X,140.7,159.5,64.0,92,0.53
-   1151494  X,140.8,159.5,64.0,92,0.53
-   1152238  X,140.9,159.5,64.0,92,0.53
-   1152998  X,140.2,159.5,64.0,92,0.53
-   1153740  X,140.4,159.5,64.0,92,0.53
-   1154501  X,140.4,159.5,64.0,92,0.53
-   1155244  X,140.2,159.5,64.0,92,0.53
-   1155986  X,140.8,159.5,64.0,92,0.53
-   1156728  X,140.6,159.5,64.0,92,0.53
-   1157490  X,140.3,159.5,64.0,92,0.53
-   1158251  X,140.5,159.5,64.0,92,0.53
-   1158994  X,140.5,159.5,64.0,92,0.53
-   1159736  X,140.8,159.5,64.0,92,0.53
-   1160498  X,140.8,159.5,64.0,92,0.53
-   1161240  X,141.0,159.5,64.0,92,0.53
-   1161982  X,140.6,159.5,64.0,92,0.53
-   1162744  X,140.6,159.5,64.0,92,0.53
-   1163486  X,140.5,159.5,64.0,92,0.53
-   1164228  X,140.6,159.5,64.0,92,0.53
-   1164990  X,141.0,159.5,64.0,92,0.53
-   1165751  X,140.8,159.5,64.0,92,0.53
-   1166494  X,140.9,159.5,64.0,92,0.53
-   1167236  X,141.4,159.5,64.0,92,0.53
-   1167998  X,141.3,159.5,64.0,92,0.53
-   1168740  X,141.2,159.5,64.0,92,0.53
-   1169501  X,141.3,159.5,64.0,92,0.53
-   1170244  X,141.3,159.5,64.0,92,0.53
-   1171005  X,141.0,159.5,64.0,92,0.53
-   1171749  X,141.1,159.5,64.0,92,0.53
-   1172490  X,140.8,159.5,64.0,92,0.53
-   1173251  X,140.9,159.5,64.0,92,0.53
-   1173994  X,140.7,159.5,64.0,92,0.53
-   1174755  X,141.0,159.5,64.0,92,0.53
-   1175498  X,140.9,159.5,64.0,92,0.53
-   1176259  X,141.0,159.5,64.0,92,0.53
-   1177001  X,141.0,159.5,64.0,92,0.53
-   1177763  X,141.2,159.5,64.0,92,0.53
-   1178505  X,141.1,159.5,64.0,92,0.53
-   1179249  X,141.2,159.5,64.0,92,0.53
-   1180009  X,140.8,159.5,64.0,92,0.53
-   1180751  X,140.9,159.5,64.0,92,0.53
-   1181494  X,141.0,159.5,64.0,92,0.53
-   1182255  X,141.2,159.5,64.0,92,0.53
-   1182998  X,141.2,159.5,64.0,92,0.53
-   1183759  X,141.3,159.5,64.0,92,0.53
-   1184501  X,140.8,159.5,64.0,92,0.53
-   1185244  X,141.2,159.5,64.0,92,0.53
-   1186005  X,140.9,159.5,64.0,92,0.53
-   1186767  X,140.8,159.5,64.0,92,0.53
-   1187509  X,141.0,159.5,64.0,92,0.53
-   1188251  X,140.9,159.5,64.0,92,0.53
-   1189013  X,140.8,159.5,64.0,92,0.53
-   1189755  X,140.9,159.5,64.0,92,0.53
-   1190517  X,140.6,159.5,64.0,92,0.53
-   1191259  X,140.6,159.5,64.0,92,0.53
-   1192021  X,141.0,159.5,64.0,92,0.53
-   1192763  X,141.4,159.5,64.0,92,0.53
-   1193525  X,141.5,159.5,64.0,92,0.53
-   1194267  X,140.9,159.5,64.0,92,0.53
-   1195029  X,140.5,159.5,64.0,92,0.53
-   1195771  X,141.0,159.5,64.0,92,0.53
-   1196533  X,140.9,159.5,64.0,92,0.53
-   1197275  X,140.9,159.5,64.0,92,0.53
-   1198037  X,140.9,159.5,64.0,92,0.53
-   1198779  X,140.7,159.5,64.0,92,0.53
-   1199521  X,140.9,159.5,64.0,92,0.53
-   1200284  X,141.2,159.5,64.0,92,0.53
-   1201025  X,140.8,159.5,64.0,92,0.53
-   1201787  X,140.9,159.5,64.0,92,0.53
-   1202529  X,140.9,159.5,64.0,92,0.53
-   1203271  X,140.7,159.5,64.0,92,0.53
-   1204033  X,140.9,159.5,64.0,92,0.53
-   1204775  X,141.2,159.5,64.0,92,0.53
-   1205517  X,141.3,159.5,64.0,92,0.53
-   1206279  X,141.5,159.5,64.0,92,0.53
-   1207021  X,141.3,159.5,64.0,92,0.53
-   1207783  X,141.3,159.5,64.0,92,0.53
-   1208525  X,141.4,159.5,64.0,92,0.53
-   1209267  X,141.0,159.5,64.0,92,0.53
-   1210030  X,141.6,159.5,64.0,92,0.53
-   1210771  X,140.9,159.5,64.0,92,0.53
-   1211533  X,141.1,159.5,64.0,92,0.53
-   1212275  X,141.1,159.5,64.0,92,0.53
-   1213017  X,141.2,159.5,64.0,92,0.53
-   1213779  X,140.7,159.5,64.0,92,0.53
-   1214521  X,141.1,159.5,64.0,92,0.53
-   1215283  X,141.0,159.5,64.0,92,0.53
-   1216025  X,141.2,159.5,64.0,92,0.53
-   1216787  X,141.5,159.5,64.0,92,0.53
-   1217548  X,141.3,159.5,64.0,92,0.53
-   1218291  X,141.6,159.5,64.0,92,0.53
-   1219052  X,141.0,159.5,64.0,92,0.53
-   1219794  X,140.7,159.5,64.0,92,0.53
-   1220556  X,140.9,159.5,64.0,92,0.53
-   1221298  X,140.9,159.5,64.0,92,0.53
-   1222060  X,141.2,159.5,64.0,92,0.53
-   1222802  X,141.2,159.5,64.0,92,0.53
-   1223544  X,141.1,159.5,64.0,92,0.53
-   1224306  X,141.2,159.5,64.0,92,0.53
-   1225048  X,141.0,159.5,64.0,92,0.53
-   1225791  X,140.9,159.5,64.0,92,0.53
-   1226552  X,140.2,159.5,64.0,92,0.53
-   1227294  X,140.7,159.5,64.0,92,0.53
-   1228056  X,141.0,159.5,64.0,92,0.53
-   1228798  X,140.8,159.5,64.0,92,0.53
-   1229560  X,141.5,159.5,64.0,92,0.53
-   1230302  X,141.2,159.5,64.0,92,0.53
-   1231064  X,141.0,159.5,64.0,92,0.53
-   1231806  X,141.0,159.5,64.0,92,0.53
-   1232568  X,141.0,159.5,64.0,92,0.53
-   1233310  X,141.2,159.5,64.0,92,0.53
-   1234072  X,141.0,159.5,64.0,92,0.53
-   1234814  X,141.2,159.5,64.0,92,0.53
-   1235576  X,141.2,159.5,64.0,92,0.53
-   1236318  X,141.1,159.5,64.0,92,0.53
-   1237080  X,141.2,159.5,64.0,92,0.53
-   1237822  X,141.3,159.5,64.0,92,0.53
-   1238564  X,141.1,159.5,64.0,92,0.53
-   1239326  X,141.5,159.5,64.0,92,0.53
-   1240068  X,140.9,159.5,64.0,92,0.53
-   1240811  X,141.0,159.5,64.0,92,0.53
-   1241572  X,141.2,159.5,64.0,92,0.53
-   1242314  X,141.0,159.5,64.0,92,0.53
-   1243056  X,141.0,159.5,64.0,92,0.53
-   1243818  X,140.9,159.5,64.0,92,0.53
-   1244580  X,140.9,159.5,64.0,92,0.53
-   1245322  X,141.1,159.5,64.0,92,0.53
-   1246064  X,141.2,159.5,64.0,92,0.53
-   1246806  X,141.4,159.5,64.0,92,0.53
-   1247568  X,141.2,159.5,64.0,92,0.53
-   1248330  X,141.5,159.5,64.0,92,0.53
-   1249072  X,141.5,159.5,64.0,92,0.53
-   1249814  X,141.2,159.5,64.0,92,0.53
-   1250576  X,141.2,159.5,64.0,92,0.53
-   1251318  X,141.1,159.5,64.0,92,0.53
-   1252060  X,141.2,159.5,64.0,92,0.53
-   1252822  X,141.1,159.5,64.0,92,0.53
-   1253564  X,141.3,159.5,64.0,92,0.53
-   1254326  X,141.3,159.5,64.0,92,0.53
-   1255068  X,141.4,159.5,64.0,92,0.53
-   1255811  X,141.7,159.5,64.0,92,0.53
-   1256572  X,141.5,159.5,64.0,92,0.53
-   1257333  X,141.5,159.5,64.0,92,0.53
-   1258056  X,141.0,159.5,64.0,92,0.53
-   1258818  X,141.1,159.5,64.0,92,0.53
-   1259580  X,141.2,159.5,64.0,92,0.53
-   1260322  X,141.2,159.5,64.0,92,0.53
-   1261083  X,141.3,159.5,64.0,92,0.53
-   1261826  X,140.9,159.5,64.0,92,0.53
-   1262568  X,141.5,159.5,64.0,92,0.53
-   1263330  X,141.2,159.5,64.0,92,0.53
-   1264072  X,141.5,159.5,64.0,92,0.53
-   1264833  X,141.6,159.5,64.0,92,0.53
-   1265576  X,141.3,159.5,64.0,92,0.53
-   1266337  X,141.7,159.5,64.0,92,0.53
-   1267080  X,141.5,159.5,64.0,92,0.53
-   1267822  X,141.3,159.5,64.0,92,0.53
-   1268583  X,141.7,159.5,64.0,92,0.53
-   1269327  X,141.1,159.5,64.0,92,0.53
-   1270068  X,141.1,159.5,64.0,92,0.53
-   1270830  X,141.1,159.5,64.0,92,0.53
-   1271572  X,141.3,159.5,64.0,92,0.53
-   1272333  X,141.3,159.5,64.0,92,0.53
-   1273076  X,141.0,159.5,64.0,92,0.53
-   1273837  X,141.0,159.5,64.0,92,0.53
-   1274580  X,140.8,159.5,64.0,92,0.53
-   1275322  X,140.8,159.5,64.0,92,0.53
-   1276083  X,140.9,159.5,64.0,92,0.53
-   1276845  X,141.0,159.5,64.0,92,0.53
-   1277587  X,141.0,159.5,64.0,92,0.53
-   1278330  X,141.4,159.5,64.0,92,0.53
-   1279091  X,141.0,159.5,64.0,92,0.53
-   1279833  X,141.2,159.5,64.0,92,0.53
-   1280576  X,141.5,159.5,64.0,92,0.53
-   1281337  X,141.0,159.5,64.0,92,0.53
-   1282099  X,140.8,159.5,64.0,92,0.53
-   1282842  X,141.5,159.5,64.0,92,0.53
-   1283583  X,141.4,159.5,64.0,92,0.53
-   1284345  X,141.4,159.5,64.0,92,0.53
-   1285087  X,141.2,159.5,64.0,92,0.53
-   1285849  X,141.1,159.5,64.0,92,0.53
-   1286592  X,141.1,159.5,64.0,92,0.53
-   1287333  X,141.2,159.5,64.0,92,0.53
-   1288095  X,141.3,159.5,64.0,92,0.53
-   1288837  X,141.3,159.5,64.0,92,0.53
-   1289580  X,141.4,159.5,64.0,92,0.53
-   1290341  X,141.0,159.5,64.0,92,0.53
-   1291083  X,141.1,159.5,64.0,92,0.53
-   1291845  X,140.8,159.5,64.0,92,0.53
-   1292587  X,141.1,159.5,64.0,92,0.53
-   1293330  X,141.1,159.5,64.0,92,0.53
-   1294091  X,140.7,159.5,64.0,92,0.53
-   1294833  X,141.2,159.5,64.0,92,0.53
-   1295576  X,140.9,159.5,64.0,92,0.53
-   1296337  X,140.7,159.5,64.0,92,0.53
-   1297080  X,140.8,159.5,64.0,92,0.53
-   1297841  X,140.7,159.5,64.0,92,0.53
-   1298583  X,140.7,159.5,64.0,92,0.53
-   1299345  X,140.8,159.5,64.0,92,0.53
-   1300087  X,140.8,159.5,64.0,92,0.53
-   1300849  X,140.8,159.5,64.0,92,0.53
-   1301592  X,140.2,159.5,64.0,92,0.53
-   1302353  X,140.7,159.5,64.0,92,0.53
-   1303095  X,140.6,159.5,64.0,92,0.53
-   1303837  X,141.1,159.5,64.0,92,0.53
-   1304599  X,140.8,159.5,64.0,92,0.53
-   1305341  X,141.0,159.5,64.0,92,0.53
-   1306083  X,140.5,159.5,64.0,92,0.53
-   1306845  X,140.5,159.5,64.0,92,0.53
-   1307587  X,141.0,159.5,64.0,92,0.53
-   1308349  X,140.8,159.5,64.0,92,0.53
-   1309091  X,140.6,159.5,64.0,92,0.53
-   1309853  X,141.1,159.5,64.0,92,0.53
-   1310595  X,140.9,159.5,64.0,92,0.53
-   1311337  X,141.3,159.5,64.0,92,0.53
-   1312099  X,141.2,159.5,64.0,92,0.53
-   1312861  X,141.0,159.5,64.0,92,0.53
-   1313603  X,141.2,159.5,64.0,92,0.53
-   1314365  X,141.4,159.5,64.0,92,0.53
-   1315107  X,141.6,159.5,64.0,92,0.53
-   1315849  X,141.4,159.5,64.0,92,0.53
-   1316611  X,141.4,159.5,64.0,92,0.53
-   1317353  X,141.1,159.5,64.0,92,0.53
-   1318095  X,141.4,159.5,64.0,92,0.53
-   1318857  X,141.5,159.5,64.0,92,0.53
-   1319599  X,141.6,159.5,64.0,92,0.53
-   1320341  X,141.3,159.5,64.0,92,0.53
-   1321103  X,141.6,159.5,64.0,92,0.53
-   1321845  X,141.8,159.5,64.0,92,0.53
-   1322607  X,141.5,159.5,64.0,92,0.53
-   1323349  X,141.3,159.5,64.0,92,0.53
-   1324091  X,141.7,159.5,64.0,92,0.53
-   1324853  X,141.3,159.5,64.0,92,0.53
-   1325615  X,141.2,159.5,64.0,92,0.53
-   1326357  X,141.9,159.5,64.0,92,0.53
-   1327099  X,141.4,159.5,64.0,92,0.53
-   1327841  X,141.5,159.5,64.0,92,0.53
-   1328603  X,141.4,159.5,64.0,92,0.53
-   1329345  X,141.1,159.5,64.0,92,0.53
-   1330108  X,141.5,159.5,64.0,92,0.53
-   1330849  X,141.4,159.5,64.0,92,0.53
-   1331591  X,141.5,159.5,64.0,92,0.53
-   1332353  X,141.3,159.5,64.0,92,0.53
-   1333115  X,141.2,159.5,64.0,92,0.53
-   1333857  X,141.1,159.5,64.0,92,0.53
-   1334599  X,141.1,159.5,64.0,92,0.53
-   1335361  X,141.3,159.5,64.0,92,0.53
-   1336103  X,141.3,159.5,64.0,92,0.53
-   1336845  X,141.3,159.5,64.0,92,0.53
-   1337607  X,141.4,159.5,64.0,92,0.53
-   1338349  X,141.2,159.5,64.0,92,0.53
-   1339111  X,141.4,159.5,64.0,92,0.53
-   1339853  X,141.2,159.5,64.0,92,0.53
-   1340595  X,141.4,159.5,64.0,92,0.53
-   1341357  X,141.7,159.5,64.0,92,0.53
-   1342099  X,141.4,159.5,64.0,92,0.53
-   1342861  X,141.3,159.5,64.0,92,0.53
-   1343603  X,140.9,159.5,64.0,92,0.53
-   1344345  X,141.3,159.5,64.0,92,0.53
-   1345107  X,141.5,159.5,64.0,92,0.53
-   1345849  X,141.2,159.5,64.0,92,0.53
-   1346611  X,141.0,159.5,64.0,92,0.53
-   1347353  X,141.2,159.5,64.0,92,0.53
-   1348095  X,141.4,159.5,64.0,92,0.53
-   1348857  X,141.9,159.5,64.0,92,0.53
-   1349599  X,141.9,159.5,64.0,92,0.53
-   1350361  X,141.8,159.5,64.0,92,0.53
-   1351103  X,141.7,159.5,64.0,92,0.53
-   1351865  X,141.2,159.5,64.0,92,0.53
-   1352607  X,141.5,159.5,64.0,92,0.53
-   1353349  X,140.9,159.5,64.0,92,0.53
-   1354091  X,141.5,159.5,64.0,92,0.53
-   1354853  X,141.3,159.5,64.0,92,0.53
-   1355595  X,141.8,159.5,64.0,92,0.53
-   1356357  X,141.3,159.5,64.0,92,0.53
-   1357099  X,141.1,159.5,64.0,92,0.53
-   1357841  X,141.3,159.5,64.0,92,0.53
-   1358603  X,141.1,159.5,64.0,92,0.53
-   1359365  X,141.0,159.5,64.0,92,0.53
-   1360107  X,141.1,159.5,64.0,92,0.53
-   1360849  X,140.8,159.5,64.0,92,0.53
-   1361611  X,141.2,159.5,64.0,92,0.53
-   1362353  X,140.9,159.5,64.0,92,0.53
-   1363115  X,140.7,159.5,64.0,92,0.53
-   1363857  X,140.7,159.5,64.0,92,0.53
-   1364599  X,141.5,159.5,64.0,92,0.53
-   1365341  X,140.9,159.5,64.0,92,0.53
-   1366103  X,141.0,159.5,64.0,92,0.53
-   1366845  X,141.0,159.5,64.0,92,0.53
-   1367608  X,141.0,159.5,64.0,92,0.53
-   1368349  X,141.1,159.5,64.0,92,0.53
-   1369111  X,141.4,159.5,64.0,92,0.53
-   1369853  X,141.3,159.5,64.0,92,0.53
-   1370615  X,141.8,159.5,64.0,92,0.53
-   1371357  X,141.3,159.5,64.0,92,0.53
-   1372099  X,141.6,159.5,64.0,92,0.53
-   1372841  X,141.6,159.5,64.0,92,0.53
-   1373603  X,141.8,159.5,64.0,92,0.53
-   1374365  X,141.6,159.5,64.0,92,0.53
-   1375107  X,142.1,159.5,64.0,92,0.53
-   1375849  X,142.2,159.5,64.0,92,0.53
-   1376591  X,141.8,159.5,64.0,92,0.53
-   1377353  X,141.6,159.5,64.0,92,0.53
-   1378115  X,141.1,159.5,64.0,92,0.53
-   1378857  X,141.5,159.5,64.0,92,0.53
-   1379599  X,141.6,159.5,64.0,92,0.53
-   1380361  X,141.6,159.5,64.0,92,0.53
-   1381103  X,141.6,159.5,64.0,92,0.53
-   1381865  X,141.7,159.5,64.0,92,0.53
-   1382607  X,142.0,159.5,64.0,92,0.53
-   1383349  X,141.9,159.5,64.0,92,0.53
-   1384111  X,141.8,159.5,64.0,92,0.53
-   1384853  X,141.9,159.5,64.0,92,0.53
-   1385595  X,141.7,159.5,64.0,92,0.53
-   1386357  X,141.1,159.5,64.0,92,0.53
-   1387099  X,141.5,159.5,64.0,92,0.53
-   1387861  X,141.4,159.5,64.0,92,0.53
-   1388603  X,141.1,159.5,64.0,92,0.53
-   1389345  X,141.3,159.5,64.0,92,0.53
-   1390108  X,141.5,159.5,64.0,92,0.53
-   1390849  X,141.5,159.5,64.0,92,0.53
-   1391611  X,141.4,159.5,64.0,92,0.53
-   1392353  X,141.0,159.5,64.0,92,0.53
-   1393115  X,141.3,159.5,64.0,92,0.53
-   1393857  X,141.1,159.5,64.0,92,0.53
-   1394599  X,140.7,159.5,64.0,92,0.53
-   1395361  X,140.9,159.5,64.0,92,0.53
-   1396103  X,140.8,159.5,64.0,92,0.53
-   1396865  X,140.5,159.5,64.0,92,0.53
-   1397607  X,140.8,159.5,64.0,92,0.53
-   1398349  X,141.2,159.5,64.0,92,0.53
-   1399111  X,141.5,159.5,64.0,92,0.53
-   1399853  X,141.8,159.5,64.0,92,0.53
-   1400595  X,140.9,159.5,64.0,92,0.53
-   1401357  X,141.2,159.5,64.0,92,0.53
-   1402100  X,141.2,159.5,64.0,92,0.53
-   1402861  X,141.2,159.5,64.0,92,0.53
-   1403603  X,141.5,159.5,64.0,92,0.53
-   1404365  X,141.3,159.5,64.0,92,0.53
-   1405107  X,141.2,159.5,64.0,92,0.53
-   1405849  X,141.6,159.5,64.0,92,0.53
-   1406611  X,141.5,159.5,64.0,92,0.53
-   1407353  X,141.3,159.5,64.0,92,0.53
-   1408115  X,141.3,159.5,64.0,92,0.53
-   1408857  X,140.9,159.5,64.0,92,0.53
-   1409599  X,141.4,159.5,64.0,92,0.53
-   1410361  X,141.2,159.5,64.0,92,0.53
-   1411103  X,141.8,159.5,64.0,92,0.53
-   1411865  X,141.4,159.5,64.0,92,0.53
-   1412607  X,141.8,159.5,64.0,92,0.53
-   1413349  X,141.4,159.5,64.0,92,0.53
-   1414111  X,141.6,159.5,64.0,92,0.53
-   1414853  X,141.7,159.5,64.0,92,0.53
-   1415615  X,141.7,159.5,64.0,92,0.53
-   1416357  X,141.5,159.5,64.0,92,0.53
-   1417099  X,141.5,159.5,64.0,92,0.53
-   1417861  X,141.7,159.5,64.0,92,0.53
-   1418603  X,141.6,159.5,64.0,92,0.53
-   1419345  X,141.2,159.5,64.0,92,0.53
-   1419912  X,141.3,159.5,64.0,92,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
    1419912  Q,1,-80.6,49.5,-121.5
    1419912  Q,2,-62.1,41.3,-118.7
    1419912  Q,3,-52.4,38.0,-117.1
@@ -2217,7 +301,7 @@
    1419912  Q,9,-20.2,31.1,-108.7
    1419912  Q,10,-16.5,31.1,-108.1
    1419912  Q,11,-10.5,30.7,-107.7
-   1419912  Q,12,-6.9,30.6,-107.1
+   1419912  Q,12,-5.3,30.7,-107.3
    1419912  Q,13,-4.1,30.3,-106.8
    1419912  Q,14,-1.6,30.2,-105.3
    1419912  Q,15,-0.8,30.5,-106.0
@@ -2228,18 +312,10 @@
    1419912  Q,20,25.3,32.9,-102.2
    1419912  Q,21,30.4,34.1,-102.5
    1419912  Q,22,33.0,35.3,-102.0
-   1419912  Q,23,33.9,35.7,-102.5
-   1419912  Q,24,36.0,36.0,-102.4
-   1419912  Q,25,36.7,36.1,-102.4
+   1419912  Q,23,35.7,36.0,-102.0
+   1419912  Q,24,40.2,37.3,-101.4
+   1419912  Q,25,41.5,37.7,-101.2
    1419912  Q,crank,0.9650,-0.0040,-0.2622,59.4,-1
-   1419912  Q,end,124.8,0.64,24
+   1419912  Q,end,129.9,1.09,14
    1419912  Check: all points fit.
    1419912  F,end,0
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53
-   1419912  X,141.3,159.5,64.0,100,0.53

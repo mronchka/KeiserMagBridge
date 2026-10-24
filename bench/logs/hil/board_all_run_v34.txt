@@ -1,0 +1,22 @@
+B1.json erase: ['E,ok,erased']
+B1.json PASS 124 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B1.json']
+B5.json erase: ['E,ok,erased']
+B5.json PASS 136 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B5.json']
+B12.json erase: ['E,ok,erased']
+B12.json PASS 123 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B12.json']
+P1_press.json erase: ['E,ok,erased']
+P1_press.json PASS 129 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\P1_press.json']
+P5_press_refused.json erase: ['E,ok,erased']
+P5_press_refused.json PASS 156 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\P5_press_refused.json']
+v32b.json.gz erase: ['E,ok,erased']
+v32b.json.gz FAIL 474 s ["  note: the scenario ends mid-calibration and '#I' was refused: send 'x', then '#I'", 'FAIL C:\\Projects\\KeiserMagBridge\\bench\\tests\\..\\logs\\hil\\v32b_erased.json']
+Scenario 2026-10-16_v3_2b.log: 71796 samples, 7 commands, 1403 s; from 2026-10-16_v3_2b.log 0.0-1000000000000.0 s; started from an erased board
+  note: the scenario ends mid-calibration and '#I' was refused: send 'x', then '#I'
+  model vs board on COM3: 95 model lines, 3 board lines, 1 difference(s)
+  replace model[2:95] ['C,1,-80.6,49.5,-121.5', 'W,2,0.9,1.6', 'C,2,-62.1,41.3,-118.7', 'C,3,-42.5,35.0,-114.6', 'N,behind', 'U,2']  |  board[2:3] ['Q,none']
+  model: 33 C, 1 K, 13 W, 8 U, 1 Z, last F: ['F,end,0']
+FAIL C:\Projects\KeiserMagBridge\bench\tests\..\logs\hil\v32b_erased.json
+
+RESULT: hil_replay: 0 of 1 scenario(s) match
+
+RESULT: 5 of 6 scenarios match on the board

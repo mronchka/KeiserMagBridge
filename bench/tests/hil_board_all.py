@@ -2,7 +2,7 @@
 
 Usage: py -3 bench/tests/hil_board_all.py COM3 [--speed 3]
 
-Every scenario starts from an erased board ('x', then '#E'). A scenario with an initial calibration
+Every scenario starts from an erased board in auto-capture mode ('x', '#E', '#A,auto'). A scenario with an initial calibration
 (the v3.2b log) runs from an erased board too, model and board alike: '#P' can't set point 25 or
 clear the down points the previous scenario left, so the board can't be given that calibration exactly.
 Output: bench/logs/hil/<scenario>_board.log and a summary. Exit code 1 if any scenario differs.
@@ -41,7 +41,7 @@ def talk(lines, wait=1.5):
 
 
 results = []
-for name in ("B1.json", "B5.json", "B12.json", "v32b.json.gz"):
+for name in ("B1.json", "B5.json", "B12.json", "P1_press.json", "P5_press_refused.json", "v32b.json.gz"):
     path = os.path.join(HERE, "scenarios", name)
     sc = H.load_scenario(path)
     if sc.get("initial_cal") is not None:
@@ -50,7 +50,8 @@ for name in ("B1.json", "B5.json", "B12.json", "v32b.json.gz"):
         path = os.path.join(LOGS, name.split(".")[0] + "_erased.json")
         with open(path, "w", encoding="utf-8") as fh:
             json.dump(sc, fh)
-    print(name, "erase:", talk(["x", "#E\n"]))
+    # erased, in auto-capture as a freshly started board: the mode survives '#E' (a press scenario sets press itself)
+    print(name, "erase:", talk(["x", "#E\n", "#A,auto\n"]))
     log = os.path.join(LOGS, name.split(".")[0] + "_board.log")
     t0 = time.time()
     r = subprocess.run([sys.executable, os.path.join(HERE, "hil_replay.py"), path, "--port", PORT,
