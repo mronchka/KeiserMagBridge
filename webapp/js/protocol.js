@@ -189,6 +189,8 @@ function onS(p) {
   if (state.behind && (state.behind.step !== s.step || state.behind.pass !== s.pass || cal === 0)) state.behind = null;
   if (state.nstuck && (state.nstuck.step !== s.step || state.nstuck.pass !== s.pass || cal === 0)) state.nstuck = null;
   if (state.overshoot && (state.overshoot.step !== s.step || state.overshoot.pass !== s.pass || cal === 0)) state.overshoot = null;
+  if (state.pressRefused && (state.pressRefused.key !== s.pass + s.step || cal === 0)) state.pressRefused = null;   // [v3.4]
+  if (flags.I) state.pressSentAt = 0;   // [v3.4] the board is measuring: no need to pretend
   // [v3.2] stuck hint: pedalling in the up or down pass, but no turn has counted (stab 0) at this point
   var stallable = state.v32 && !state.learnFailed && (s.pass === 'u' || s.pass === 'd') && cal === 1 && s.pedalling &&
     s.stab === 0 && !flags.B && !flags.M && !flags.O && s.step > 0 && s.step < TOTAL_POINTS - 1 &&
@@ -608,6 +610,26 @@ function onF(p) {
 function onE(p) {
   var kind = (p[1] || '').trim(), text = p.slice(2).join(',').trim();
   var ed = state.edit;
+  // [v3.4] the firmware version (#V) and the capture mode (#A): not edits
+  var vm = kind === 'ok' ? /^v3\.(\d+)$/.exec(text) : null;
+  if (vm) {
+    state.v34 = +vm[1] >= 4; state.vAskedAt = 0;
+    logLine('Firmware ' + text + '.', 'sys');
+    if (state.v34) sendCmd('#A,' + capturePref());
+    render();
+    return true;
+  }
+  if (kind === 'ok' && /^capture,(press|auto)$/.test(text)) {
+    state.captureMode = text.split(',')[1];
+    logLine(state.captureMode === 'press' ? 'Press to capture: tap the circle at each gear.' : 'Auto-capture: each gear saves by itself.', 'sys');
+    render();
+    return true;
+  }
+  if (kind === 'fail' && ((state.vAskedAt && Date.now() - state.vAskedAt < 5000 && /unknown/.test(text)) || text === 'press or auto')) {
+    state.vAskedAt = 0;   // (firmware before v3.4: no press mode; the page carries on as before)
+    logLine('This bridge saves each gear by itself (firmware before v3.4).', 'sys');
+    return true;
+  }
   if (kind === 'ok' && /^(redo|down)$/.test(text)) {
     // the bridge accepted #R / #D and starts it; E,ok,saved and K come when it is done
     if (ed) clearTimeout(ed.timer);
@@ -776,6 +798,22 @@ function onP(p) {
 // [v3.1] N,<reason>: a manual capture was refused
 function onN(p) {
   var r = (p[1] || '').trim();
+  var s0 = state.s, pressOn = !!(s0 && s0.flags.T && state.v3 && !state.learnFailed);
+  if (r === 'press') {
+    // [v3.4] the board took the tap: it measures the next pedal turns at this spot
+    state.pressRefused = null;
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+    render();
+    return true;
+  }
+  if (r === 'notmoved' && pressOn) {
+    // [v3.4] measured where the last gear was saved: say so next to the circle (a second tap saves it anyway)
+    state.pressSentAt = 0;
+    state.pressRefused = { key: s0.pass + s0.step, at: Date.now() };
+    try { if (navigator.vibrate) navigator.vibrate([80, 60, 80]); } catch (e) {}
+    render();
+    return true;
+  }
   if (r === 'notmoved') toast('Not saved: move the lever to the next gear first');
   else if (r === 'noturn') toast('Keep pedalling: no full turn yet');
   else if (r === 'stuck') {

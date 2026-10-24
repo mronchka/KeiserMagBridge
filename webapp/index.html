@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.3-2026-10-18.8';
+  var APP_BUILD = 'v3.4-2026-10-24.1';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.3-2026-10-18.8">
+<link rel="stylesheet" href="css/app.css?v=v3.4-2026-10-24.1">
 </head>
 <body>
 
@@ -338,7 +338,7 @@
     <details class="more-opts" id="calMore">
       <summary>More options</summary>
       <button class="switch-row" id="autoToggle" type="button" role="switch" aria-checked="mixed">
-        <span class="t">Auto-capture</span>
+        <span class="t" id="autoToggleT">Auto-capture</span>
         <span class="switch" aria-hidden="true"></span>
       </button>
       <button class="btn secondary wide" id="saveStored" type="button">Save stored calibration</button>

@@ -15,7 +15,8 @@ var CAL_INTRO = {
   crank: [
     { art: 'pedal', title: 'Keep pedalling', text: 'The bridge reads the gear on every pedal turn, so pedal the whole time at a steady pace.' },
     { art: 'check', title: 'A quick cadence check', text: 'First it learns your pedal stroke. Then check the rpm matches your Keiser console.' },
-    { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear, then hold it. The circle turns green when it’s saved.' },
+    { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear, then hold it. The circle turns green when it’s saved.',
+      textPress: 'Shift up until the console just shows the next gear, then tap the circle. It measures a few pedal turns and turns green when it’s saved.' },
     { art: 'ring', title: 'Bottom to top', text: 'Start with the lever all the way down and work up. It takes a few minutes.' },
     { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, come back down the same way: move the lever down until the console first shows each lower gear. You can finish early.' }
   ],
@@ -26,6 +27,8 @@ var CAL_INTRO = {
   ]
 };
 var onbIdx = 0, onbKey = '';
+// [v3.4] the bridge saves each gear on a tap (press mode), as the rider chose
+function pressPreferred() { return !!state.v34 && capturePref() === 'press'; }
 
 function onbSteps() {
   var known = !!state.s;   // no status line yet (not connected, or just reconnected): assume current firmware
@@ -41,7 +44,7 @@ function renderOnb() {
   var key = (steps === CAL_INTRO.still ? 'still' : 'crank' + steps.length) + '-' + onbIdx;  // the step list switches once the firmware is known (#68)
   if (key !== onbKey) {
     $('onbTitle').textContent = st.title;
-    $('onbText').textContent = st.text;
+    $('onbText').textContent = (pressPreferred() && st.textPress) || st.text;
     onbKey = key;
   }
   var dots = $('onbDots');
@@ -121,6 +124,8 @@ function renderCal() {
   var at = $('autoToggle');
   at.setAttribute('aria-checked', s ? (s.flags.A ? 'true' : 'false') : 'mixed');
   at.disabled = !connected;
+  var atText = state.v34 ? 'Save each gear by itself (no tap)' : 'Auto-capture';   // [v3.4] off = tap the circle
+  if ($('autoToggleT').textContent !== atText) $('autoToggleT').textContent = atText;
 
   setHidden('pointsCard', (state.points.length === 0 && state.downPoints.length === 0 && !active) || checkRun);
   // focused screen while a calibration step is on: no tab bar, the (x) Calibrate Undo bar
@@ -162,6 +167,14 @@ function renderCal() {
   renderPointCheck(checking, s);
   if (paused || sweeping) setHidden('holdBanner', true);
   var holdNote = !$('holdBanner').hidden;   // "Hold the lever still": the circle says the same
+  // [v3.4] press to capture (flag T): the circle is the button. I = measuring after a tap;
+  // until the board says so, a tap shows "Measuring…" for a moment.
+  var pressOn = crankMode && !!s.flags.T;
+  var pressMode = pressOn && s.cal === 1 && !learning && !confirming && !sweeping && !checking;
+  var pkey = s.pass + s.step;
+  var pressing = pressMode && (!!s.flags.I || (!!state.pressSentAt && now - state.pressSentAt < PRESS_WAIT_MS && state.pressKey === pkey));
+  var refused = pressMode && !pressing && !!state.pressRefused && state.pressRefused.key === pkey;
+  var topStep = v32 && step >= TOTAL_POINTS - 1 && !down && !redoing;   // (worked out by itself)
 
   // disc look: learn | confirm | grey | blue | green | amber
   var look, head, sub;
@@ -198,9 +211,12 @@ function renderCal() {
     look = 'amber';
     head = 'Keep pedalling';
     sub = 'The gear is read on every pedal turn';
-  } else if (!mustPass && (s.cal === 2 || stab > 0)) {
+  } else if (!mustPass && (s.cal === 2 || stab > 0 || pressing)) {
     look = 'blue';
-    if (crankMode) {
+    if (pressMode || (pressOn && s.cal === 2)) {
+      head = 'Measuring…';
+      sub = s.cal === 2 ? 'Saving…' : 'Keep pedalling, lever still';
+    } else if (crankMode) {
       head = 'Hold it there';
       if (s.cal === 2) sub = 'Saving…';
       else if (v32) {
@@ -240,6 +256,10 @@ function renderCal() {
     else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
     else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Move the lever until the console FIRST shows ' + n + ', then hold'; }
     else { head = 'Shift up to ' + n; sub = 'Stop the lever as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
+    if (pressMode && !mustPass && !topStep) {
+      sub = step === 0 && !down && !redoing ? 'Keep pedalling, then tap the circle'
+        : 'Keep pedalling. When the console shows ' + pGear + ', tap the circle';
+    }
   }
   $('calHead').textContent = head;
   $('calSub').textContent = sub;
@@ -259,6 +279,11 @@ function renderCal() {
       : down
         ? '<b>Gear ' + pGear + ' was saved a little too far down.</b> Shift UP into gear ' + (pGear + 1) + ', then back down to where the console first shows gear ' + pGear + '.'
         : '<b>Gear ' + pGear + ' was saved a little too far up.</b> Shift DOWN into gear ' + (pGear - 1) + ', then back up to where the console first shows gear ' + pGear + '.';
+  } else if (refused) {
+    // [v3.4] N,notmoved after a tap: the turns sat where the gear before was saved
+    var before = down || pass === 'rd' ? pGear + 1 : pGear - 1;
+    bt = '<b>That’s where gear ' + before + ' was saved.</b> Move the lever on a little, then tap again. ' +
+      'If the console already shows gear ' + pGear + ', tap again to save it here.';
   } else if (state.nstuck && state.nstuck.step === s.step && state.nstuck.pass === s.pass && !checking) {
     // [v3.3] N,stuck: the reading stays put although turns agree
     var upDir = !(down || pass === 'rd');
@@ -273,7 +298,9 @@ function renderCal() {
     // gear before the target can be 24 or 23.
     var on = down ? pGear + 1 : pGear - 1;
     var onTxt = down && step >= DOWN_FIRST_STEP ? (TOTAL_POINTS - 1) + ' or ' + on : String(on);
-    bt = '<b>Still on gear ' + onTxt + '?</b> Move ' + dirWord + ' until the console first shows gear ' + pGear +
+    bt = pressMode
+      ? '<b>Waiting for your tap.</b> When the console shows gear ' + pGear + ', tap the circle.'   // [v3.4] nothing saves by itself
+      : '<b>Still on gear ' + onTxt + '?</b> Move ' + dirWord + ' until the console first shows gear ' + pGear +
       '. If it already shows ' + pGear + ', ease back ' + (down ? 'up' : 'down') + ' into gear ' + on + '.';
   }
   setHidden('behindHint', !bt);
@@ -281,12 +308,23 @@ function renderCal() {
 
   // disc
   $('disc').className = 'disc' + (look === 'blue' ? ' blue' : look === 'green' ? ' green' : look === 'amber' ? ' amber' : look === 'learn' ? ' learn' : look === 'paused' ? ' paused' : '') +
-    ((flash || bFlash) && look === 'green' ? ' pop' : '') + (mustPass && look === 'grey' ? ' back' : '');
+    ((flash || bFlash) && look === 'green' ? ' pop' : '') + (mustPass && look === 'grey' ? ' back' : '') +
+    (pressMode && !mustPass && !topStep && look === 'grey' ? ' press' : '');
+  // [v3.4] where a tap counts: waiting at a gear, measuring (a new tap starts again), paused
+  // (also during "Got it": a quick tap for the next gear counts, as on the board)
+  state.discTap = pressMode && !mustPass && !topStep && connected && (look === 'grey' || look === 'blue' || look === 'paused' || look === 'green');
+  var disc = $('disc');
+  if (state.discTap) {
+    disc.setAttribute('role', 'button'); disc.tabIndex = 0;
+    disc.setAttribute('aria-label', 'Tap when the console shows gear ' + pGear);
+  } else if (disc.getAttribute('role')) { disc.removeAttribute('role'); disc.removeAttribute('tabindex'); disc.removeAttribute('aria-label'); }
   var showNum = look !== 'learn' && (look !== 'green' || bFlash);
   setHidden('discNum', !showNum);
   setHidden('discCheck', look !== 'green' || bFlash);
   setHidden('discCrank', look !== 'learn');
-  setHidden('discTurns', look !== 'learn');
+  var tapHint = state.discTap && look === 'grey';
+  setHidden('discTurns', look !== 'learn' && !tapHint);
+  if (tapHint && $('discTurns').textContent !== 'Tap to save') $('discTurns').textContent = 'Tap to save';
   if (showNum) {
     if (confirming) {
       $('discLbl').textContent = 'RPM';
@@ -413,7 +451,7 @@ function renderCal() {
   $('btnConfirm').disabled = !connected;
   $('btnRelearn').disabled = !connected;
   $('calActive').classList.toggle('checking', checking);
-  setHidden('btnCapture', noPoint || checking);
+  setHidden('btnCapture', noPoint || checking || pressOn);   // [v3.4] the circle is the button
   setHidden('btnUndo', noPoint || checking || redoing);
   // [v3.2] down pass: save what's measured and skip the rest (s), with a second-tap confirm
   setHidden('btnSkipDown', !(down && !checking && (s.cal === 1 || s.cal === 2)));
@@ -427,7 +465,11 @@ function renderCal() {
   cap.disabled = !connected || s.cal !== 1 || (auto && stab < 67) || stopped || mustPass;
   // Undo: at the first down point it goes back to up point 24 (the board allows it).
   // Not at the first point of a down pass resumed with #D (the board doesn't go back into the up pass there).
-  $('btnUndo').disabled = !connected || s.cal !== 1 || (!down && step === 0) || (down && step === state.downResumeStep);
+  $('btnUndo').disabled = !connected || s.cal !== 1 || (!s.flags.I && ((!down && step === 0) || (down && step === state.downResumeStep)));
+  var undoText = pressOn && s.flags.I ? 'UNDO TAP' : 'UNDO';   // [v3.4] u while measuring: the tap is cancelled, the point stays
+  if ($('btnUndo').textContent !== undoText) $('btnUndo').textContent = undoText;
+  var topUndoText = pressOn && s.flags.I ? 'Undo tap' : 'Undo';
+  if ($('topUndo').textContent !== topUndoText) $('topUndo').textContent = topUndoText;
   $('btnCancel').disabled = !connected;
   setHidden('topUndo', $('btnUndo').hidden);
   $('topUndo').disabled = $('btnUndo').disabled;

@@ -330,6 +330,12 @@ main {
   transition: transform .35s cubic-bezier(.22, 1, .36, 1);
 }
 .disc.pop { transform: scale(1.06); }
+/* [v3.4] press to capture: the circle is a button */
+.disc[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.disc[role="button"]:active { transform: scale(.97); }
+.disc[role="button"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 50%; }
+.disc.press .face { stroke: var(--accent); stroke-width: 4; }
+.disc.press .turns { color: var(--accent); font-size: min(.95rem, 7cqw); margin-top: 3cqw; }   /* (scales with the circle) */
 .disc > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .disc .face { fill: var(--surface); stroke: var(--line); stroke-width: 3; transition: fill .3s, stroke .3s; }
 .disc .arc { fill: none; stroke: var(--surface2); stroke-width: 8; stroke-linecap: round; transition: stroke .25s; }

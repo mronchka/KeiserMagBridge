@@ -230,6 +230,7 @@ function setConn(c, msg, isErr) {
       state.v31 = false;
       state.v32 = false;
       state.v33 = false; state.newerLines = 0; state.bWas = null;
+      state.v34 = false; state.captureMode = ''; state.pressSentAt = 0; state.pressRefused = null;   // [v3.4] asked again (#V)
       // [v3.3] the board keeps its placement stream across a drop ('v' toggles it): the first
       // status line after reconnecting decides (onFlowStatus)
       if (was === 'connected' && hadS) state.placeWas = !!state.place;

@@ -12,7 +12,7 @@ function check(name, ok, detail) {
 }
 
 (async function main() {
-  const app = loadApp({ search: '?demo=1&v3=1&fast=1&review=1&rest=1&nstuck=1' });
+  const app = loadApp({ search: '?demo=1&v3=1&v33=1&fast=1&review=1&rest=1&nstuck=1' });
   const M3 = app.M3, st = M3.state, $ = app.$;
   const crumb = () => ($('crumbs').hidden ? '' : $('crumbT').textContent);
   async function until(cond, maxSec, stepSec) {

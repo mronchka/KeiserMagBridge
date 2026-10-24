@@ -85,6 +85,20 @@ Web Bluetooth only works on secure pages: `https://`, or `http://localhost` on a
 
 If the connection drops, tap **Reconnect**. If it drops during a diagnostic run, reconnect and tap **Download recording**.
 
+### Press to capture (firmware v3.4)
+
+On each connection the page asks the bridge's firmware version (`#V`). A v3.4 bridge (`E,ok,v3.4`) is then set to the rider's choice of capture mode (`#A,press` or `#A,auto`). The default is press; older bridges answer `E,fail` and carry on saving each gear by itself.
+
+In press mode (flag `T`), the circle is the button on the up pass, the down pass and redos:
+
+- **Waiting:** the circle has a blue edge and "Tap to save". The line under it says "When the console shows N, tap the circle". Nothing saves by itself, and after 10 s without a tap the note says "Waiting for your tap".
+- **A tap** sends `n`. The circle shows "Measuring…" at once, and the board's `I` flag keeps it there for the 2–3 pedal turns it measures. Then "Got it", as before. A tap during "Got it" counts for the next gear.
+- **Too early** (`N,notmoved`, the turns sat where the gear before was saved): the note says so. A second tap saves it anyway, for gears that sit close together.
+- **Undo tap** (`u` while measuring) cancels the measurement. The saved points stay.
+- **Not tappable:** during a go-back (flag `B`, "GO TO") or a pause, and when the top is worked out by itself.
+
+"More options" has the switch "Save each gear by itself (no tap)". It is kept on this phone (`m3bridge.capture`) and sent on every connection. The simulator is a v3.4 bridge by default (`&v33=1` for v3.3); a tap before the simulated rider has reached the gear is refused once.
+
 ## Saved runs and export
 
 Calibrations and diagnostic recordings are kept in this browser's storage on the phone (up to about 4 MB; when it is full the oldest are removed and the page says so). They are listed under **Saved runs** at the bottom of the Diagnose tab. Each one has:
@@ -155,4 +169,5 @@ Extra options, added after `?demo=1`:
 `bench/tests/app_harness/harness.js` runs this page's scripts in node (the `<head>` script, then the files the loader lists) (a small DOM stub, a virtual clock, writes captured), so board lines go through the same parser as on the phone.
 
 - `node bench/tests/app_harness/replay_v32b.js [log] [--page file]`: replays a real board log (default `bench/logs/2026-10-16_v3_2b.log`) and checks that the guided redo starts after `F,end` and that the down-pass dots turn blue. `--page` runs an older copy of the page (e.g. from `git show`).
-- `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.
+- `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator (`&v33=1`) through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.
+- `node bench/tests/app_harness/demo_v34_press.js`: a v3.4 bridge in press mode. It checks `#V` / `#A,press`, the tappable circle, Measuring…, a tap too early and the second tap, Undo tap, nothing saving by itself, the switch back to auto, and a v3.3 bridge refusing `#V` quietly.

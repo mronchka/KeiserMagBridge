@@ -46,6 +46,8 @@ function onFlowStatus(s, prevCal, prevFlow) {
     state.placeCheck = false;
     // the board's USB log notes which phone page is connected (older pages never send this)
     if (state.conn === 'connected') sendCmd('#J,page,' + APP_BUILD);
+    // [v3.4] which firmware: E,ok,v3.4 (or later) means press to capture; older bridges answer E,fail
+    if (state.conn === 'connected') { state.vAskedAt = Date.now(); sendCmd('#V'); }
     if (state.wantReadback && state.result && state.result.ok && s.cal === 0 && state.conn === 'connected') {
       state.wantReadback = false; state.qFromEdit = true;
       requestStoredCal();

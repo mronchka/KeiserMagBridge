@@ -35,6 +35,11 @@ var DEMO_V32ONLY = params.get('v32') === '1';         // demo: v3.2 instead of v
 if (DEMO_V31 || DEMO_V32ONLY) DEMO_V3 = true;
 var DEMO_V32 = DEMO_V3 && !DEMO_V31;                  // demo: v3.2 features (also part of v3.3)
 var DEMO_V33 = DEMO_V32 && !DEMO_V32ONLY;             // demo: &v3=1 simulates v3.3 by default
+var DEMO_V34 = DEMO_V33 && params.get('v33') !== '1'; // demo: v3.4 (press to capture) by default; &v33=1 = v3.3
+// [v3.4] how each gear point is saved: 'press' (tap the circle; the default) or 'auto' (by itself)
+var CAPTURE_KEY = 'm3bridge.capture';
+function capturePref() { try { return localStorage.getItem(CAPTURE_KEY) === 'auto' ? 'auto' : 'press'; } catch (e) { return 'press'; } }
+function setCapturePref(m) { try { localStorage.setItem(CAPTURE_KEY, m); } catch (e) {} }
 var DEMO_NSTUCK = params.get('nstuck') === '1';       // demo v3.3: N,stuck once at point 5
 var DEMO_REST = params.get('rest') === '1';           // demo v3.3: short pedalling breaks while calibrating (flag O)
 var DEMO_REVIEW = params.get('review') === '1';       // demo v3.2: the check flags up point 20 and down point 23 after saving
@@ -65,6 +70,7 @@ var DOWN_FIRST_STEP = 22;
 var DOWN_POINTS = 22;
 var UNCAL_HOLD_MS = 2000;    // once calibrated was seen, "Not calibrated" needs 2 s of uncalibrated S lines
 var EDIT_TIMEOUT_MS = 8000;  // [v3.2] no E line after a # command: give up waiting
+var PRESS_WAIT_MS = 2500;    // [v3.4] after a tap on the circle: "Measuring…" until the board's I flag (or N,press) says so
 var STALL_MS = 10000;        // [v3.2] pedalling but no turn counted at a point this long: the "still on gear N?" hint
 var FIX_MAX_TRIES = 2;       // [v3.2] guided fixes: redos per flagged point before offering the guess or skip
 var S_FLAGS_RE = /^[A-Z]*$/;

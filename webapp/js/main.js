@@ -74,7 +74,23 @@ $('btnConfirm').addEventListener('click', function () {
   send('n');
 });
 $('btnRelearn').addEventListener('click', function () { send('l'); });
-$('autoToggle').addEventListener('click', function () { send('a'); });
+$('autoToggle').addEventListener('click', function () {
+  // [v3.4] the rider's choice is kept on this phone and sent on every connection (#A)
+  if (state.v34) { var m = state.s && state.s.flags.A ? 'press' : 'auto'; setCapturePref(m); sendCmd('#A,' + m); return; }
+  send('a');
+});
+// [v3.4] press to capture: a tap on the circle (or Enter / Space on it) is the press
+function pressDisc() {
+  if (!state.discTap || !state.s) return;
+  if (Date.now() - (state.pressSentAt || 0) < 600) return;   // (a double tap is one press)
+  state.pressSentAt = Date.now(); state.pressKey = state.s.pass + state.s.step;
+  send('n');
+  render();
+}
+$('disc').addEventListener('click', pressDisc);
+$('disc').addEventListener('keydown', function (ev) {
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pressDisc(); }
+});
 
 var cancelArmedUntil = 0, cancelTimer = 0;
 function disarmCancel() {

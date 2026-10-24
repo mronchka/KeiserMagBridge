@@ -26,6 +26,9 @@ function Simulator(startCalibrated) {
   var cmdBuf = null;           // '#...' command being received, up to \n
   // [v3.3] flow step (S field 15), pause, sweep, placement stream
   var flowStep = 0, stillTicks = 0, sweepT = 0, xOn = false, placeT = 0, noiseN = 0, nstuckSent = false;
+  // [v3.4] press to capture (#A,press): nothing saves until n; a tap before the rider got there
+  // (still moving to the gear) measures the previous spot: N,notmoved, and a second tap saves anyway
+  var press = false, pressArmed = false, pressEarly = false, pressRefused = false, crankOk = !!startCalibrated;
 
   // A plausible calibration path: 25 points, total ~146 µT, smallest step 3.8 µT at gear 6.
   var PATH = (function () {
@@ -182,11 +185,13 @@ function Simulator(startCalibrated) {
           if (learnFails > 0) {
             learnFails--;
             out('L,0,6,' + Math.round(cad) + ',6.1,dip too shallow');
+            crankOk = false;
             out('Crank magnet not detected well enough. Send l to try again.');
             cal = 1; step = 0; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
             if (DEMO_V33) flowStep = 4;   // the hold-still method: the gear step
           } else {
             out('L,1,6,' + Math.round(cad) + ',58.0,ok');
+            crankOk = true;
             out('Crank learned. Check that the cadence matches the Keiser console.');
             cal = 4; stab = 100;
           }
@@ -265,6 +270,8 @@ function Simulator(startCalibrated) {
     if (sat) flags += 'S';
     if (hold && calValid) flags += 'H';
     if (auto) flags += 'A';
+    if (press) flags += 'T';                                   // [v3.4] press to capture
+    if (press && pressArmed && cal === 1) flags += 'I';         // [v3.4] measuring after a press
     if (mflag && cal !== 0) flags += 'M';
     if (recording) flags += 'G';
     if (dumping) flags += 'Y';
@@ -295,7 +302,7 @@ function Simulator(startCalibrated) {
     }
   }
 
-  function beginCapture() { cal = 2; capT = 2; if (DEMO_V32) stab = 100; }
+  function beginCapture() { cal = 2; capT = 2; if (DEMO_V32) stab = 100; pressArmed = false; pressRefused = false; }
 
   // [v3] one detected pedal turn
   function onTurn(period) {
@@ -333,11 +340,19 @@ function Simulator(startCalibrated) {
         return;
       }
       if (Date.now() < backUntil) { agree = 0; stab = 0; return; }
+      if (press && crankOk && !pressArmed) { agree = 0; stab = 0; return; }   // [v3.4] nothing counts before a press
       var need = DEMO_V32 ? 2 : 3;   // [v3.2] 2 agreeing turns, then the check turn
+      if (press && crankOk && pressEarly && !pressRefused && agree + 1 >= need) {
+        // [v3.4] the tap came while the rider was still at the previous gear
+        pressArmed = false; pressEarly = false; pressRefused = true; agree = 0; stab = 0;
+        out('N,notmoved');
+        out('Move the lever a little further, then press.');
+        return;
+      }
       if (agree < need) {
         agree++;
         stab = DEMO_V32 ? [0, 34, 67][agree] : [0, 34, 68, 100][agree];
-      } else if (auto) {
+      } else if (auto || (press && pressArmed)) {
         // [v3.1] one more turn at stab 100: did the lever really stop?
         var stuckHere = DEMO_STUCK && step === 5 && !stuckDone;
         if (wPlan[step] === undefined) wPlan[step] = DEMO_SUSPECT && step > 0 && step % 4 === 3 ? 1 + (step % 8 === 3 ? 1 : 0) : 0;
@@ -385,6 +400,7 @@ function Simulator(startCalibrated) {
   }
 
   function capturePoint() {
+    pressArmed = false; pressEarly = false; pressRefused = false;   // [v3.4] (also "capture anyway" at cal 5)
     if (DEMO_V32 && (passName === 'd' || passName === 'rd')) {
       // [v3.2] down point step+1: coming down to gear step
       var dp = step + 1;
@@ -469,6 +485,14 @@ function Simulator(startCalibrated) {
       startDown();
       return;
     }
+    if (k === 'V' && DEMO_V34) { out('E,ok,v3.4'); return; }   // [v3.4]
+    if (k === 'A' && DEMO_V34) {
+      if (a[1] === 'press') { press = true; auto = false; pressArmed = false; }
+      else if (a[1] === 'auto') { press = false; auto = true; pressArmed = false; }
+      else { out('E,fail,press or auto'); return; }
+      out('E,ok,capture,' + (press ? 'press' : 'auto'));
+      return;
+    }
     if (k === 'X') { out('E,ok,cleared'); return; }
     if (k === 'P') { out('E,ok,staged'); return; }
     if (k === 'W') { out('E,ok,saved'); out('K,1,146.0,3.8,6,saved'); sendF(); return; }
@@ -550,7 +574,15 @@ function Simulator(startCalibrated) {
             : 'Cadence confirmed: keep pedalling through all 25 points.');
           break;
         }
-        if (redoInfo && Date.now() < redoInfo.bUntil) { out('Not captured: go past the gear first.'); break; }
+        if (redoInfo && Date.now() < redoInfo.bUntil) { out('Not captured: go past the gear first.'); if (press) out('N,notmoved'); break; }
+        if (cal === 1 && press && crankOk) {
+          // [v3.4] a press: measure the next turns at this spot (a press while measuring starts again)
+          if (Date.now() < backUntil) { out('N,notmoved'); break; }
+          pressArmed = true; pressEarly = phase === 'move' && step > 0; agree = 0; stab = 0; mflag = false;
+          out('N,press');
+          out('Measuring the next pedal turns...');
+          break;
+        }
         if (cal === 1) {
           // [v3.1] manual captures get the same checks as auto-capture
           if (step > 0 && phase === 'move') { out('Not captured: the lever has not moved from the previous point.'); out('N,notmoved'); break; }
@@ -566,6 +598,8 @@ function Simulator(startCalibrated) {
         break;
       case 'u':
         if (cal === 0) { out('Not calibrating.'); break; }
+        if (press && pressArmed && cal === 1) { pressArmed = false; pressEarly = false; agree = 0; stab = 0; out('Press cancelled.'); break; }   // [v3.4]
+        pressRefused = false;
         if (passName === 'ru' || passName === 'rd') { out('Nothing to undo in a redo. x = cancel.'); break; }
         if (cal === 7) {
           passName = 'u'; step = TOTAL_POINTS - 2; cal = 1; flowStep = 4; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
@@ -631,6 +665,7 @@ function Simulator(startCalibrated) {
         out('Placement stream ' + (xOn ? 'ON' : 'OFF') + '.');
         break;
       case 'a':
+        if (press) { press = false; pressArmed = false; auto = true; out('Auto-capture ON.'); break; }   // [v3.4] leaves press mode
         auto = !auto;
         out('Auto-capture ' + (auto ? 'ON' : 'OFF') + '.');
         if (auto && cal === 1 && stab >= 100) beginCapture();
