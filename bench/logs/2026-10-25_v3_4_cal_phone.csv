@@ -1,0 +1,38 @@
+# Keiser M3 Bridge calibration
+# record: calibration
+# source: calibration run
+# timestamp: 2026-10-25T14:58:52.060Z
+# page_build: v3.4-2026-10-24.1
+# result: saved
+# span_uT: 172.4
+# minstep_uT: 1.6
+# minstep_at_gear: 24
+# message: saF,u,3,offpath,25.9,-F,d,3,offpath,20.0,-F,u,4,pair,49.8,-49.9,-181.4 (read back incomplete: 22 of 25 points on this phone)
+# points: 22 of 25
+# edit: redo of gear 4 (going up)
+# labels: point 1 = lever all the way down (Bottom); points 2-24 = where the console first shows that gear; point 25 = lever all the way up (Top)
+# point_stats: u20 w=1
+# down_points: 17 of 22 (down point N = coming down, where the console first shows gear N-1; empty when not measured)
+point,label,x_uT,y_uT,z_uT,dist_prev_uT,down_x_uT,down_y_uT,down_z_uT
+1,Bottom,-13.6,-50.3,-208.9,,,,
+2,Gear 2,16.6,-51.8,-199.8,31.58,3.4,-51.3,-199.4
+3,Gear 3,41.2,-54.5,-192.5,25.80,26.7,-52.1,-192.2
+5,Gear 5,56.5,-48.0,-178.4,,,,
+6,Gear 6,59.4,-45.5,-176.4,4.32,54.3,-47.5,-178.5
+7,Gear 7,65.6,-45.6,-176.6,6.20,57.6,-46.5,-177.2
+8,Gear 8,69.5,-44.8,-174.0,4.75,61.4,-45.1,-175.2
+9,Gear 9,74.1,-42.5,-171.4,5.76,67.2,-42.9,-173.1
+10,Gear 10,76.8,-40.9,-169.0,3.95,69.6,-41.5,-171.1
+12,Gear 12,84.2,-35.9,-163.7,,,,
+13,Gear 13,84.3,-33.5,-162.7,2.60,79.8,-35.4,-165.3
+14,Gear 14,87.3,-30.7,-160.5,4.66,,,
+15,Gear 15,91.9,-26.8,-156.5,7.24,86.9,-28.7,-159.5
+16,Gear 16,93.8,-23.6,-154.8,4.09,89.2,-26.8,-157.5
+17,Gear 17,95.1,-21.2,-152.4,3.63,91.3,-23.5,-154.2
+18,Gear 18,96.7,-18.1,-149.8,4.35,93.3,-20.5,-151.3
+19,Gear 19,97.4,-15.4,-146.9,4.02,96.2,-17.8,-148.9
+20,Gear 20,97.6,-11.7,-144.0,4.71,,,
+21,Gear 21,97.3,-7.1,-141.0,5.50,94.7,-10.1,-143.5
+22,Gear 22,97.0,-2.8,-139.2,4.67,95.9,-7.7,-141.8
+24,Gear 24,95.6,2.5,-134.1,,,,
+25,Top,95.4,3.5,-133.0,1.50,,,
