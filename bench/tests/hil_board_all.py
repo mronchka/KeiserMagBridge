@@ -41,7 +41,7 @@ def talk(lines, wait=1.5):
 
 
 results = []
-for name in ("B1.json", "B5.json", "B12.json", "P1_press.json", "P5_press_refused.json", "v32b.json.gz"):
+for name in ("B1.json", "B5.json", "B12.json", "P1_press.json", "P5_press_refused.json", "G1_gear_redo.json", "v32b.json.gz"):
     path = os.path.join(HERE, "scenarios", name)
     sc = H.load_scenario(path)
     if sc.get("initial_cal") is not None:

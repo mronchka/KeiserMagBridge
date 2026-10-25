@@ -2,7 +2,7 @@
 
 Usage: py -3 bench/tests/test_v34_press.py [--quick]
 
-  P0  commands: '#V' -> E,ok,v3.4; '#A,press' / '#A,auto' -> E,ok,capture,<mode>; flags T / A; 'a' leaves press
+  P0  commands: '#V' -> E,ok,v3.5; '#A,press' / '#A,auto' -> E,ok,capture,<mode>; flags T / A; 'a' leaves press
   P1  press mode, normal riders at 55/75/90 rpm: 24 up + 22 down, in order, accurate, no go-back, no undo, few flags
   P2  press mode: every saved point follows a press (N,press) for that point; nothing saved by itself
   P3  press mode: flag I from the press until the point is saved
@@ -61,8 +61,8 @@ print("P0. Commands")
 f = fw.Firmware()
 API.line(f, "V")
 API.line(f, "A,press")
-ck.check(("E,ok,v3.4" in [l for _, l in f.out]) and ("E,ok,capture,press" in [l for _, l in f.out]),
-         "P0 '#V' -> E,ok,v3.4 and '#A,press' -> E,ok,capture,press")
+ck.check(("E,ok,v3.5" in [l for _, l in f.out]) and ("E,ok,capture,press" in [l for _, l in f.out]),
+         "P0 '#V' -> E,ok,v3.5 and '#A,press' -> E,ok,capture,press")
 fl = f.flags()
 ck.check("T" in fl and "A" not in fl, f"P0 press mode: flag T, no A ({fl})")
 API.line(f, "A,auto")

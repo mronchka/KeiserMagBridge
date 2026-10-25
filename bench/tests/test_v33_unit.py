@@ -368,7 +368,7 @@ else:
 # ====================================================================== A4
 print("\nA4. Calibration file v4 / v5 / v6: byte layouts as in the sketch")
 SK32 = os.path.join(ROOT, "KeiserMagBridge_v3_2", "KeiserMagBridge_v3_2.ino")
-SK33 = os.path.join(ROOT, "KeiserMagBridge_v3_4", "KeiserMagBridge_v3_4.ino")   # v3.4: same CalData (v6)
+SK33 = os.path.join(ROOT, "KeiserMagBridge_v3_5", "KeiserMagBridge_v3_5.ino")   # v3.5: same CalData (v6)
 if not os.path.exists(SK33):
     SK33 = os.path.join(ROOT, "KeiserMagBridge_v3_3", "KeiserMagBridge_v3_3.ino")
 CTYPES = {"uint32_t": ("I", 4), "int32_t": ("i", 4), "uint16_t": ("H", 2), "int16_t": ("h", 2),

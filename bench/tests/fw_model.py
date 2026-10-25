@@ -1,4 +1,4 @@
-"""Host model of KeiserMagBridge_v3_4.ino (v3.3 + press to capture; sample pipeline, crank learning,
+"""Host model of KeiserMagBridge_v3_5.ino (v3.3 + press to capture + whole-gear redo by taps; sample pipeline, crank learning,
 turn detector, survey, calibration state machine, tolerances, the check,
 pause, power, Zwift packet, '#' line input, calibration file layouts).
 
@@ -379,6 +379,9 @@ class Firmware:
         self.pressMode = False           # v3.4: '#A,press'
         self.pressArmed = False          # pressed: measuring this point
         self.pressRefused = False        # the last press measured the previous point: the next one saves anyway
+        self.gearRedo = 0                # v3.5 (#87): the gear being redone by taps (0: none)
+        self.gearStage = 0               # 1 below, 2 up edge, 3 above, 4 down edge
+        self.phoneText = True            # v3.5 '#H'
         self.stabRef = [0.0, 0.0, 0.0]
         self.stabSince = 0
         self.stabPct = 0
@@ -942,6 +945,7 @@ class Firmware:
 
     def cal_abort(self, why):
         fixing = self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN)
+        self.gearRedo = self.gearStage = 0
         self.backGate = False
         self.calState = CAL_IDLE
         self.calPass = PASS_UP
@@ -1136,7 +1140,86 @@ class Firmware:
         self.log("E,ok,down")
         self.cal_down_begin(i, True)
 
+    # ------------------------------------------------------------- v3.5: whole-gear redo by taps (#87)
+    def pressing(self):
+        return self.pressMode or self.gearRedo != 0
+
+    def gear_stage_set(self, st):                                     # gearStageSet()
+        g = self.gearRedo
+        self.gearStage = st
+        up = st <= 2
+        self.calPass = PASS_FIX_UP if up else PASS_FIX_DOWN
+        self.calStep = g - 1 if up else g
+        self.fixArmed = st in (2, 4)
+        self.calRedo = False
+        self.calState = CAL_WAITING
+        self.lastTurnMs = self.millis()
+        self.paused = False
+        self.cal_prompt()
+
+    def cal_gear_redo_start(self, g):                                 # calGearRedoStart()
+        if self.calState != CAL_IDLE:
+            return self.log("E,fail,busy calibrating")
+        if not self.calValid or not self.cal.get("crankOk") or not self.crank["ok"]:
+            return self.log("E,fail,needs a saved calibration made while pedalling")
+        if not 1 <= g <= NUM_GEARS:
+            return self.log("E,fail,no such gear")
+        self.calRaw = [list(x) for x in self.cal["pts"]]
+        self.calDown = [list(x) for x in self.cal["down"]]
+        self.calDownMask = self.cal["downMask"]
+        self.staging = False
+        self.calFromBle = self.cmdSrc == "ble"
+        self.spotKind = SPOT_SAME
+        self.expUp, self.expDown, self.expDownMask = None, None, 0
+        self.derive_tolerances(from_cal=True)
+        self.gearRedo = g
+        self.log("E,ok,redo")
+        self.gear_stage_set(3 if g == 1 else 1)
+
+    def gear_ref_turn(self, avg):                                     # gearRefTurn()
+        if not self.pressArmed:
+            self.stabPct = 0
+            return
+        if len(self.turnHist) == 2:
+            self.turnHist = self.turnHist[1:]
+        self.turnHist.append(list(avg))
+        if len(self.turnHist) < 2 or dist3(self.turnHist[0], self.turnHist[1]) > self.tol["agree"]:
+            self.stabPct = 34
+            return
+        m = self.turn_hist_mean()
+        r, _ = self.locate(self.calRaw, m)                             # along the up points, not the riding path
+        g = self.gearRedo
+        there = r < GEAR_EDGES[g - 1] if self.gearStage == 1 else r > GEAR_EDGES[g]
+        self.pressArmed = False
+        self.turnHist = []
+        self.stabPct = 0
+        if not there:
+            return self.log("N,notmoved")
+        self.gear_stage_set(self.gearStage + 1)
+
+    def gear_redo_store(self, b):                                     # gearRedoStore()
+        g = self.gearRedo
+        if self.gearStage == 2:
+            self.calRaw[self.calStep] = list(b)
+            self.log("C,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.captures.append((self.millis(), ('ru', self.calStep), list(b)))
+            if g <= DOWN_FIRST:
+                self.beep("capture")
+                return self.gear_stage_set(3)
+        else:
+            self.calDown[self.calStep] = list(b)
+            self.calDownMask |= 1 << self.calStep
+            self.log("C,down,%d,%.1f,%.1f,%.1f" % (self.calStep + 1, b[0], b[1], b[2]))
+            self.captures.append((self.millis(), ('rd', self.calStep), list(b)))
+        self.gearRedo = self.gearStage = 0
+        self.calState = CAL_IDLE
+        self.calPass = PASS_UP
+        self.paused = False
+        self.cal_commit(self.calRaw, self.calDown, self.calDownMask, COMMIT_EDIT)
+
     def cal_fix_store(self, b):                                       # calFixStore()
+        if self.gearRedo:
+            return self.gear_redo_store(b)
         down = self.calPass == PASS_FIX_DOWN
         self.calState = CAL_IDLE
         self.calPass = PASS_UP
@@ -1459,6 +1542,8 @@ class Firmware:
             if not self.settleTurns and x <= min(SETTLE_MAX_FRAC * self.settleStep, max(SETTLE_MAX_UT, 4 * self.tol["noise"])):
                 self.settle_add(x)                                     # (more than that: the rider moved)
         fixing = self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN)
+        if self.gearRedo and self.gearStage in (1, 3):                 # v3.5 (#87)
+            return self.gear_ref_turn(avg)
         if (fixing or (self.calPass == PASS_DOWN and self.downGate)) and not self.cal_fix_gate(avg):
             return
         if self.backGate and not self.cal_back_gate(avg):
@@ -1483,8 +1568,8 @@ class Firmware:
             if not suspect:
                 n = len(self.turnHist)
                 m = [(self.pendingMean[k] * n + avg[k]) / (n + 1) for k in range(3)]
-                if dist3(avg, self.pendingMean) <= t["agree"] and (self.cal_moved_on(m, False, manual=self.pressMode)
-                                                                   or (self.pressMode and self.pressRefused and self.lastDist >= STEP_REJECT_UT)):
+                if dist3(avg, self.pendingMean) <= t["agree"] and (self.cal_moved_on(m, False, manual=self.pressing())
+                                                                   or (self.pressing() and self.pressRefused and self.lastDist >= STEP_REJECT_UT)):
                     self.stabPct = 100
                     h = self.turnHist
                     if len(h) == 2:                                    # 3 held turns: refine the noise
@@ -1514,19 +1599,19 @@ class Firmware:
         moved = self.cal_moved_on(mean, len(self.turnHist) >= 2)
         if self.behindNow and self.calPass in (PASS_UP, PASS_DOWN) and self.cal_back_up():
             return
-        if self.pressMode and not self.pressArmed:                   # v3.4: nothing counts before a press
+        if self.pressing() and not self.pressArmed:                  # v3.4: nothing counts before a press
             self.stabPct = 0
             return
-        if self.pressMode:
+        if self.pressing():
             moved = (len(self.turnHist) < 2 or self.cal_moved_on(mean, False, manual=True)
                      or (self.pressRefused and self.lastDist >= STEP_REJECT_UT))   # never two points the same
         self.stabPct = (67 if len(self.turnHist) >= 2 else 34) if moved else 0
-        if self.pressMode and not moved:                               # measured at the previous point: not saved
+        if self.pressing() and not moved:                              # measured at the previous point: not saved
             self.pressArmed = False
             self.pressRefused = True                                   # a second press here saves it anyway
             self.log("N,notmoved")
             return
-        if moved and (self.autoCapture or self.pressMode) and len(self.turnHist) == 2:
+        if moved and (self.autoCapture or self.pressing()) and len(self.turnHist) == 2:
             self.pendingMean = list(mean)
             self.pendingDir = self.cal_travel_dir(mean)
             self.pendingFirst = list(self.turnHist[0])
@@ -1546,14 +1631,20 @@ class Firmware:
         if self.calState != CAL_WAITING:
             return
         if self.crank["ok"]:
-            if not self.turnHist and not self.pressMode:
+            if self.gearRedo and self.gearStage in (1, 3):         # v3.5: "I'm in the gear below / above"
+                self.pressArmed = True
+                self.turnHist = []
+                self.pendingCap = False
+                self.stabPct = 0
+                return self.log("N,press")
+            if not self.turnHist and not self.pressing():
                 self.log("N,noturn")
                 return
             if ((self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN) or (self.calPass == PASS_DOWN and self.downGate))
                     and not self.fixArmed) or self.backGate or self.backRising:
                 self.log("N,notmoved")
                 return
-            if self.pressMode:                                         # measure from the next turns
+            if self.pressing():                                        # measure from the next turns
                 self.pressArmed = True
                 self.turnHist = []
                 self.pendingCap = False
@@ -1576,6 +1667,20 @@ class Firmware:
         if self.calState not in (CAL_POINT_CHECK, CAL_DOWN_READY, CAL_WAITING):
             return
         self.settleTurns = 0
+        if self.gearRedo:                                              # v3.5: a whole-gear redo
+            if self.calState == CAL_WAITING and self.pressArmed:      # the tap being measured: cancelled
+                self.pressArmed = False
+                self.turnHist = []
+                self.pendingCap = False
+                self.stabPct = 0
+                return
+            first = 3 if self.gearRedo == 1 else 1
+            if self.calState == CAL_WAITING and self.gearStage == first:
+                return
+            back = max(first, self.gearStage - 1)
+            self.log(("U,%d" % (self.gearRedo - 1)) if back <= 2 else ("U,%d,d" % self.gearRedo))
+            self.beep("undo")
+            return self.gear_stage_set(back)
         if self.calState == CAL_POINT_CHECK:
             self.backUpOk = False                                      # the rider is going back on purpose
             self.calState = CAL_WAITING
@@ -2153,6 +2258,8 @@ class Firmware:
         point = atoi(f[2]) if len(f) > 2 else 0
         pass_ok = ps in ("u", "d")
         n = len(f)
+        if cmd == "R" and n == 3 and ps == "g":                         # v3.5 (#87): a whole gear by taps
+            return self.cal_gear_redo_start(point)
         if cmd == "R" and n == 3 and pass_ok:
             return self.cal_fix_start(ps == "d", point)
         if cmd == "G" and n == 3 and pass_ok:
@@ -2209,8 +2316,11 @@ class Firmware:
             else:
                 return self.log("E,fail,press or auto")
             return self.log("E,ok,capture," + ("press" if self.pressMode else "auto"))
-        if cmd == "V" and n == 1:                                       # version (v3.4)
-            return self.log("E,ok,v3.4")
+        if cmd == "V" and n == 1:                                       # version
+            return self.log("E,ok,v3.5")
+        if cmd == "H" and n == 2 and f[1] in ("0", "1"):                # v3.5: human text to the phone
+            self.phoneText = f[1] == "1"
+            return self.log("E,ok,text," + ("on" if self.phoneText else "off"))
         if cmd == "E" and n == 1:                                       # erase the calibration (USB only)
             if self.cmdSrc != "usb":
                 return self.log("E,fail,usb only")
@@ -2486,14 +2596,14 @@ class Firmware:
             s += "A"
         if self.pressMode:
             s += "T"                                                   # v3.4: press to capture
-            if self.pressArmed and self.calState == CAL_WAITING:
-                s += "I"                                               # measuring after a press
+        if self.pressing() and self.pressArmed and self.calState == CAL_WAITING:
+            s += "I"                                                   # measuring after a press
         if self.pedalling():
             s += "R"
         if self.settleSince and self.calState == CAL_WAITING:
             s += "M"
         fixing = self.calPass in (PASS_FIX_UP, PASS_FIX_DOWN) or (self.calPass == PASS_DOWN and self.downGate)
-        if self.calState == CAL_WAITING and ((fixing and not self.fixArmed) or self.backGate):
+        if self.calState == CAL_WAITING and not self.gearRedo and ((fixing and not self.fixArmed) or self.backGate):
             s += "B"
         if self.paused:
             s += "O"
@@ -2502,6 +2612,8 @@ class Firmware:
     def pass_name(self):                                               # printStatus() pass field
         if self.calState == CAL_IDLE:
             return "-"
+        if self.gearRedo:
+            return "g%d" % self.gearStage                              # v3.5 (#87)
         if self.calState == CAL_SURVEY and self.survPhase != SURV_NOISE:
             return "su" if self.survPhase == SURV_UP else "sd"
         return {PASS_UP: "u", PASS_DOWN: "d", PASS_FIX_UP: "ru", PASS_FIX_DOWN: "rd"}[self.calPass]
@@ -2509,7 +2621,8 @@ class Firmware:
     def status_fields(self):                                           # printStatus()
         ps = self.pass_name()
         return dict(gear=self.stableGear if self.calValid else 0, res=self.resistance, watts=self.powerW,
-                    cad=self.cadenceRpm, cal=self.calState, point=self.calStep, calStep=self.calStep,
+                    cad=self.cadenceRpm, cal=self.calState, point=self.gearRedo - 1 if self.gearRedo else self.calStep,
+                    calStep=self.calStep,
                     stab=self.stabPct, off=self.offPath, flags=self.flags(),
                     lturns=self.learnLast["turns"] if self.calState == CAL_LEARN else 0, pass_=ps,
                     step=self.step_no, steps=STEPS_TOTAL)
