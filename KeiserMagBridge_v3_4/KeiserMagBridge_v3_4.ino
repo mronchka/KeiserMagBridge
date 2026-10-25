@@ -3,6 +3,12 @@
  * -------------------------------------------------------------------------
  * Passive, zero-solder Bluetooth power bridge for a Keiser M3 indoor bike.
  *
+ * v3.4.1 (issue #91): Bluetooth lines are sent whole or not at all. A piece
+ *     the link can't take yet is retried (bounded) instead of being dropped,
+ *     which glued half lines together on the phone; status lines are skipped
+ *     whole when the link is behind. '#V' still answers E,ok,v3.4 (the page
+ *     only accepts E,ok,v3.<n>).
+ *
  * v3.4 changes (bench/PROTOCOL.md "v3.4 additions"; issues #5, #6, #8):
  *   - Press to capture: '#A,press' puts the gear points under the rider's
  *     control. Nothing is saved by itself; a press ('n', button A, the
@@ -755,15 +761,44 @@ class DualLog : public Print {
   // The default link (no configPrphBandwidth) carries at most 20 bytes per
   // notification and the library cuts longer writes at 23 bytes, so send the
   // buffered line in 20-byte pieces.
+  //
+  // v3.4.1 (issue #91): a piece waits at most 100 ms in the library for a free
+  // notification slot; on a slow link (or in a burst) write() returned 0 and the
+  // piece was lost, so the phone glued half lines together. Now whole lines or
+  // nothing:
+  //   - the first piece of a status (S) or placement (X) line gets one try: if
+  //     the link is behind, the whole line is skipped (the next one, 250 ms
+  //     later, carries the same news) and nothing half-sent reaches the phone;
+  //   - the first piece of any other line waits up to BLE_FIRST_WAIT_MS;
+  //   - once a line has started, each further piece waits up to BLE_PIECE_WAIT_MS.
+  // A disconnect ends the wait at once. 'p' shows the counts.
   void sendLocked(uint16_t conn) {
     if (n_ && bleuart.notifyEnabled(conn)) {
+      bool periodic = n_ > 1 && buf_[1] == ',' && (buf_[0] == 'S' || buf_[0] == 'X');
       for (size_t i = 0; i < n_; i += 20) {
-        bleuart.write(conn, buf_ + i, min(n_ - i, (size_t)20));
+        uint32_t t0 = millis();
+        uint32_t limit = i == 0 ? (periodic ? 0 : BLE_FIRST_WAIT_MS) : BLE_PIECE_WAIT_MS;
+        while (!bleuart.write(conn, buf_ + i, min(n_ - i, (size_t)20))) {   // each try waits <= 100 ms
+          watchdogFeed();
+          if (!bleuart.notifyEnabled(conn) || millis() - t0 >= limit) {   // gone, or waited long enough
+            if (i == 0) skipped++; else cut++;
+            n_ = 0;
+            return;
+          }
+        }
         watchdogFeed();                          // 'k' / 'p' can take several seconds on a slow link
       }
     }
     n_ = 0;
   }
+
+ public:
+  uint32_t skipped = 0;                          // whole lines not sent: the link was behind
+  uint32_t cut = 0;                              // lines that started but couldn't finish (rare)
+
+ private:
+  static const uint32_t BLE_FIRST_WAIT_MS = 3000;   // a C / K / F / Q / E ... line waits its turn
+  static const uint32_t BLE_PIECE_WAIT_MS = 1000;   // the rest of a line already started
   SemaphoreHandle_t mutex_ = nullptr;
   uint8_t buf_[160];
   size_t  n_ = 0;
@@ -1037,6 +1072,10 @@ static bool printCalibrationLine(int pos) {
     case 4:
       Log.printf("  off-path hold %.1f, span >= %.1f, step warn %.2f / reject %.2f, fold %.2f, same spot %.2f\n",
                  tol.offHold, tol.minSpan, tol.stepWarn, tol.stepReject, tol.fold, tol.sameSpot);
+      return true;
+    case 5:                                       // v3.4.1: lines the phone didn't get (issue #91)
+      Log.printf("Bluetooth to the phone since power-up: %lu status lines skipped, %lu lines cut short.\n",
+                 (unsigned long)Log.skipped, (unsigned long)Log.cut);
       return true;
     default:
       return false;
@@ -4004,7 +4043,7 @@ void setup() {
   pinMode(PIN_BUTTON1, INPUT_PULLUP);
   Log.begin();
 
-  Log.println(F("\nKeiser M3 magnetometer bridge v3.4"));
+  Log.println(F("\nKeiser M3 magnetometer bridge v3.4.1"));
 
   if (!lis3mdl.begin_I2C()) {
     Log.println(F("LIS3MDL not found. Is this a CLUE or Feather nRF52840 Sense?"));

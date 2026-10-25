@@ -533,6 +533,25 @@ So, while `cal` is 1 in press mode:
   - **Why:** before, 8 agreeing turns since before the rider shifted, and a move of the noise floor, were enough. That saved gear 1 again as point 2 on the bike.
 - **Board text:** the prompt's last line in press mode reads "When the console shows it, press button A or send 'n': it measures the next pedal turns."
 
+### Bluetooth delivery (v3.4.1, issue #91)
+
+**Lines reach the phone whole or not at all.** Before v3.4.1, a 20-byte piece that the link couldn't take within the library's 100 ms was dropped, and the page glued half lines together (`K,1,172.4,1.60,24,saF,u,3,...`). Now:
+
+- **`S` and `X` lines** get one try at their first piece. When the link is behind, the whole line is skipped; the next one comes 250 ms later.
+- **Every other line** waits up to 3 s for its first piece and up to 1 s for each further piece, so a readback (`k`) arrives complete. It just takes as long as the link needs.
+- **On a disconnect** the wait ends at once.
+- **`p` ends with a count:** `Bluetooth to the phone since power-up: <n> status lines skipped, <m> lines cut short.` A cut-short line would end without its tail. That should only happen when the phone disconnects mid-line.
+- **`#V` still answers `E,ok,v3.4`.** The page accepts only `E,ok,v3.<n>`; the banner says v3.4.1.
+
+**Measured from a Windows PC (one piece every ~180 ms):**
+
+| | Before | After |
+|---|---|---|
+| Readback (`k`) intact | 1 of 49 lines, 8 s | 49 of 49 lines, 28 s |
+| Glued lines | most | 0 |
+
+An iPhone link (about 30 ms) should be several times faster.
+
 ### Not changed
 
 - `C`, `C,down`, `K`, `Q`, `U`, `W`, `P`, `F`, `E,ok,redo`, `E,ok,down`, `E,ok,saved`;
