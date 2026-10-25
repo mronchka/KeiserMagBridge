@@ -533,7 +533,7 @@ So, while `cal` is 1 in press mode:
   - **Why:** before, 8 agreeing turns since before the rider shifted, and a move of the noise floor, were enough. That saved gear 1 again as point 2 on the bike.
 - **Board text:** the prompt's last line in press mode reads "When the console shows it, press button A or send 'n': it measures the next pedal turns."
 
-### Bluetooth delivery (v3.4.1, issue #91)
+### Bluetooth delivery (v3.4.1, issue #91; replaced by the v3.5 mailbox, below)
 
 **Lines reach the phone whole or not at all.** Before v3.4.1, a 20-byte piece that the link couldn't take within the library's 100 ms was dropped, and the page glued half lines together (`K,1,172.4,1.60,24,saF,u,3,...`). Now:
 
@@ -558,6 +558,66 @@ An iPhone link (about 30 ms) should be several times faster.
 - the `S` field count;
 - `cal` values;
 - the stored format (still v6).
+
+## v3.5 additions [v3.5]
+
+Firmware `KeiserMagBridge_v3_5/` (issues #87, #91, #92). `#V` answers `E,ok,v3.5`. Every v3.4 line keeps its shape, and the page in use today works unchanged.
+
+### Redo a whole gear by taps (`#R,g,<gear>`, issue #87)
+
+A guided redo of both edges of one gear. The rider's taps replace the board's go-past gate (flag `B`).
+
+| Stage | `pass` | `step` | The rider | The board, on the tap (`n` → `N,press`, flag `I`) |
+|---|---|---|---|---|
+| 1 | `g1` | gear − 1 | Shift down into gear g−1, tap | Two agreeing turns must sit below up point g. If not: `N,notmoved`, stays at `g1`. |
+| 2 | `g2` | gear − 1 | Shift up to where the console first shows gear g, tap | Measures up point g as a press does (2 agreeing turns + the check turn, `W` if still moving). `C,<g>,…` |
+| 3 | `g3` | gear − 1 | Shift up into gear g+1, tap | Two agreeing turns must sit above up point g+1. If not: `N,notmoved`, stays at `g3`. |
+| 4 | `g4` | gear − 1 | Shift down to where the console first shows gear g again, tap | Measures down point g+1. `C,down,<g+1>,…` |
+
+- **Saving:** both points are saved together after stage 4: `E,ok,saved`, `K`, then the `F` list, once. While the redo runs, the stored calibration is unchanged.
+- **The ends:**
+  - **Gear 1:** starts at `g3` and has only stages 3–4 (down point 2).
+  - **Gears 23 and 24:** only stages 1–2 (up point 23 or 24). Saving after stage 2 moves the worked-out top as usual.
+- **Replies:** `E,ok,redo` at the start; `E,fail,no such gear` for a gear outside 1–24; `E,fail,busy calibrating`; `E,fail,needs a saved calibration made while pedalling`.
+- **During the redo:**
+  - **Status:** `cal` is 1 (5 if a point can't settle, as now). `stepNo` is 6, and the `step` field is gear − 1 at every stage. Flag `I` shows while a tap is measuring; flag `B` never shows.
+  - **Taps:** a gear redo always goes by taps, whatever the capture mode (`#A`).
+- **What the references are measured against:** the up points, not the riding path, which runs through the middle of the console's up/down sticking, about half a gear lower.
+- **`x`** cancels, and the stored calibration stays unchanged (`A,cancelled by user`, as a redo does now).
+- **`u`:**
+  - while a tap is measuring, it cancels that tap (no line; `I` clears);
+  - between stages, it goes back one stage (`U,<g−1>` for stages 1–2, `U,<g>,d` for 3–4);
+  - at the first stage, nothing.
+- **`#R,u|d,<point>`** is unchanged.
+
+### Bluetooth: the mailbox (issues #91, #92)
+
+This replaces v3.4.1's retry. The phone's copy of the console goes through a queue, sent by its own task.
+
+- **Status (`S`):** only the newest line is kept. It's sent when anything the page shows changes, at most every 250 ms, and otherwise once a second. Resistance and off-path count as a change only when they move by 1 or more, because they jitter in the last digit.
+- **Every other line** is queued whole and never dropped while the phone is connected. A line is only taken off the queue once all its 20-byte pieces have gone, so nothing arrives half-sent.
+- **Paced output** (`k`, `p`, the check's `F` list, the recording dump `D`) waits for room in the queue, so a long readback goes out at the link's pace.
+- **Status during a long readback** still goes out between queued lines at least once a second.
+- **When the phone connects or disconnects,** the queue is emptied. The page reads the state again when it connects.
+- **The main loop never waits on Bluetooth.**
+- **`p` ends with** `Bluetooth to the phone since power-up: <n> lines dropped (queue full).` That should stay 0; a line is only dropped if the queue stays full for a whole second.
+
+**Measured from a Windows PC** (one piece every ~180 ms, much slower than an iPhone):
+
+| | v3.4 | v3.5 |
+|---|---|---|
+| Status lines while idle | 4 a second | 7 in 10 s |
+| Readback | 1 of 49 lines intact | 49 of 49, 0 glued, 31 s; status never more than 1.4 s apart |
+| Burst (`k`, `p`, `k` ×3) | mostly glued | 0 malformed, 0 glued, 0 dropped |
+
+### Human-readable text to the phone (`#H`)
+
+```
+#H,0   -> E,ok,text,off   only machine lines (S C K A U Q G M Y D L N W P F E X Z J T) go to the phone
+#H,1   -> E,ok,text,on    everything again (the default, and set again at every new connection)
+```
+
+USB always gets everything. The page can turn the text off except while its Console tab is open: about 10% of the phone traffic in the 10-17 calibration was text the page never reads.
 
 ## Beeps on the board (CLUE speaker)
 
