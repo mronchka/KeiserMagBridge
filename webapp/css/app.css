@@ -140,11 +140,9 @@ body.calfocus #calActive:has(#confirmBtns:not([hidden])) .cal-btns { margin-top:
 /* whatever else is showing, the circle gives up that much room (so the buttons stay on screen) */
 /* (each one's real height at 393 px wide, where its text takes two lines, plus the 10 px gap) */
 #calActive:has(#btnSkipDown:not([hidden])) { --sx1: 54px; }
-#calActive:has(#holdBanner:not([hidden])) { --sx2: 92px; }
-#calActive:has(#behindHint:not([hidden])) { --sx3: 90px; }
-#calActive:has(#redoBanner:not([hidden])) { --sx4: 92px; }
-/* with a notice up, "stop any time" makes way (two notices at once still fit) */
-#calActive:has(#holdBanner:not([hidden]), #behindHint:not([hidden]), #redoBanner:not([hidden])) #stopNote { display: none; }
+/* #88: notes take the count's place under the circle (.cal-foot), so nothing else resizes the circle */
+.cal-foot { min-height: 3.4rem; }
+.cal-foot:has(#behindHint:not([hidden])) #calCount, .cal-foot:has(#behindHint:not([hidden])) #stopNote { display: none; }
 body.calfocus .place-btns, body.calfocus #upSaved .btn-stack { margin-top: auto; }
 .place-btns { display: flex; flex-direction: column; gap: 2px; }
 body.calfocus .place { flex: 1; }
@@ -352,6 +350,9 @@ main {
   container-type: inline-size;
 }
 .disc-in .lbl { font-size: .8rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
+/* the label sits centred over the number (its box is the number's width), its letter-spacing balanced */
+#discNum { text-align: center; }
+.disc-in .lbl { text-indent: .14em; }
 .disc-in .big { font-size: 88px; font-size: 39cqw; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .disc.blue .lbl { color: var(--accent-ink); }
 .disc.green .lbl, .disc.green .big { color: var(--ok-ink); }
@@ -402,11 +403,8 @@ main {
 .stage .pt.down { background: var(--accent); }
 .stage .pt.ring { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
 /* [v3.2] N,behind: the agreeing turns sit behind the previous point */
-.behind-hint {
-  border: 2px solid var(--warn); background: var(--warn-bg); border-radius: 14px;
-  padding: 8px 14px; font-size: .92rem; font-weight: 600; line-height: 1.35; text-align: center;
-}
-.behind-hint b { color: var(--warn); }
+.behind-hint { color: var(--warn); padding: 0 16px; font-size: .95rem; font-weight: 600; line-height: 1.35; text-align: center; }   /* #88: a line, not a box */
+.behind-hint b { color: inherit; }
 .cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 44px; font-size: 1rem; background: transparent; color: var(--accent); font-weight: 500; }
 .cal-btns .btn.skipdown.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
 #calActive.redoing .cal-btns .btn.danger { grid-column: 1 / -1; }

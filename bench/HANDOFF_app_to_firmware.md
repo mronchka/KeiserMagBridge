@@ -144,3 +144,58 @@ The page only needs to know which way the board or magnet should face. I'll ask 
 3. **Any change to the acks or to what `x`/`s`/`u` do** in the new states.
 
 I'll update the page, the simulator and the harness tests, publish to the preview, and the rider tests the pair together. Nothing goes to `main` (the live phone page) without the rider's OK.
+
+---
+
+## Update 2026-10-25: redo a gear by taps (issue #87; #11 phase 2 with #8)
+
+**The rider, after redoing gears on the bike with v3.4:** in a redo the bridge decides by itself when the reading has been in the gear below (or above), using flag `B` and the go-past gate. It can take a while of sitting in that other gear before the board lets the rider move on, and a tap before then is refused (`N,notmoved`). The rider wants taps there too. To redo gear 5:
+
+1. go down to gear 4, **tap**;
+2. go up to gear 5, **tap**: measures up point 5 (where gear 5 starts going up);
+3. go up to gear 6, **tap**;
+4. come back down to gear 5, **tap**: measures down point 6 (where gear 5 starts coming down).
+
+Both edges of the gear come out of one guided pass, and the taps replace the gate.
+
+**What the page needs (names are suggestions):**
+- **A whole-gear redo**, for example `#R,g,<gear>`, accepted in press mode, answered `E,ok,redo` as now.
+- **Its four stages readable from `S`:** for example `pass` = `g1` (tap in the gear below), `g2` (tap in the gear: up edge), `g3` (tap in the gear above), `g4` (tap back in the gear: down edge), with `step` = gear − 1. `cal` stays 1 (2 while saving), and the pass name fits the page's 1–3 lowercase letters.
+- **Each tap** is `n` → `N,press`, with flag `I` while measuring.
+  - **Stages 1 and 3 (references):** the measured turns only need to sit behind or beyond the point being redone (below up point g; above up point g+1, or past the new point by your margin). If they don't, `N,notmoved`, and the rider taps again once in the right gear. No timed gate and no flag `B`: the tap is the rider saying "I'm there".
+  - **Stages 2 and 4:** measure the point as a press does now (2 agreeing turns + the check turn, `W` if still moving, `N,notmoved` if it sits on the reference spot), then move to the next stage.
+- **The ends:**
+  - **Gear 1:** has no gear below and no up edge to redo. Only stages 3–4 (tap in gear 2, tap back in gear 1: down point 2).
+  - **Gears 23 and 24:** have no down point above them. Only stages 1–2 (gear 23: up point 23; gear 24: up point 24, which also moves the worked-out top as it does today).
+- **Saving:** both points together at the end, then `C,<g>,…` and `C,down,<g+1>,…` (or each `C` as it's measured; your call), then `E,ok,saved`, `K` and the `F` list, as a redo does now. `x` cancels with the stored calibration unchanged (`A,…` or `E,fail,redo cancelled`, as now). `u` during a measurement cancels that tap; `u` between stages could go back one stage.
+- **Keep:** `#R,u|d,<point>` as it is, for the old pages and for USB.
+
+**Page side once it's in:**
+- The circle shows "GO TO 4 → tap", "UP TO 5 → tap", "UP TO 6 → tap", "BACK TO 5 → tap", with four small dots for the stages.
+- Improve and the gear check's "Redo gear N" both use `#R,g`.
+- A gear's yellow or red edge then always gets a fresh pair of readings.
+
+Please write the final names into PROTOCOL.md ("v3.5 additions"?) and, as before, a board log of a run with it.
+
+---
+
+## Update 2026-10-25 (2): lines lost over Bluetooth on the v3.4 bike run
+
+The phone export of the first press-mode calibration (`bench/logs/2026-10-25_v3_4_cal_phone.csv`) shows heavy line loss from the board to the phone.
+
+**What was lost:**
+- **The result line:** its message reads `saF,u,3,offpath,25.9,-F,d,3,offpath,20.0,-F,u,4,pair,49.8,-49.9,-181.4`. The tail of `K,…,saved` was lost, and so was the tail (with the newline) of each of the next three `F` lines. What reached the phone was the first piece or two of each line, glued together. The flags for gears 3 and 4 never reached the gear list.
+- **Points:** the phone got 22 of 25 up points (4, 11 and 23 missing) and 17 of 22 down points, and the page's two readbacks (`k`) came back incomplete too.
+
+**Likely cause:** `DualLog::sendLocked()` calls `bleuart.write(conn, buf + i, 20)` per piece and ignores the result. When the SoftDevice's notification queue is full (a burst after a save, `k`, prompts, on iOS's 30 ms connection interval), a piece is dropped. The losses are line tails, which fits pieces dropped once the queue fills partway through each burst.
+
+**Suggested fixes (your call):**
+- Check what `bleuart.write()` returns and retry the piece (with a short wait) until it's taken, or until a time limit if the link is gone.
+- Or buffer: `bleuart.bufferTXD(true)` with a FIFO big enough for the post-save burst.
+- Pace the post-save `K` + `F` burst the way `k` and `p` are paced.
+
+**What the page does now (app-refactor, after 7a58b05):**
+- It cuts a glued message back.
+- When the check list comes short, or the phone's copy has gaps, it reads the calibration again quietly once the board is idle, at most twice per connection. Then it saves the run's file again in full.
+
+That covers the symptoms, but every lost line costs a re-read on a slow link, so please fix the sending side.

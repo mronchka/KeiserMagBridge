@@ -367,6 +367,24 @@ function redoOutcome(points, down) {
   logLine('The bridge saved that redo (' + st.label + ').', 'sys');
   return st.label || '';
 }
+// Lines from the bridge were lost (a short check list, a result line with others glued on, points the
+// phone doesn't have): once the bridge is idle, read its calibration again quietly. Its points fill the
+// phone's copy, and its check list colours the gears. At most twice per connection.
+function rereadSoon() {
+  if ((state.rereadTries || 0) >= 2) return;
+  clearTimeout(state.rereadT);
+  state.rereadT = setTimeout(function go() {
+    if (state.conn !== 'connected') return;
+    if (state.q || state.qFromEdit || state.edit || state.improving || reviewItems().length || calRunning(state.s) || (state.s && state.s.cal === 7)) {
+      state.rereadT = setTimeout(go, 3000);   // (not now: the page is reading or redoing)
+      return;
+    }
+    state.rereadTries = (state.rereadTries || 0) + 1;
+    logLine('Some lines from the bridge were lost: reading the calibration again.', 'sys');
+    state.qReread = true;
+    requestStoredCal(true);
+  }, 2500);
+}
 // #76: Improve carries on without the readback's F list: a gear the bridge saved leaves the queue
 function dropSavedImprove() {
   if (!state.improveLast || state.improveSaved !== state.improveLast || !state.review || state.review.source !== 'improve') return;
@@ -430,6 +448,15 @@ function onK(p) {
     span: num(p[2]), minstep: num(p[3]), minAt: int(p[4]),
     msg: p.slice(5).join(',').trim()
   };
+  // (2026-10-25: the end of the line was lost and the F lines after it were glued on: their flags
+  // never reached the list. Keep the K, cut the message, and read the calibration again.)
+  var glued = /[A-Z],[-a-z0-9]/.exec(r.msg);
+  if (glued) {
+    r.msg = r.msg.slice(0, glued.index);
+    if (r.ok && r.msg && 'saved'.indexOf(r.msg) === 0) r.msg = 'saved';
+    logLine('The end of the bridge\u2019s result line was lost (other lines ran into it).', 'bad');
+    state.linesLost = true;
+  }
   // [v3.2] after an edit (#R / #G) the board saves again and sends K
   var ed = state.edit && (state.edit.okd || (state.edit.kind === 'R' && state.edit.started)) ? state.edit : null;   // (#74: E,ok,saved lost)
   if (ed && ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; }   // (#52: the redo was saved)
@@ -529,9 +556,10 @@ function onF(p) {
       if (!state.qFromEdit) toast('Stored calibration incomplete: try again');
     }
     if (state.qQuietF) {   // #12: the quiet readback's F list: its flags color the gear list, nothing more
-      state.qQuietF = false; state.qJustEnded = false; clearTimeout(state.qQuietT); clearTimeout(state.qQuietT); clearTimeout(state.qQuietT);
+      state.qQuietF = false; state.qJustEnded = false; clearTimeout(state.qQuietT);
       state.review = null;
       state.lastFlags = items.slice();
+      if (items.length < count) rereadSoon();   // (part of it lost too: once more)
       render();
       return true;
     }
@@ -541,6 +569,7 @@ function onF(p) {
       return true;
     }
     if (items.length !== count) logLine('Check list: expected ' + count + ' flagged point' + (count === 1 ? '' : 's') + ', received ' + items.length + '.', 'bad');
+    if (items.length < count || state.linesLost) { state.linesLost = false; rereadSoon(); }   // (the bridge sends the whole list again with k)
     var flagged = items.filter(function (it) { return !state.reviewKept[it.pass + it.point]; });
     state.lastFlags = items.slice();
     // A stored readback the rider asked for doesn't start a redo by itself; one the page asked for
@@ -1010,9 +1039,21 @@ function onQ(p) {
         if ((state.homeTries = (state.homeTries || 0) + 1) < 3) state.homeAsked = false;   // (read it again, at most twice more on this link)
         return true;
       }
-      adoptStoredCal(q);
+      var reread = state.qReread; state.qReread = false;
+      adoptStoredCal(q, reread);
       redoOutcome(q.points, q.down);   // (#74)
       state.homeRead = true;
+      var kr1 = state.result && state.result.type === 'K' && state.result.ok ? state.result : null;
+      if (reread && kr1 && kr1.partialRead) {
+        // the run's file was saved with the lines the phone had: save it again whole
+        kr1.partialRead = false;
+        try {
+          kr1.recordId = saveCalRecord('run', { ok: true, span: kr1.span, minstep: kr1.minstep, minAt: kr1.minAt, edit: kr1.edit,
+            msg: (kr1.msg || 'saved') + ' (read again in full)', down: state.downPoints }, state.points);
+          noteCalRecord(kr1.recordId, state.v33);
+          logLine('The calibration is now complete on this phone too.', 'sys');
+        } catch (e) { console.warn('save failed', e); }
+      }
       render();
       return true;
     }
@@ -1038,6 +1079,7 @@ function onQ(p) {
         };
         state.points = merge(state.points, q.points); state.downPoints = merge(state.downPoints, q.down);
         redoOutcome(state.points, state.downPoints);   // (#74)
+        if (kr0) kr0.partialRead = state.points.length < TOTAL_POINTS || downPointsMissing();   // (read again later: rereadSoon)
         if (kr0 && !kr0.recordId) {
           try {
             kr0.recordId = saveCalRecord('run', { ok: true, span: kr0.span, minstep: kr0.minstep, minAt: kr0.minAt, edit: kr0.edit,
@@ -1048,6 +1090,7 @@ function onQ(p) {
           } catch (e) { console.warn('save failed', e); }
         }
         logLine('The stored calibration arrived incomplete twice: carrying on.', 'bad');
+        rereadSoon();   // (a quiet try once the bridge is idle)
         editFList();   // (#86: its F list may be lost too)
         if (state.improving) setTimeout(function () { if (state.improving && !state.edit && !state.q) { dropSavedImprove(); fixNext(); } render(); }, 6000);
         return true;

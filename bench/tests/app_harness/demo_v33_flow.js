@@ -52,14 +52,14 @@ function check(name, ok, detail) {
   // Up pass, with pauses (&rest=1)
   let sawPause = false, pauseText = '', sawStopNote = false, stuckHint = '';
   await until(() => {
-    if (!$('behindHint').hidden && /already shows gear/.test($('behindHint').textContent)) stuckHint = $('behindHint').textContent;
+    if (!$('behindHint').hidden && /already shows/.test($('behindHint').textContent)) stuckHint = $('behindHint').textContent;
     if (st.s.flags.O) { sawPause = true; pauseText = $('calHead').textContent; }
     if (!$('stopNote').hidden) sawStopNote = true;
     return st.upSaved;
   }, 400);
   check('paused (flag O) shown calmly', sawPause && /Paused — pedal to continue/.test(pauseText) && !/amber/.test($('disc').className), pauseText);
   check('"you can stop any time" note on the gear steps', sawStopNote);
-  check('N,stuck hint shown', /If the console already shows gear 5, ease back into gear 4 and come up to it again/.test(stuckHint), stuckHint);
+  check('N,stuck hint shown', /If the console already shows 5, ease back into 4 and come up to it again/.test(stuckHint), stuckHint);
   await app.advance(1);
   check('checkpoint after the up pass (cal 7): Saved card, breadcrumb step 4', st.upSaved && st.s.cal === 7 && !$('upSaved').hidden && $('calActive').hidden && /STEP 4 OF 6/.test(crumb()), 'cal ' + st.s.cal + ' ' + crumb());
   check('flagged gears wait during the checkpoint', $('reviewCard').hidden && !st.edit, 'review ' + (st.review ? st.review.items.length : 0));

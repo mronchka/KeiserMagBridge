@@ -124,7 +124,12 @@ function qualityLevels(q) { var l = {}; for (var g = 1; g <= GEARS; g++) l[g] = 
 // The list replaces the finish card when a v3.3 calibration is done (maybeOfferCheck).
 function openGearList() {
   var gl = { sel: 0 };
-  if (state.improving) {
+  if (state.improving && state.improving.picked) {
+    gl.redone = state.improving.picked;   // #90: the gear the rider picked
+    (state.improvedGears = state.improvedGears || {})[gl.redone] = true;
+    gl.sel = gl.redone;
+    state.improving = null;
+  } else if (state.improving) {
     // back from the improve pass: what got better
     var now = qualityLevels(gearQuality()), before = state.improving.before, total = 0, better = 0;
     for (var g = 1; g <= GEARS; g++) if (before[g] > 0) { total++; if (now[g] < before[g]) better++; }
@@ -134,14 +139,33 @@ function openGearList() {
     state.improving = null;
   }
   state.gearList = gl;
+  if (state.points.length && (state.points.length < TOTAL_POINTS || downPointsMissing())) rereadSoon();   // (lines lost on the way)
   showView('cal');
   render();
 }
 
-function startImprove() {
-  var q = gearQuality(), edges = improveEdges(q);
+// #90: one gear the rider picked on the list, whatever its colour: where it starts going up, then
+// where it starts coming down (down point g+1, when the down pass measured it). The bottom (point 1)
+// isn't redone this way, and gears 23 and 24 have no down point above them.
+function gearRedoEdges(g) {
+  var out = [];
+  if (g >= 2) out.push({ pass: 'u', point: g, reason: 'rider', gear: g });
+  var dn = g + 1;
+  if (isV32() && !state.learnFailed && dn <= TOTAL_POINTS - 2 && state.downPoints.some(function (x) { return x.point === dn; })) {
+    out.push({ pass: 'd', point: dn, reason: 'rider', gear: g });
+  }
+  return out;
+}
+function startGearRedo(g) {
+  var edges = gearRedoEdges(g);
   if (!edges.length) return;
-  state.improving = { before: qualityLevels(q) };
+  startImprove(edges, g);
+}
+
+function startImprove(pick, picked) {
+  var q = gearQuality(), edges = Array.isArray(pick) ? pick : improveEdges(q);
+  if (!edges.length) return;
+  state.improving = { before: qualityLevels(q), picked: Array.isArray(pick) ? picked : 0 };
   state.gearList = null;
   state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = '';
   state.review = { items: edges, source: 'improve' };
@@ -193,10 +217,11 @@ function renderGearList() {
   var edges = improveEdges(q), connected = state.conn === 'connected';
   var reading = !!gl.home && connected && !state.homeRead;   // #75: the last list shown, while the bridge's is read
   var live = connected && !reading;
-  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading;
+  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading + '|' + (gl.redone || 0);
   if (key === gearListKey) return;
   gearListKey = key;
-  var lead = gl.improved ? gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. '
+  var lead = gl.redone ? 'Gear ' + gl.redone + ' redone. '
+    : gl.improved ? gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. '
     : reading ? 'The last one read from the bridge (reading it again). '
     : gl.home ? 'The calibration on the bridge. ' : 'Saved on the bridge and ready to ride. ';
   var downs = state.downPoints.map(function (x) { return x.point; });
@@ -204,7 +229,7 @@ function renderGearList() {
   lead += !bad && !unsure ? (noDown ? 'Every gear looks good going up; coming down isn\u2019t measured yet.' : 'Every gear looks good.')
     : (bad ? bad + ' gear' + (bad === 1 ? '' : 's') + ' need' + (bad === 1 ? 's' : '') + ' another look' : '') + (bad && unsure ? ', ' : '') +
       (unsure ? unsure + ' ' + (unsure === 1 ? 'is' : 'are') + ' unsure' : '') + '. ' + (noDown ? 'Coming down isn\u2019t measured yet. ' : '') + 'Tap a gear to see why.';
-  $('glTitle').textContent = gl.improved ? 'Your gears now' : gl.home ? 'Your calibration' : gl.checked ? 'Your gears' : 'Calibration done';
+  $('glTitle').textContent = gl.improved || gl.redone ? 'Your gears now' : gl.home ? 'Your calibration' : gl.checked ? 'Your gears' : 'Calibration done';
   $('glLead').textContent = lead;
   var html = '';
   for (g = 1; g <= GEARS; g++) {
@@ -219,15 +244,18 @@ function renderGearList() {
     : downRead ? 'looks good going up and coming down.' : 'looks good going up; coming down isn\u2019t measured yet.') +
     (keptHere ? ' You chose to keep it as it is.' : '');
   $('glLead').hidden = !!sel;   // #43: the why takes the lead's place
-  setHidden('glImprove', !edges.length);
   var fixable = 0;   // #36: gears with something Improve can redo
   var kept = state.keptEdges || {};
   for (g = 1; g <= GEARS; g++) if (q[g].level && q[g].edges.some(function (e) { return !kept[e.pass + e.point]; })) fixable++;
-  $('glImprove').textContent = gl.home ? 'Improve calibration' : 'Improve ' + fixable + ' gear' + (fixable === 1 ? '' : 's');
+  // #90: with a gear tapped, the main button redoes that gear (any colour)
+  var pickRedo = !!gl.sel && gearRedoEdges(gl.sel).length > 0;
+  setHidden('glImprove', !edges.length && !pickRedo);
+  $('glImprove').textContent = pickRedo ? 'Redo gear ' + gl.sel : gl.home ? 'Improve calibration' : 'Improve ' + fixable + ' gear' + (fixable === 1 ? '' : 's');
+  $('glImprove').className = 'btn ' + (edges.length || pickRedo ? 'primary ' : '') + 'wide';
   setHidden('glFinish', !!gl.home);
   setHidden('glAgain', !gl.home);
   $('glAgain').disabled = !live;
   $('glImprove').disabled = !live;
-  $('glCheck').className = 'btn ' + (edges.length ? '' : 'primary ') + 'wide';
+  $('glCheck').className = 'btn ' + (edges.length || pickRedo ? '' : 'primary ') + 'wide';
   $('glCheck').disabled = !live;
 }

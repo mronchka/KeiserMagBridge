@@ -1088,5 +1088,53 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     check('#85 a fresh page reading the bridge\'s calibration shows that, not the walkthrough', !app.$('calReading').hidden && app.$('onb').hidden,
       'reading ' + !app.$('calReading').hidden + ' onb ' + !app.$('onb').hidden);
   }
+  {
+    // 2026-10-25 bike run: the down pass's K lost its end and the F lines ran into it; C lines were lost too.
+    // The page cuts the message, reads the calibration again once the bridge is idle, colours the
+    // flagged gears, and saves the run's file again whole.
+    const app = mk(); const st = app.M3.state;
+    await app.upPass();
+    app.$('upContinue').click();
+    await app.downPass(23, 2);
+    st.points = st.points.filter((q) => q.point !== 11);           // as if C,11 had been lost
+    await app.f('K,1,120.0,3.00,6,saF,u,3,offpath,25.9,-F,d,3,offpath,20.0,-F,u,4,pair,49.8,-49.9,-181.4');
+    await app.f('F,end,3');
+    await app.f(S({}));
+    check('a result line with other lines glued on: its message is cut back to "saved"', st.result && st.result.ok && st.result.msg === 'saved', st.result && st.result.msg);
+    for (let i = 0; i < 12 && app.cmds().filter((c) => c === 'k').length < 2; i++) await app.f(S({}), 1);
+    const ks = app.cmds().filter((c) => c === 'k').length;
+    check('...and the page reads the calibration again (quietly) once the bridge is idle', ks >= 1, JSON.stringify(app.cmds().slice(-4)));
+    for (let p = 1; p <= 25; p++) await app.f('Q,' + p + ',' + (p * 3) + '.0,1.0,2.0', 0.02);
+    for (let p = 23; p >= 2; p--) await app.f('Q,down,' + p + ',' + (p * 3 - 1) + '.0,1.0,2.0', 0.02);
+    await app.f('Q,end,120.0,3.00,6', 0.02);
+    await app.f('F,u,3,offpath,25.9,-50.0,-190.0', 0.02);
+    await app.f('F,d,3,offpath,20.0,-50.0,-190.0', 0.02);
+    await app.f('F,u,4,pair,49.8,-49.9,-181.4', 0.02);
+    await app.f('F,end,3', 0.02);
+    await app.f(S({}));
+    const q = app.win.gearQuality();
+    check('...its check list colours the flagged gears red (3 and 4)', q[3].level === 2 && q[4].level === 2, [3, 4].map((g) => g + ':' + q[g].level).join(' '));
+    check('...and the phone has every point again', st.points.length === 25 && st.downPoints.length === 22, st.points.length + '/' + st.downPoints.length);
+  }
+  {
+    // #90: tap any gear on the list (a green one too) and redo just that one: going up, then coming down
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    app.$('glGrid').innerHTML;   // (the chips)
+    st.gearList.sel = 10; app.win.renderGearList();
+    check('#90 a tapped gear: the main button reads "Redo gear 10"', !app.$('glImprove').hidden && app.$('glImprove').textContent === 'Redo gear 10', app.$('glImprove').textContent);
+    app.$('glImprove').click();
+    await app.advance(0.5);
+    check('#90 ...it redoes where gear 10 starts going up first', redos(app).join(' ') === '#R,u,10', redos(app).join(' '));
+    await app.f('E,ok,redo'); await app.f(S({ cal: 1, flow: 6, step: 9, pass: 'ru' }));
+    await app.f('C,10,30.2,1.0,2.0'); await app.f('E,ok,saved'); await app.f('K,1,120.0,3.00,6,saved'); await app.f('F,end,0'); await app.f(S({}));
+    await app.advance(0.5);
+    check('#90 ...then where it starts coming down (down point 11)', redos(app).join(' ') === '#R,u,10 #R,d,11', redos(app).join(' '));
+    await app.f('E,ok,redo'); await app.f(S({ cal: 1, flow: 6, step: 10, pass: 'rd' }));
+    await app.f('C,down,11,29.5,1.0,2.0'); await app.f('E,ok,saved'); await app.f('K,1,120.0,3.00,6,saved'); await app.f('F,end,0'); await app.f(S({}));
+    await app.advance(1);
+    check('#90 ...and back on the list: "Gear 10 redone"', !!st.gearList && /^Gear 10 redone\./.test(app.$('glLead').textContent),
+      app.$('glTitle').textContent + ' / ' + app.$('glLead').textContent + ' / ' + app.$('glWhy').textContent);
+  }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });

@@ -211,7 +211,11 @@ $('glGrid').addEventListener('click', function (ev) {
   else state.homeSel = state.homeSel === g ? 0 : g;   // #12: the Calibrate tab's list
   renderGearList();
 });
-$('glImprove').addEventListener('click', startImprove);
+$('glImprove').addEventListener('click', function () {
+  var gl = state.gearList || (homeListShown() ? { sel: state.homeSel || 0 } : null);
+  if (gl && gl.sel && gearRedoEdges(gl.sel).length) startGearRedo(gl.sel);   // #90: the gear the rider tapped
+  else startImprove();
+});
 $('glCheck').addEventListener('click', function () { state.gearList = null; startGearCheck(); });
 $('glFinish').addEventListener('click', finishGearList);
 $('glAgain').addEventListener('click', calibrateAgain);

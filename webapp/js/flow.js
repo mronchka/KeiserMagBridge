@@ -105,8 +105,10 @@ function renderFlow(active, placing, saved) {
   setHidden('crumbs', !f);
   if (f) {
     var rs = state.s && state.s.cal !== 0 && (state.s.pass === 'ru' || state.s.pass === 'rd');
-    var title = rs ? 'Redo a gear' : FLOW_STEPS[f - 1];
-    var t = 'STEP ' + f + ' OF 6 · <b>' + esc(title) + '</b>';
+    var rg = rs ? (state.s.pass === 'rd' ? state.s.step : state.s.step + 1) : 0;
+    var title = rs ? 'Redo gear ' + rg : FLOW_STEPS[f - 1];
+    var t = rs ? '<b>' + esc(title) + '</b>' : 'STEP ' + f + ' OF 6 · <b>' + esc(title) + '</b>';   // (#88: a redo isn't a flow step)
+    setHidden('crumbSegs', rs);
     if ($('crumbT').innerHTML !== t) $('crumbT').innerHTML = t;
     $('crumbs').setAttribute('aria-label', 'Step ' + f + ' of 6: ' + title);
     var segs = $('crumbSegs').children;
@@ -328,9 +330,11 @@ function renderReview() {
   var dis = !connected || busy ? ' disabled' : '';
   var named = improving && it.gear ? 'Gear ' + it.gear : capFirst(words.replace(/ \(.*\)$/, ''));
   var unsure = improving && /^(narrow|gap|back|unsteady)$/.test(it.reason);
-  var html = '<h2>' + esc(named) + (unsure ? ' is unsure' : ' needs another look') +
+  var picked = it.reason === 'rider';   // #90: a gear the rider tapped on the list
+  var html = '<h2>' + (picked ? 'Redo gear ' + esc(String(it.gear)) : esc(named) + (unsure ? ' is unsure' : ' needs another look')) +
     '<button class="x-btn" type="button" data-review="dismiss" aria-label="Stop checking gears">×</button></h2>' +
-    (improving && it.why ? '<p class="rv-t">' + esc(it.why) + '</p>'
+    (picked ? '<p class="rv-t">' + (it.pass === 'u' ? 'Where it starts going up.' : 'Where it starts coming down.') + '</p>'
+      : improving && it.why ? '<p class="rv-t">' + esc(it.why) + '</p>'
       : '<p class="rv-t">The bridge checked the saved calibration: <b>' + esc(words) + '</b> ' + esc(why) + '.</p>');
   if (tired && fixCanRedo(it)) html += '<p class="small muted">It still looks off after ' + tries + ' tries. ' + (guessable ? 'Use the bridge’s best guess, or keep it as it is.' : 'Keep it as it is, or try it again.') + '</p>';
   else if (!busy) html += '<p class="small muted">Pedal it once more: the screen walks you through it.</p>';

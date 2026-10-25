@@ -14,11 +14,12 @@ var CAD_LO = 30, CAD_HI = 120;
 var CAL_INTRO = {
   crank: [
     { art: 'pedal', title: 'Keep pedalling', text: 'The bridge reads the gear on every pedal turn, so pedal the whole time at a steady pace.' },
-    { art: 'check', title: 'A quick cadence check', text: 'First it learns your pedal stroke. Then check the rpm matches your Keiser console.' },
-    { art: 'shift', title: 'One gear at a time', text: 'Shift up until the console just shows the next gear, then hold it. The circle turns green when it’s saved.',
-      textPress: 'Shift up until the console just shows the next gear, then tap the circle. It measures a few pedal turns and turns green when it’s saved.' },
-    { art: 'ring', title: 'Bottom to top', text: 'Start with the lever all the way down and work up. It takes a few minutes.' },
-    { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, come back down the same way: move the lever down until the console first shows each lower gear. You can finish early.' }
+    { art: 'check', title: 'Learn your pedalling', text: 'First it learns your pedal stroke and you check the rpm against your Keiser console. Then you push the lever slowly up and back down once.',
+      textOld: 'First it learns your pedal stroke. Then check the rpm matches your Keiser console.' },
+    { art: 'shift', title: 'Up through the gears', text: 'From the bottom, shift up one gear at a time and hold where the console first shows the next. It turns green once saved.',
+      textPress: 'From the bottom, shift up one gear at a time. When the console shows the next gear, tap the circle. It turns green once saved.' },
+    { art: 'ring', v32: true, title: 'Then back down', text: 'From the top, the same coming down, to where the console first shows each lower gear. You can stop early and finish later.' },
+    { art: 'ring', v33: true, title: 'Your gears', text: 'At the end each gear gets a colour: green is good, yellow unsure, red needs another look. Tap any gear to redo it.' }
   ],
   still: [
     { art: 'ring', title: 'Bottom to top', text: 'You’ll set the lever at each gear, starting all the way down and working up.' },
@@ -32,7 +33,7 @@ function pressPreferred() { return !!state.v34 && capturePref() === 'press'; }
 
 function onbSteps() {
   var known = !!state.s;   // no status line yet (not connected, or just reconnected): assume current firmware
-  return state.v3 || !known ? CAL_INTRO.crank.filter(function (st) { return !st.v32 || state.v32 || !known; }) : CAL_INTRO.still;
+  return state.v3 || !known ? CAL_INTRO.crank.filter(function (st) { return (!st.v32 || state.v32 || !known) && (!st.v33 || state.v33 || !known); }) : CAL_INTRO.still;
 }
 
 function renderOnb() {
@@ -41,10 +42,10 @@ function renderOnb() {
   var st = steps[onbIdx], last = onbIdx === steps.length - 1;
   var arts = document.querySelectorAll('#onb .art');
   for (var i = 0; i < arts.length; i++) arts[i].classList.toggle('on', arts[i].getAttribute('data-art') === st.art);
-  var key = (steps === CAL_INTRO.still ? 'still' : 'crank' + steps.length) + '-' + onbIdx;  // the step list switches once the firmware is known (#68)
+  var key = (steps === CAL_INTRO.still ? 'still' : 'crank' + steps.length) + '-' + onbIdx + (pressPreferred() ? 'p' : '');  // the step list switches once the firmware is known (#68)
   if (key !== onbKey) {
     $('onbTitle').textContent = st.title;
-    $('onbText').textContent = (pressPreferred() && st.textPress) || st.text;
+    $('onbText').textContent = (pressPreferred() && st.textPress) || (state.s && !state.v33 && st.textOld) || st.text;   // (#89)
     onbKey = key;
   }
   var dots = $('onbDots');
@@ -165,8 +166,7 @@ function renderCal() {
   var back = backGear(s);
   var bFlash = v32 && !mustPass && state.bClearAt && now - state.bClearAt < B_CLEAR_MS && !flash;
   renderPointCheck(checking, s);
-  if (paused || sweeping) setHidden('holdBanner', true);
-  var holdNote = !$('holdBanner').hidden;   // "Hold the lever still": the circle says the same
+  var holdNote = !!state.holdingNow && !paused && !sweeping;   // "Hold the lever still": the circle's heading says it
   // [v3.4] press to capture (flag T): the circle is the button. I = measuring after a tap;
   // until the board says so, a tap shows "Measuring…" for a moment.
   var pressOn = crankMode && !!s.flags.T;
@@ -240,10 +240,10 @@ function renderCal() {
       // [v3.3] go back first (a redo, or the board went back to an overshot point): the circle shows
       // only the gear to be in now; the target comes after (green, then the target gear).
       head = 'Shift ' + (upw ? 'down' : 'up') + ' into gear ' + back;
-      sub = 'Keep pedalling';
+      sub = 'Keep pedalling. Then back ' + (upw ? 'up' : 'down') + ' to ' + pGear;   // (#88: the next step)
     } else if (redoing) {
       head = 'Now ' + (upw ? 'up' : 'down') + ' to gear ' + pGear;
-      sub = 'Move the lever until the console FIRST shows ' + pGear + ', then hold';
+      sub = 'Stop where the console first shows ' + pGear + ', then hold';
     } else if (overshot) {
       head = 'Now ' + (upw ? 'up' : 'down') + ' to gear ' + pGear;
       sub = 'Move the lever until the console FIRST shows ' + pGear + ', then hold';
@@ -275,33 +275,31 @@ function renderCal() {
   } else if (overshot && !checking) {
     // [v3.3] the circle and the line under it say where to go; this just says why
     bt = v33
-      ? '<b>Gear ' + pGear + ' was saved a little too far ' + (down ? 'down' : 'up') + '</b>, so it’s being redone.'
+      ? 'Gear ' + pGear + ' was saved a little too far ' + (down ? 'down' : 'up') + ', so it’s being redone.'
       : down
         ? '<b>Gear ' + pGear + ' was saved a little too far down.</b> Shift UP into gear ' + (pGear + 1) + ', then back down to where the console first shows gear ' + pGear + '.'
         : '<b>Gear ' + pGear + ' was saved a little too far up.</b> Shift DOWN into gear ' + (pGear - 1) + ', then back up to where the console first shows gear ' + pGear + '.';
   } else if (refused) {
     // [v3.4] N,notmoved after a tap: the turns sat where the gear before was saved
     var before = down || pass === 'rd' ? pGear + 1 : pGear - 1;
-    bt = '<b>That’s where gear ' + before + ' was saved.</b> Move the lever on a little, then tap again. ' +
-      'If the console already shows gear ' + pGear + ', tap again to save it here.';
+    bt = 'That’s where gear ' + before + ' was saved. Move on a little and tap again, or tap again to save it here.';
   } else if (state.nstuck && state.nstuck.step === s.step && state.nstuck.pass === s.pass && !checking) {
     // [v3.3] N,stuck: the reading stays put although turns agree
     var upDir = !(down || pass === 'rd');
-    bt = '<b>If the console already shows gear ' + pGear + '</b>, ease back into gear ' + (upDir ? pGear - 1 : pGear + 1) +
+    bt = 'If the console already shows ' + pGear + ', ease back into ' + (upDir ? pGear - 1 : pGear + 1) +
       ' and come ' + (upDir ? 'up' : 'down') + ' to it again.';
   } else if (bh) {
     bt = redoing
-      ? '<b>This reading is behind the gear before it.</b> Check the console and move the lever on past it.'
-      : '<b>Not quite there yet.</b> Keep moving the lever ' + dirWord + ' until the console first shows gear ' + pGear + '.';
+      ? 'Not past gear ' + (down || pass === 'rd' ? pGear + 1 : pGear - 1) + ' yet: move the lever on.'
+      : 'Not quite there yet: keep moving ' + dirWord + ' until the console first shows ' + pGear + '.';
   } else if (stalled) {
     // At the first down point the rider starts in gear 24 (the up pass ended on that edge), so the
     // gear before the target can be 24 or 23.
     var on = down ? pGear + 1 : pGear - 1;
     var onTxt = down && step >= DOWN_FIRST_STEP ? (TOTAL_POINTS - 1) + ' or ' + on : String(on);
     bt = pressMode
-      ? '<b>Waiting for your tap.</b> When the console shows gear ' + pGear + ', tap the circle.'   // [v3.4] nothing saves by itself
-      : '<b>Still on gear ' + onTxt + '?</b> Move ' + dirWord + ' until the console first shows gear ' + pGear +
-      '. If it already shows ' + pGear + ', ease back ' + (down ? 'up' : 'down') + ' into gear ' + on + '.';
+      ? 'Waiting for your tap. When the console shows ' + pGear + ', tap the circle.'   // [v3.4] nothing saves by itself
+      : 'Still on gear ' + onTxt + '? Move ' + dirWord + ' until the console first shows ' + pGear + '.';
   }
   setHidden('behindHint', !bt);
   if (bt && $('behindHint').innerHTML !== bt) $('behindHint').innerHTML = bt;
@@ -388,7 +386,7 @@ function renderCal() {
   }
 
   // cadence slider (crank mode only: the v2 method needs the flywheel still)
-  setHidden('cadG', !crankMode || checking);
+  setHidden('cadG', !crankMode || checking || redoing);   // (#88: not during a redo)
   if (crankMode) {
     var rpm = fin(s.cad) ? Math.round(s.cad) : 0, dotCls = '', cap, capCls = '';
     // [v3.2+] cadence guide: a green window for the gear to be in now (CAD_GUIDE)
@@ -429,7 +427,7 @@ function renderCal() {
   $('calActive').classList.toggle('nopoint', noPoint);
   $('calActive').classList.toggle('redoing', redoing);
   setHidden('calCount', noPoint);
-  $('calCount').textContent = redoing ? 'Redoing ' + pointWords(pass === 'rd' ? 'd' : 'u', step + 1)
+  $('calCount').textContent = redoing ? 'Redo gear ' + pGear + (pass === 'rd' ? ' coming down' : '') + ' · step ' + (mustPass ? 1 : 2) + ' of 2'
     : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
     // (the hold-still method after the crank wasn't found: why, where 0 of 25 would be)
     : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + learnWhyText()
@@ -512,32 +510,13 @@ function renderPointCheck(checking, s) {
   // hold-still strip: driven by the M flag, or a W for this point that hasn't been captured yet
   var holding = !checking && (s.cal === 1 || s.cal === 2) &&
     (!!s.flags.M || !!(state.w && !state.w.resolved && state.w.point === s.step + 1));
-  setHidden('holdBanner', !holding);
+  state.holdingNow = holding;
+  setHidden('holdBanner', true);   // #88: the circle's heading says "Hold the lever still"
   var connected = state.conn === 'connected';
   $('btnRedo').disabled = !connected;
   $('btnKeep').disabled = !connected;
 
-  var redo = state.redo, txt = '';
-  var redoDown = state.redoPass === 'd';
-  var showRedo = !checking && !holding && redo > 0 && (s.cal === 1 || s.cal === 2) && s.step === redo - 1 &&
-    (pass === 'd') === redoDown;
-  if (showRedo) {
-    txt = redoDown
-      ? 'Redo gear ' + (redo - 1) + ' (coming down): lever UP above gear ' + (redo - 1) + ' first, then down to where the console first shows gear ' + (redo - 1) + ', then hold.'
-      : redo >= TOTAL_POINTS
-        ? 'Redo point 25: push the lever back down a little, then all the way up again and hold.'
-        : 'Redo point ' + redo + ': lever DOWN below gear ' + redo + ' first, then up to where the console first shows gear ' + redo + ', then hold.';
-  } else if (!checking && !holding && (pass === 'ru' || pass === 'rd')) {
-    // [v3.2] #R redo of one point of the saved calibration
-    var g = pass === 'ru' ? s.step + 1 : s.step;
-    var lead = fixInRedo() ? 'Gear ' + g + (pass === 'rd' ? ' (coming down)' : '') + ' needs another look: ' : 'Redo gear ' + g + (pass === 'rd' ? ' (coming down)' : '') + ': ';
-    showRedo = true;
-    txt = pass === 'ru'
-      ? lead + 'lever DOWN below gear ' + g + ' first, then up to where the console FIRST shows gear ' + g + ', then hold.'
-      : lead + 'from above gear ' + g + ', down to where the console FIRST shows gear ' + g + ', then hold.';
-  }
-  setHidden('redoBanner', !showRedo);
-  if (showRedo && $('redoBanner').textContent !== txt) $('redoBanner').textContent = txt;
+  setHidden('redoBanner', true);   // #88: the circle and the lines under it take the rider through a redo step by step
 }
 
 // #77: the link is down, or back but its first status line hasn't come yet
