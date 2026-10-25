@@ -114,7 +114,10 @@ function toast(msg) {
 // ===================================================================
 function showView(v) {
   if (['ride', 'cal', 'diag', 'console'].indexOf(v) < 0) v = 'ride';
+  var was = state.view;
   state.view = v;
+  // [v3.5] the bridge's own text (prompts, help) only while the Console is open
+  if (state.v35 && state.conn === 'connected' && (was === 'console') !== (v === 'console')) sendCmd('#H,' + (v === 'console' ? 1 : 0));
   var views = { ride: 'view-ride', cal: 'view-cal', diag: 'view-diag', console: 'view-console' };
   Object.keys(views).forEach(function (k) { $(views[k]).classList.toggle('active', k === v); });
   Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {

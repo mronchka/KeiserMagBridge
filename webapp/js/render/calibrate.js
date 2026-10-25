@@ -146,7 +146,8 @@ function renderCal() {
   // [v3.2] the pass: '' or 'u' up, 'd' down (step 22..1, prompt gear = step), 'ru' / 'rd' redo of one point
   var v32 = state.v32;
   var pass = v32 ? s.pass : '';
-  var down = pass === 'd', redoing = pass === 'ru' || pass === 'rd';
+  var gStage = gearPass(pass) ? +pass.charAt(1) : 0;   // [v3.5] #R,g: 1 below, 2 into it, 3 above, 4 back into it
+  var down = pass === 'd', redoing = pass === 'ru' || pass === 'rd' || gStage > 0;
   // [v3.2] B: go back past the point first (a redo, or the board went back to an overshot point)
   var mustPass = v32 && !!s.flags.B && s.cal === 1;
   var overshot = !!state.overshoot && !redoing && state.overshoot.step === s.step && state.overshoot.pass === s.pass;
@@ -154,7 +155,7 @@ function renderCal() {
   var pGear = down || pass === 'rd' ? step : step + 1;   // the gear named in the prompt
   var stab = Math.round(s.stab);
   var turns = Math.max(0, Math.min(3, Math.round(stab / 100 * 3)));
-  var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < (state.capturedFlashMs || CAPTURE_FLASH_MS);
+  var flash = !learning && !confirming && state.capturedAt && now - state.capturedAt < (state.capturedFlashMs || CAPTURE_FLASH_MS) && !gearPass(s.pass);
   var justLearned = !learning && !confirming && step === 0 && !down && !redoing && state.learnDoneAt && now - state.learnDoneAt < LEARN_DONE_MS;
   // [v3.3] the flow step from the bridge; paused (O) is calm, and replaces the amber "keep pedalling"
   var v33 = state.v33, flow = v33 ? s.flow : 0;
@@ -169,7 +170,9 @@ function renderCal() {
   var holdNote = !!state.holdingNow && !paused && !sweeping;   // "Hold the lever still": the circle's heading says it
   // [v3.4] press to capture (flag T): the circle is the button. I = measuring after a tap;
   // until the board says so, a tap shows "Measuring…" for a moment.
-  var pressOn = crankMode && !!s.flags.T;
+  var pressOn = crankMode && (!!s.flags.T || gStage > 0);   // ([v3.5] a gear redo is by taps whatever the mode)
+  var gw = gStage ? gearStageWords(gStage, pGear) : null;
+  var gFlash = gStage && state.gearStageAt && now - state.gearStageAt < CAPTURE_FLASH_MS;
   var pressMode = pressOn && s.cal === 1 && !learning && !confirming && !sweeping && !checking;
   var pkey = s.pass + s.step;
   var pressing = pressMode && (!!s.flags.I || (!!state.pressSentAt && now - state.pressSentAt < PRESS_WAIT_MS && state.pressKey === pkey));
@@ -195,6 +198,10 @@ function renderCal() {
     var sweepDown = sweepIsDown(s);
     head = sweepDown ? 'Slowly back down to the bottom' : 'Slowly push the lever up';
     sub = sweepDown ? 'Keep pedalling, then tap Next' : 'As far as you can still pedal, then tap Next';
+  } else if (gFlash && !(s.flags.I || (state.pressSentAt && now - state.pressSentAt < PRESS_WAIT_MS))) {
+    look = 'green';   // [v3.5] that stage is done: on to the next
+    head = 'Got it';
+    sub = 'Now ' + gw.head.charAt(0).toLowerCase() + gw.head.slice(1);
   } else if (flash || justLearned) {
     look = 'green';
     head = justLearned ? 'Crank learned' : 'Got it';
@@ -241,6 +248,8 @@ function renderCal() {
       // only the gear to be in now; the target comes after (green, then the target gear).
       head = 'Shift ' + (upw ? 'down' : 'up') + ' into gear ' + back;
       sub = 'Keep pedalling. Then back ' + (upw ? 'up' : 'down') + ' to ' + pGear;   // (#88: the next step)
+    } else if (gStage) {
+      head = gw.head; sub = gw.sub;
     } else if (redoing) {
       head = 'Now ' + (upw ? 'up' : 'down') + ' to gear ' + pGear;
       sub = 'Stop where the console first shows ' + pGear + ', then hold';
@@ -256,7 +265,7 @@ function renderCal() {
     else if (step >= TOTAL_POINTS - 1) { head = 'Lever all the way up'; sub = v31c ? 'Keep pedalling and hold it there' : crankMode ? 'Keep pedalling' : 'Then stop pedalling'; }
     else if (v31c) { head = 'Shift up to ' + n; sub = 'Keep pedalling. Move the lever until the console FIRST shows ' + n + ', then hold'; }
     else { head = 'Shift up to ' + n; sub = 'Stop the lever as soon as it shows ' + n + (crankMode ? '' : ', then stop pedalling'); }
-    if (pressMode && !mustPass && !topStep) {
+    if (pressMode && !mustPass && !topStep && !gStage) {
       sub = step === 0 && !down && !redoing ? 'Keep pedalling, then tap the circle'
         : 'Keep pedalling. When the console shows ' + pGear + ', tap the circle';
     }
@@ -282,7 +291,9 @@ function renderCal() {
   } else if (refused) {
     // [v3.4] N,notmoved after a tap: the turns sat where the gear before was saved
     var before = down || pass === 'rd' ? pGear + 1 : pGear - 1;
-    bt = 'That’s where gear ' + before + ' was saved. Move on a little and tap again, or tap again to save it here.';
+    bt = gStage === 1 || gStage === 3 ? 'Not in gear ' + gw.num + ' yet: shift ' + (gStage === 1 ? 'down' : 'up') + ' a little more, then tap again.'
+      : gStage ? 'Still in gear ' + (gStage === 2 ? pGear - 1 : pGear + 1) + ': move on until the console first shows ' + pGear + ', then tap again.'
+      : 'That’s where gear ' + before + ' was saved. Move on a little and tap again, or tap again to save it here.';
   } else if (state.nstuck && state.nstuck.step === s.step && state.nstuck.pass === s.pass && !checking) {
     // [v3.3] N,stuck: the reading stays put although turns agree
     var upDir = !(down || pass === 'rd');
@@ -322,7 +333,8 @@ function renderCal() {
   setHidden('discCrank', look !== 'learn');
   var tapHint = state.discTap && look === 'grey';
   setHidden('discTurns', look !== 'learn' && !tapHint);
-  if (tapHint && $('discTurns').textContent !== 'Tap to save') $('discTurns').textContent = 'Tap to save';
+  var tapText = gw ? gw.tap : 'Tap to save';
+  if (tapHint && $('discTurns').textContent !== tapText) $('discTurns').textContent = tapText;
   if (showNum) {
     if (confirming) {
       $('discLbl').textContent = 'RPM';
@@ -336,6 +348,9 @@ function renderCal() {
     } else if (mustPass) {
       $('discLbl').textContent = 'GO TO';
       $('discBig').textContent = String(back);
+    } else if (gStage) {
+      $('discLbl').textContent = gw.lbl;   // [v3.5]
+      $('discBig').textContent = String(gw.num);
     } else if (redoing || down) {
       $('discLbl').textContent = redoing ? 'REDO' : 'DOWN TO';
       $('discBig').textContent = String(Math.max(1, pGear));
@@ -427,7 +442,9 @@ function renderCal() {
   $('calActive').classList.toggle('nopoint', noPoint);
   $('calActive').classList.toggle('redoing', redoing);
   setHidden('calCount', noPoint);
-  $('calCount').textContent = redoing ? 'Redo gear ' + pGear + (pass === 'rd' ? ' coming down' : '') + ' · step ' + (mustPass ? 1 : 2) + ' of 2'
+  var gst = gStage ? gearStages(pGear) : null;
+  $('calCount').textContent = gStage ? 'Redo gear ' + pGear + ' · step ' + (gst.indexOf(gStage) + 1) + ' of ' + gst.length
+    : redoing ? 'Redo gear ' + pGear + (pass === 'rd' ? ' coming down' : '') + ' · step ' + (mustPass ? 1 : 2) + ' of 2'
     : down ? 'Down pass: ' + Math.max(0, Math.min(DOWN_POINTS, DOWN_FIRST_STEP - step)) + ' of ' + DOWN_POINTS
     // (the hold-still method after the crank wasn't found: why, where 0 of 25 would be)
     : state.learnFailed && v3 && step === 0 && state.learnWhy ? 'Crank not found: ' + learnWhyText()
@@ -487,7 +504,7 @@ function renderPointCheck(checking, s) {
   setHidden('calCheck', !checking);
   var n = checking ? s.step + 1 : 0;
   var pass = state.v32 ? s.pass : '';
-  var downP = pass === 'd' || pass === 'rd';   // [v3.2] down point n = coming down to gear n-1
+  var downP = pass === 'd' || pass === 'rd' || pass === 'g4';   // [v3.2] down point n = coming down to gear n-1
   if (checking) {
     if (pass + n !== checkKey) {   // only rewrite the card when it changes
       checkKey = pass + n;
@@ -521,6 +538,16 @@ function renderPointCheck(checking, s) {
 
 // #77: the link is down, or back but its first status line hasn't come yet
 function linkBack() { return state.conn !== 'connected' || !state.s; }
+
+// [v3.5] #R,g: what each stage asks of the rider (gear g)
+function gearStageWords(k, g) {
+  return k === 1 ? { head: 'Down into gear ' + (g - 1), sub: 'Then tap the circle', lbl: 'DOWN TO', num: g - 1, tap: 'Tap when there' }
+    : k === 2 ? { head: 'Up to gear ' + g, sub: 'Tap where the console first shows ' + g, lbl: 'UP TO', num: g, tap: 'Tap to save' }
+    : k === 3 ? { head: 'Up into gear ' + (g + 1), sub: 'Then tap the circle', lbl: 'UP TO', num: g + 1, tap: 'Tap when there' }
+    : { head: 'Back down to gear ' + g, sub: 'Tap where the console first shows ' + g + ' again', lbl: 'BACK TO', num: g, tap: 'Tap to save' };
+}
+// the stages a gear redo has: gear 1 only 3-4, gears 23 and 24 only 1-2
+function gearStages(g) { return g <= 1 ? [3, 4] : g >= TOTAL_POINTS - 2 ? [1, 2] : [1, 2, 3, 4]; }
 
 function renderBadge() {
   var b = $('calBadge');

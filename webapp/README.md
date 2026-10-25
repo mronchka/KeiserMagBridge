@@ -99,6 +99,23 @@ In press mode (flag `T`), the circle is the button on the up pass, the down pass
 
 "More options" has the switch "Save each gear by itself (no tap)". It is kept on this phone (`m3bridge.capture`) and sent on every connection. The simulator is a v3.4 bridge by default (`&v33=1` for v3.3); a tap before the simulated rider has reached the gear is refused once.
 
+### Redo a gear by taps (firmware v3.5)
+
+With a v3.5 bridge (`E,ok,v3.5`), every redo is a whole gear (`#R,g,<gear>`), done by taps in any capture mode. That covers Improve, "Redo gear N" after tapping a gear on the list, and the gear check's Redo. To redo gear 10, the circle asks, one stage at a time:
+
+1. DOWN TO 9, tap;
+2. UP TO 10, tap (where gear 10 starts going up);
+3. UP TO 11, tap;
+4. BACK TO 10, tap (where it starts coming down).
+
+The line under the circle says "Redo gear 10 · step k of 4". Gear 1 has only the last two stages, and gears 23 and 24 only the first two.
+
+- **Tap in the wrong gear:** the bridge answers `N,notmoved` and the note says "Not in gear 9 yet", and the rider taps again once there.
+- **Saving:** the measured points (`C,10`, `C,down,11`) go into the phone's copy only when the bridge saves (`E,ok,saved`). A cancel (`x`) leaves both as they were.
+- **`u`:** goes back one stage (`U` lines here are a stage, not an undo of points).
+
+With v3.5 the page also turns the bridge's human-readable text off (`#H,0`), except while the Console tab is open (`#H,1`). The simulator is a v3.5 bridge by default (`&v34=1` for v3.4, `&v33=1` for v3.3).
+
 ## Saved runs and export
 
 Calibrations and diagnostic recordings are kept in this browser's storage on the phone (up to about 4 MB; when it is full the oldest are removed and the page says so). They are listed under **Saved runs** at the bottom of the Diagnose tab. Each one has:
@@ -171,3 +188,4 @@ Extra options, added after `?demo=1`:
 - `node bench/tests/app_harness/replay_v32b.js [log] [--page file]`: replays a real board log (default `bench/logs/2026-10-16_v3_2b.log`) and checks that the guided redo starts after `F,end` and that the down-pass dots turn blue. `--page` runs an older copy of the page (e.g. from `git show`).
 - `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator (`&v33=1`) through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.
 - `node bench/tests/app_harness/demo_v34_press.js`: a v3.4 bridge in press mode. It checks `#V` / `#A,press`, the tappable circle, Measuring…, a tap too early and the second tap, Undo tap, nothing saving by itself, the switch back to auto, and a v3.3 bridge refusing `#V` quietly.
+- `node bench/tests/app_harness/demo_v35_gear.js`: a v3.5 bridge redoing gear 10 by four taps. It checks the circle at each stage, a tap too early, the points kept until the bridge saves, a stage back, a cancel, gear 1, Improve with `#R,g`, and `#H` following the Console tab.

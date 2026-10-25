@@ -29,6 +29,9 @@ function Simulator(startCalibrated) {
   // [v3.4] press to capture (#A,press): nothing saves until n; a tap before the rider got there
   // (still moving to the gear) measures the previous spot: N,notmoved, and a second tap saves anyway
   var press = false, pressArmed = false, pressEarly = false, pressRefused = false, crankOk = !!startCalibrated;
+  // [v3.5] #R,g: the whole gear by taps (passName g1..g4, step = gear - 1); #H,0: only machine lines to the phone
+  var textOn = true;
+  function gStage() { return /^g[1-4]$/.test(passName) ? +passName.charAt(1) : 0; }
 
   // A plausible calibration path: 25 points, total ~146 µT, smallest step 3.8 µT at gear 6.
   var PATH = (function () {
@@ -75,6 +78,7 @@ function Simulator(startCalibrated) {
   }
   function out(line) {
     if (!connected) return;
+    if (!textOn && line && !/^[SCKAUQGMYDLNWPFEXZJT],/.test(line)) return;   // [v3.5] #H,0
     enqueueText(line + '\r\n');
   }
   function jitter(a) { return (Math.random() * 2 - 1) * a; }
@@ -210,6 +214,8 @@ function Simulator(startCalibrated) {
       }
       var tgt = step <= 0 ? 1 : step >= 24 ? 24 : step + 1;
       if (passName === 'd' || passName === 'rd') tgt = Math.max(1, step);   // [v3.2] coming down to gear step
+      var gs = gStage();
+      if (gs) tgt = gs === 1 ? step : gs === 3 ? step + 2 : step + 1;   // [v3.5] below, into it, above, back into it
       if (cal < 3 && !(DEMO_V33 && flowStep === 3)) gear = tgt;
       res = gearToRes(gear) + (phase === 'move' && cal === 1 ? jitter(1.5) : jitter(0.1));
       watts = Math.round(cad * (0.4 + res * 0.045));
@@ -340,9 +346,9 @@ function Simulator(startCalibrated) {
         return;
       }
       if (Date.now() < backUntil) { agree = 0; stab = 0; return; }
-      if (press && crankOk && !pressArmed) { agree = 0; stab = 0; return; }   // [v3.4] nothing counts before a press
+      if ((press && crankOk || gStage()) && !pressArmed) { agree = 0; stab = 0; return; }   // [v3.4] nothing counts before a press
       var need = DEMO_V32 ? 2 : 3;   // [v3.2] 2 agreeing turns, then the check turn
-      if (press && crankOk && pressEarly && !pressRefused && agree + 1 >= need) {
+      if ((press && crankOk || gStage()) && pressEarly && !pressRefused && agree + 1 >= need) {
         // [v3.4] the tap came while the rider was still at the previous gear
         pressArmed = false; pressEarly = false; pressRefused = true; agree = 0; stab = 0;
         out('N,notmoved');
@@ -352,7 +358,9 @@ function Simulator(startCalibrated) {
       if (agree < need) {
         agree++;
         stab = DEMO_V32 ? [0, 34, 67][agree] : [0, 34, 68, 100][agree];
-      } else if (auto || (press && pressArmed)) {
+      } else if (gStage() && pressArmed && (gStage() === 1 || gStage() === 3)) {
+        gearStageDone();   // [v3.5] the reference taps: the turns sit in the gear below / above
+      } else if (auto || (press && pressArmed) || (gStage() && pressArmed)) {
         // [v3.1] one more turn at stab 100: did the lever really stop?
         var stuckHere = DEMO_STUCK && step === 5 && !stuckDone;
         if (wPlan[step] === undefined) wPlan[step] = DEMO_SUSPECT && step > 0 && step % 4 === 3 ? 1 + (step % 8 === 3 ? 1 : 0) : 0;
@@ -399,7 +407,30 @@ function Simulator(startCalibrated) {
     sendF();
   }
 
+  // [v3.5] a gear redo's stage is done: on to the next, or save both points
+  function gearStageDone() {
+    var g = step + 1, gs = gStage();
+    pressArmed = false; pressEarly = false; pressRefused = false;
+    if (gs === 2) {
+      if (!(DEMO_STUBBORN && g === 20)) resolved['u' + g] = true;
+      out('C,' + g + ',' + xyzStr(PATH[g - 1], 0.05));
+      if (g >= TOTAL_POINTS - 2) { out('E,ok,saved'); saveAll('Gear ' + g + ' redone and saved.'); return; }
+    }
+    if (gs === 4) {
+      downPts[g + 1] = downXYZ(g + 1); resolved['d' + (g + 1)] = true;
+      out('C,down,' + (g + 1) + ',' + xyzStr(downPts[g + 1], 0.05));
+      out('E,ok,saved');
+      saveAll('Gear ' + g + ' redone and saved.');
+      return;
+    }
+    passName = 'g' + (gs + 1);
+    cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0; mflag = false; wSent = 0;
+    out(['', 'Now up to where the console first shows gear ' + g + ', then press.', 'Now up into gear ' + (g + 1) + ', then press.',
+      'Now back down to where the console first shows gear ' + g + ', then press.'][gs]);
+  }
+
   function capturePoint() {
+    if (gStage()) { gearStageDone(); return; }   // [v3.5]
     pressArmed = false; pressEarly = false; pressRefused = false;   // [v3.4] (also "capture anyway" at cal 5)
     if (DEMO_V32 && (passName === 'd' || passName === 'rd')) {
       // [v3.2] down point step+1: coming down to gear step
@@ -485,7 +516,8 @@ function Simulator(startCalibrated) {
       startDown();
       return;
     }
-    if (k === 'V' && DEMO_V34) { out('E,ok,v3.4'); return; }   // [v3.4]
+    if (k === 'V' && DEMO_V34) { out(DEMO_V35 ? 'E,ok,v3.5' : 'E,ok,v3.4'); return; }   // [v3.4]
+    if (k === 'H' && DEMO_V35) { textOn = a[1] !== '0'; out('E,ok,text,' + (textOn ? 'on' : 'off')); return; }   // [v3.5]
     if (k === 'A' && DEMO_V34) {
       if (a[1] === 'press') { press = true; auto = false; pressArmed = false; }
       else if (a[1] === 'auto') { press = false; auto = true; pressArmed = false; }
@@ -497,6 +529,17 @@ function Simulator(startCalibrated) {
     if (k === 'P') { out('E,ok,staged'); return; }
     if (k === 'W') { out('E,ok,saved'); out('K,1,146.0,3.8,6,saved'); sendF(); return; }
     if (k !== 'R' && k !== 'G') { out('E,fail,unknown command'); return; }
+    if (k === 'R' && pass === 'g' && DEMO_V35) {
+      // [v3.5] the whole gear by taps: g1 (below), g2 (into it), g3 (above), g4 (back into it)
+      if (!(point >= 1 && point <= 24)) { out('E,fail,no such gear'); return; }
+      if (cal !== 0) { out('E,fail,busy calibrating'); return; }
+      if (!calValid) { out('E,fail,needs a saved calibration made while pedalling'); return; }
+      passName = point <= 1 ? 'g3' : 'g1'; step = point - 1; cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+      mflag = false; wSent = 0; pressArmed = false; pressRefused = false; flowStep = 6;
+      out('E,ok,redo');
+      out(point <= 1 ? 'Redo gear 1: shift up into gear 2, then press.' : 'Redo gear ' + point + ': shift down into gear ' + (point - 1) + ', then press.');
+      return;
+    }
     if (pass !== 'u' && pass !== 'd') { out('E,fail,bad pass'); return; }
     if (cal !== 0) { out('E,fail,calibrating'); return; }
     if (!calValid) { out('E,fail,no calibration'); return; }
@@ -575,10 +618,10 @@ function Simulator(startCalibrated) {
           break;
         }
         if (redoInfo && Date.now() < redoInfo.bUntil) { out('Not captured: go past the gear first.'); if (press) out('N,notmoved'); break; }
-        if (cal === 1 && press && crankOk) {
+        if (cal === 1 && ((press && crankOk) || gStage())) {
           // [v3.4] a press: measure the next turns at this spot (a press while measuring starts again)
           if (Date.now() < backUntil) { out('N,notmoved'); break; }
-          pressArmed = true; pressEarly = phase === 'move' && step > 0; agree = 0; stab = 0; mflag = false;
+          pressArmed = true; pressEarly = phase === 'move' && (step > 0 || gStage() > 0); agree = 0; stab = 0; mflag = false;
           out('N,press');
           out('Measuring the next pedal turns...');
           break;
@@ -600,6 +643,14 @@ function Simulator(startCalibrated) {
         if (cal === 0) { out('Not calibrating.'); break; }
         if (press && pressArmed && cal === 1) { pressArmed = false; pressEarly = false; agree = 0; stab = 0; out('Press cancelled.'); break; }   // [v3.4]
         pressRefused = false;
+        if (gStage()) {   // [v3.5] one stage back (not before the first)
+          var gg = step + 1, first = gg <= 1 ? 3 : 1;
+          if (gStage() <= first) break;
+          passName = 'g' + (gStage() - 1);
+          cal = 1; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
+          out(gStage() <= 2 ? 'U,' + (gg - 1) : 'U,' + gg + ',d');
+          break;
+        }
         if (passName === 'ru' || passName === 'rd') { out('Nothing to undo in a redo. x = cancel.'); break; }
         if (cal === 7) {
           passName = 'u'; step = TOTAL_POINTS - 2; cal = 1; flowStep = 4; stab = 0; agree = 0; phase = 'move'; phaseT = 0;
@@ -647,6 +698,11 @@ function Simulator(startCalibrated) {
         if (DEMO_V33 && passName === 'd') {
           // [v3.3] stopping the down pass keeps the down points measured so far
           saveAll('Down pass stopped: saved with ' + Object.keys(downPts).length + ' down points. #D carries on later.');
+          break;
+        }
+        if (gStage()) {   // [v3.5] cancel a gear redo: the saved calibration is unchanged
+          cal = 0; step = 0; stab = 0; passName = '-'; flowStep = 0; pressArmed = false;
+          out('A,cancelled by user');
           break;
         }
         if (passName === 'ru' || passName === 'rd') {
@@ -733,7 +789,7 @@ function Simulator(startCalibrated) {
   };
 
   this.connect = function () {
-    connected = true; stream = false; debug = false;
+    connected = true; stream = false; debug = false; textOn = true;   // ([v3.5] text on again at every connection)
     clearInterval(timer);
     timer = setInterval(tick, 250);
     out('');

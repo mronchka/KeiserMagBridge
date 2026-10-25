@@ -36,6 +36,7 @@ if (DEMO_V31 || DEMO_V32ONLY) DEMO_V3 = true;
 var DEMO_V32 = DEMO_V3 && !DEMO_V31;                  // demo: v3.2 features (also part of v3.3)
 var DEMO_V33 = DEMO_V32 && !DEMO_V32ONLY;             // demo: &v3=1 simulates v3.3 by default
 var DEMO_V34 = DEMO_V33 && params.get('v33') !== '1'; // demo: v3.4 (press to capture) by default; &v33=1 = v3.3
+var DEMO_V35 = DEMO_V34 && params.get('v34') !== '1'; // demo: v3.5 (#R,g gear redo by taps, #H) by default; &v34=1 = v3.4
 // [v3.4] how each gear point is saved: 'press' (tap the circle; the default) or 'auto' (by itself)
 var CAPTURE_KEY = 'm3bridge.capture';
 function capturePref() { try { return localStorage.getItem(CAPTURE_KEY) === 'auto' ? 'auto' : 'press'; } catch (e) { return 'press'; } }
@@ -70,12 +71,25 @@ var DOWN_FIRST_STEP = 22;
 var DOWN_POINTS = 22;
 var UNCAL_HOLD_MS = 2000;    // once calibrated was seen, "Not calibrated" needs 2 s of uncalibrated S lines
 var EDIT_TIMEOUT_MS = 8000;  // [v3.2] no E line after a # command: give up waiting
+// [v3.5] #R,g: a whole gear redone by taps, in stages g1 (tap in the gear below), g2 (where it first
+// shows going up), g3 (tap in the gear above), g4 (where it first shows coming down)
+function gearPass(p) { return /^g[1-4]$/.test(p || ''); }
+function redoPass(p) { return p === 'ru' || p === 'rd' || gearPass(p); }
+// the gear an item of the review list belongs to (up point g = where gear g starts; down point g+1 = where it ends)
+function itemGear(it) { return it.gear || (it.pass === 'd' ? it.point - 1 : it.point); }
+// the points a gear redo measures: up point g (not the bottom), down point g+1 (2..23)
+function gearEdges(g) {
+  var out = [];
+  if (g >= 2) out.push({ pass: 'u', point: g });
+  if (g + 1 <= TOTAL_POINTS - 2) out.push({ pass: 'd', point: g + 1 });
+  return out;
+}
 var PRESS_WAIT_MS = 2500;    // [v3.4] after a tap on the circle: "Measuring…" until the board's I flag (or N,press) says so
 var STALL_MS = 10000;        // [v3.2] pedalling but no turn counted at a point this long: the "still on gear N?" hint
 var FIX_MAX_TRIES = 2;       // [v3.2] guided fixes: redos per flagged point before offering the guess or skip
 var S_FLAGS_RE = /^[A-Z]*$/;
 var PASS_RE = /^(-|u|d|ru|rd)$/;
-var PASS33_RE = /^[-a-z]{1,3}$/;   // [v3.3] lenient: a new pass name mustn't make every status line invalid
+var PASS33_RE = /^(-|[a-z][a-z0-9]{0,2})$/;   // [v3.3] lenient: a new pass name mustn't make every status line invalid ([v3.5] g1-g4)
 // [v3.3] one calibration flow: titles are plain instructions (no internal names)
 var FLOW_STEPS = ['Find a good spot', 'Learn your pedalling', 'Sweep the lever', 'Up through the gears',
   'Back down through the gears', 'Check a few gears'];

@@ -104,7 +104,7 @@ function renderFlow(active, placing, saved) {
   var f = flowNow();
   setHidden('crumbs', !f);
   if (f) {
-    var rs = state.s && state.s.cal !== 0 && (state.s.pass === 'ru' || state.s.pass === 'rd');
+    var rs = state.s && state.s.cal !== 0 && redoPass(state.s.pass);
     var rg = rs ? (state.s.pass === 'rd' ? state.s.step : state.s.step + 1) : 0;
     var title = rs ? 'Redo gear ' + rg : FLOW_STEPS[f - 1];
     var t = rs ? '<b>' + esc(title) + '</b>' : 'STEP ' + f + ' OF 6 · <b>' + esc(title) + '</b>';   // (#88: a redo isn't a flow step)
@@ -243,7 +243,8 @@ function fixGuess(it) { return fin(it.gx) ? { x: it.gx, y: it.gy, z: it.gz } : n
 // The flagged point being redone right now (pass ru/rd matching the first item), or null.
 function fixInRedo() {
   var s = state.s, it = reviewItems()[0];
-  if (!it || !s || s.cal === 0 || (s.pass !== 'ru' && s.pass !== 'rd')) return null;
+  if (!it || !s || s.cal === 0 || !redoPass(s.pass)) return null;
+  if (gearPass(s.pass)) return itemGear(it) === s.step + 1 ? it : null;   // [v3.5] the whole gear
   return (s.pass === 'rd' ? 'd' : 'u') === it.pass && s.step + 1 === it.point ? it : null;
 }
 
@@ -270,7 +271,8 @@ function fixNext() {
     return;
   }
   state.fixTries[fixKey(it)] = tries + 1;
-  startEdit('R', it.pass, it.point);
+  if (state.v35) startEdit('R', 'g', itemGear(it));   // [v3.5] the whole gear, by taps
+  else startEdit('R', it.pass, it.point);
 }
 
 // Skip or Use best guess, from the card or from the redo screen (then the redo is cancelled first).
@@ -363,7 +365,7 @@ function renderFixLinks() {
 
 // Send #R (redo by pedalling) or #G (use the board's guess) for one point.
 function startEdit(kind, pass, point, g) {
-  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21
+  if (state.review && state.review.source === 'improve') state.improveLast = pass + point;   // #21 ([v3.5] 'g' + gear)
   if (state.conn !== 'connected') { toast('Not connected'); return; }
   if (state.edit) { toast('Still waiting for the bridge'); return; }
   if (state.s && state.s.cal !== 0) { toast('Finish or cancel the calibration first'); return; }

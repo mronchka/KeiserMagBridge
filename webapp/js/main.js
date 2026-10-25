@@ -223,7 +223,7 @@ $('glAgain').addEventListener('click', calibrateAgain);
 $('onbHome').addEventListener('click', function () { state.homeWalk = false; render(); });
 $('rckSum').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-rck-redo]') : null;
-  if (b && !b.disabled) startEdit('R', 'u', +b.getAttribute('data-rck-redo'));
+  if (b && !b.disabled) startEdit('R', state.v35 ? 'g' : 'u', +b.getAttribute('data-rck-redo'));   // ([v3.5] the whole gear)
 });
 
 // Saved-record actions anywhere on the page (saved list, result cards).

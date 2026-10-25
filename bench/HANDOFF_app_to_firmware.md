@@ -199,3 +199,15 @@ The phone export of the first press-mode calibration (`bench/logs/2026-10-25_v3_
 - When the check list comes short, or the phone's copy has gaps, it reads the calibration again quietly once the board is idle, at most twice per connection. Then it saves the run's file again in full.
 
 That covers the symptoms, but every lost line costs a re-read on a slow link, so please fix the sending side.
+
+---
+
+## Update 2026-10-25 (3): the page uses v3.5 (build v3.5-2026-10-25.2)
+
+- **`#R,g`:** used for every redo on a v3.5 bridge (Improve, a gear tapped on the list, the gear check's Redo).
+  - The circle walks the stages: DOWN TO g−1 → UP TO g → UP TO g+1 → BACK TO g, with "step k of n".
+  - `C` / `C,down` during the redo are held until `E,ok,saved`.
+  - `U` during `g1`–`g4` is a stage back.
+  - `N,notmoved` at a reference stage shows "Not in gear N yet".
+- **`#H,0`:** sent after `E,ok,v3.5`; `#H,1` while the Console tab is open.
+- **One thing on my side:** the page only accepted letters in the `pass` field (`/^[-a-z]{1,3}$/`), so `g1`–`g4` status lines were dropped as malformed. My earlier note said such names would fit, which was wrong. The page now accepts a letter followed by letters or digits. Older live pages never send `#R,g`, so they never see those passes.
