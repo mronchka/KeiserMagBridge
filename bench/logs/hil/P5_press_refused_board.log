@@ -1,10 +1,10 @@
          0  E,ok,inject on
-      1992  Press to capture: move to the gear, then press.
-      1992  E,ok,capture,press
+      2011  Press to capture: move to the gear, then press.
+      2011  E,ok,capture,press
       2011  
       2011  === Calibration started (hold button 3 s or send 'x' to abort, 'u' to undo) ===
       2011  Pedal steadily, any comfortable pace, so the bridge can learn your crank (5-15 s).
-      7363  Crank: dip depth 57.4 uT, 6 turns (6 regular) at 75 rpm in 5.5 s: ok.
+      7382  Crank: dip depth 57.4 uT, 6 turns (6 regular) at 75 rpm in 5.5 s: ok.
       7382  L,1,6,75,57.4,ok
       7382  Crank learned. Check that the cadence matches the Keiser console:
       7382  press button A or send 'n' if it does, send 'l' to learn again.
@@ -12,7 +12,7 @@
       8378  Keep pedalling with the lever still for a few more turns.
      19140  Noise 0.75 uT from 20 still turns.
      19140  
-     19140  [SWEEP UP] Keep pedalling. Lever all the way down, then slowly push it up as far as you can still pedal, then press button A or send 'n'.
+     19160  [SWEEP UP] Keep pedalling. Lever all the way down, then slowly push it up as far as you can still pedal, then press button A or send 'n'.
      38691  
      38691  [SWEEP DOWN] Keep pedalling. Slowly back down to the bottom, then press button A or send 'n'.
      58281  Sweep: path 135.6 uT (signal ok), first spot.
@@ -22,11 +22,11 @@
      58300  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      59921  Measuring: keep pedalling, lever still.
      59921  N,press
-     61738    captured (-84.7, 50.5, -123.2) uT
-     61738  C,1,-84.7,50.5,-123.2
-     61738  
-     61738  [UP 2/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 2, then hold it there.
-     61738  When the console shows it, press button A or send 'n': it measures the next pedal turns.
+     61757    captured (-84.7, 50.5, -123.2) uT
+     61757  C,1,-84.7,50.5,-123.2
+     61757  
+     61757  [UP 2/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 2, then hold it there.
+     61757  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      66347  Measuring: keep pedalling, lever still.
      66347  N,press
      68261    captured (-68.5, 48.2, -117.8) uT
@@ -36,9 +36,9 @@
      68261  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      72578  Measuring: keep pedalling, lever still.
      72578  N,press
-     74648    captured (-53.3, 47.2, -112.3) uT
-     74648  C,3,-53.3,47.2,-112.3
-     74648  
+     74667    captured (-53.3, 47.2, -112.3) uT
+     74667  C,3,-53.3,47.2,-112.3
+     74667  
      74667  [UP 4/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 4, then hold it there.
      74667  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      78554  Measuring: keep pedalling, lever still.
@@ -55,8 +55,8 @@
      84355  
      84355  [UP 6/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 6, then hold it there.
      84355  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-     86835  Measuring: keep pedalling, lever still.
-     86835  N,press
+     86816  Measuring: keep pedalling, lever still.
+     86816  N,press
      88496    captured (-34.4, 47.3, -105.3) uT
      88496  C,6,-34.4,47.3,-105.3
      88496  
@@ -71,30 +71,30 @@
      92558  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      94707  Measuring: keep pedalling, lever still.
      94707  N,press
-     96796    captured (-28.3, 47.6, -103.0) uT
-     96796  C,8,-28.3,47.6,-103.0
-     96796  
+     96816    captured (-28.3, 47.6, -103.0) uT
+     96816  C,8,-28.3,47.6,-103.0
+     96816  
      96816  [UP 9/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 9, then hold it there.
      96816  When the console shows it, press button A or send 'n': it measures the next pedal turns.
      99453  Measuring: keep pedalling, lever still.
      99453  N,press
-    101757    captured (-23.9, 48.0, -101.1) uT
-    101757  C,9,-23.9,48.0,-101.1
-    101757  
-    101757  [UP 10/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 10, then hold it there.
+    101738    captured (-23.9, 48.0, -101.1) uT
+    101738  C,9,-23.9,48.0,-101.1
+    101738  
+    101738  [UP 10/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 10, then hold it there.
     101757  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     104375  Measuring: keep pedalling, lever still.
     104375  N,press
     106796    captured (-16.5, 48.7, -98.4) uT
     106796  C,10,-16.5,48.7,-98.4
     106796  
-    106816  [UP 11/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 11, then hold it there.
+    106796  [UP 11/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 11, then hold it there.
     106816  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     109140  Measuring: keep pedalling, lever still.
     109140  N,press
-    111093    captured (-13.8, 49.1, -97.3) uT
-    111093  C,11,-13.8,49.1,-97.3
-    111093  
+    111113    captured (-13.8, 49.1, -97.3) uT
+    111113  C,11,-13.8,49.1,-97.3
+    111113  
     111113  [UP 12/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 12, then hold it there.
     111113  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     114980  Paused: pedal to continue.
@@ -104,7 +104,7 @@
     178046    captured (-7.2, 50.1, -94.7) uT
     178046  C,12,-7.2,50.1,-94.7
     178046  
-    178046  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
+    178066  [UP 13/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 13, then hold it there.
     178066  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     180273  Measuring: keep pedalling, lever still.
     180273  N,press
@@ -115,20 +115,20 @@
     182304  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     184472  Measuring: keep pedalling, lever still.
     184472  N,press
-    186660    captured (-1.3, 51.1, -92.2) uT
-    186660  C,14,-1.3,51.1,-92.2
-    186660  
+    186679    captured (-1.3, 51.1, -92.2) uT
+    186679  C,14,-1.3,51.1,-92.2
+    186679  
     186679  [UP 15/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 15, then hold it there.
     186679  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     189472  Measuring: keep pedalling, lever still.
     189472  N,press
-    192148    captured (5.0, 52.4, -89.6) uT
-    192148  C,15,5.0,52.4,-89.6
-    192148  
+    192128    captured (5.0, 52.4, -89.6) uT
+    192128  C,15,5.0,52.4,-89.6
+    192128  
     192148  [UP 16/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 16, then hold it there.
     192148  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    194355  Measuring: keep pedalling, lever still.
-    194355  N,press
+    194335  Measuring: keep pedalling, lever still.
+    194335  N,press
     196933    captured (8.2, 53.1, -88.4) uT
     196933  C,16,8.2,53.1,-88.4
     196933  
@@ -169,15 +169,15 @@
     222773  
     222792  [UP 22/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 22, then hold it there.
     222792  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    225058  Measuring: keep pedalling, lever still.
-    225058  N,press
-    227988    captured (28.5, 58.3, -79.8) uT
-    227988  C,22,28.5,58.3,-79.8
-    227988  
+    225078  Measuring: keep pedalling, lever still.
+    225078  N,press
+    228007    captured (28.5, 58.3, -79.8) uT
+    228007  C,22,28.5,58.3,-79.8
+    228007  
     228007  [UP 23/24] Keep pedalling, any steady pace. Move the lever up to where the Keiser console FIRST shows gear 23, then hold it there.
     228007  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    230371  Measuring: keep pedalling, lever still.
-    230371  N,press
+    230390  Measuring: keep pedalling, lever still.
+    230390  N,press
     233417    captured (32.3, 59.6, -78.1) uT
     233417  C,23,32.3,59.6,-78.1
     233417  
@@ -195,8 +195,8 @@
     240136  Up pass saved. Press button A or send 'n' to come back DOWN through the gears now, or 's' to stop here ('#D' does the down pass later).
     240214  Check: all points fit.
     240214  F,end,0
-    241699  Coming back down.
-    241699  
+    241660  Coming back down.
+    241660  
     241699  [DOWN 1/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 22, then hold it there.
     241699  When the console shows it, press button A or send 'n': it measures the next pedal turns.
     244902  Measuring: keep pedalling, lever still.
@@ -213,8 +213,8 @@
     253261  
     253261  [DOWN 3/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 20, then hold it there.
     253261  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    255761  Measuring: keep pedalling, lever still.
-    255761  N,press
+    255722  Measuring: keep pedalling, lever still.
+    255722  N,press
     258417    captured (21.4, 56.3, -82.8) uT
     258417  C,down,21,21.4,56.3,-82.8
     258417  
@@ -227,8 +227,8 @@
     263261  
     263261  [DOWN 5/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 18, then hold it there.
     263261  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    265371  Measuring: keep pedalling, lever still.
-    265371  N,press
+    265332  Measuring: keep pedalling, lever still.
+    265332  N,press
     267792  
     267792  Point 19: the reading is still changing - hold the lever still.
     267792  W,19,0.9,1.0
@@ -237,8 +237,8 @@
     270136  
     270136  [DOWN 6/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 17, then hold it there.
     270136  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    272480  Measuring: keep pedalling, lever still.
-    272480  N,press
+    272441  Measuring: keep pedalling, lever still.
+    272441  N,press
     275292    captured (13.9, 54.3, -86.0) uT
     275292  C,down,18,13.9,54.3,-86.0
     275292  
@@ -251,8 +251,8 @@
     280214  
     280214  [DOWN 8/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 15, then hold it there.
     280214  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    282636  Measuring: keep pedalling, lever still.
-    282636  N,press
+    282597  Measuring: keep pedalling, lever still.
+    282597  N,press
     284980    captured (4.0, 52.1, -90.1) uT
     284980  C,down,16,4.0,52.1,-90.1
     284980  
@@ -265,8 +265,8 @@
     289277  
     289277  [DOWN 10/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 13, then hold it there.
     289277  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    292324  Measuring: keep pedalling, lever still.
-    292324  N,press
+    292285  Measuring: keep pedalling, lever still.
+    292285  N,press
     294667    captured (-8.3, 50.0, -95.0) uT
     294667  C,down,14,-8.3,50.0,-95.0
     294667  
@@ -279,8 +279,8 @@
     298964  
     298964  [DOWN 12/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 11, then hold it there.
     298964  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    301542  Measuring: keep pedalling, lever still.
-    301542  N,press
+    301503  Measuring: keep pedalling, lever still.
+    301523  N,press
     303183    captured (-13.6, 49.1, -97.4) uT
     303183  C,down,12,-13.6,49.1,-97.4
     303183  
@@ -297,8 +297,8 @@
     369824  Resumed.
     371835  Measuring: keep pedalling, lever still.
     371835  N,press
-    374082    captured (-24.1, 48.0, -101.3) uT
-    374082  C,down,10,-24.1,48.0,-101.3
+    374101    captured (-24.1, 48.0, -101.3) uT
+    374101  C,down,10,-24.1,48.0,-101.3
     374121  
     374121  [DOWN 15/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 8, then hold it there.
     374121  When the console shows it, press button A or send 'n': it measures the next pedal turns.
@@ -333,9 +333,9 @@
     393730  
     393730  [DOWN 19/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 4, then hold it there.
     393730  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    396464  Measuring: keep pedalling, lever still.
-    396464  N,press
-    398574  
+    396425  Measuring: keep pedalling, lever still.
+    396445  N,press
+    398554  
     398574  Point 5: the reading is still changing - hold the lever still.
     398574  W,5,1.7,2.3
     400214    captured (-46.6, 47.0, -110.0) uT
@@ -343,8 +343,8 @@
     400214  
     400214  [DOWN 20/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 3, then hold it there.
     400214  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    402011  Measuring: keep pedalling, lever still.
-    402011  N,press
+    401992  Measuring: keep pedalling, lever still.
+    401992  N,press
     403496  Not captured: the lever hasn't moved on from the previous point. Press again to save it here anyway.
     403496  N,notmoved
     404746  Measuring: keep pedalling, lever still.
@@ -361,8 +361,8 @@
     412480  
     412480  [DOWN 22/22] Keep pedalling, any steady pace. Move the lever DOWN to where the Keiser console FIRST shows gear 1, then hold it there.
     412480  When the console shows it, press button A or send 'n': it measures the next pedal turns.
-    416777  Measuring: keep pedalling, lever still.
-    416777  N,press
+    416757  Measuring: keep pedalling, lever still.
+    416757  N,press
     418906    captured (-73.4, 48.7, -119.4) uT
     418906  C,down,2,-73.4,48.7,-119.4
     418906  Down pass: 22 points.

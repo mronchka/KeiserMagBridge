@@ -1,0 +1,16 @@
+B1.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+B1.json PASS 125 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B1.json']
+B5.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+B5.json PASS 137 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B5.json']
+B12.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+B12.json PASS 126 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\B12.json']
+P1_press.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+P1_press.json PASS 130 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\P1_press.json']
+P5_press_refused.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+P5_press_refused.json PASS 157 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\P5_press_refused.json']
+G1_gear_redo.json erase: ['E,ok,erased', 'E,ok,capture,auto']
+G1_gear_redo.json PASS 134 s ['PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\scenarios\\G1_gear_redo.json']
+v32b.json.gz erase: ['E,ok,erased', 'E,ok,capture,auto']
+v32b.json.gz PASS 476 s ["  note: the scenario ends mid-calibration and '#I' was refused: send 'x', then '#I'", 'PASS C:\\Projects\\KeiserMagBridge\\bench\\tests\\..\\logs\\hil\\v32b_erased.json']
+
+RESULT: 7 of 7 scenarios match on the board
