@@ -537,7 +537,7 @@ function onK(p) {
   } else if (r.ok && !r.edit && flowAt === 5) {
     state.upSaved = false;
     state.fixHold = false;
-    if (state.stopSent) { state.noAutoCheck = true; state.fixPaused = true; }   // the rider stopped it (x / Finish without the down pass): flagged gears and step 6 wait
+    if (state.stopSent) state.fixPaused = true;   // the rider stopped it (x / Finish without the down pass): flagged gears wait on the gear list (#117)
     var finished = state.downPoints.some(function (q) { return q.point === 2; });
     setFlowRecord({ downDone: finished, checkDone: false });
   }
@@ -729,7 +729,7 @@ function onE(p) {
     if (ed) {
       clearTimeout(ed.timer);
       ed.okd = true;   // K follows
-      if (ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; gearPendingApply(); }   // (#74: saved, even if its K is lost)
+      if (ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; gearPendingApply(); if (state.improving) state.improving.savedAny = true; }   // (#74: saved, even if its K is lost)
       if (ed.kind === 'G') (state.guessed = state.guessed || {})[ed.pass === 'd' ? ed.point - 1 : ed.point] = true;   // (#111)
       // A guess isn't sent back as a C line: apply it here so the saved copy matches the bridge.
       if (ed.kind === 'G' && ed.g && fin(ed.g.x)) {
@@ -791,6 +791,7 @@ function onA(p) {
   onbIdx = 0;
   state.fixHold = false; state.upSaved = false;
   logLine('Calibration aborted: ' + state.result.reason, 'sys');
+  if (/cancel/i.test(state.result.reason)) toast('Stopped. The points so far are under Saved runs.');   // (#116)
   state.result.recordId = savePartialCal('aborted: ' + state.result.reason);
   renderResult();
   renderBadge();

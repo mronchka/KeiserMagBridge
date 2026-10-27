@@ -141,7 +141,8 @@ function improveSummary(before) {
   if (moved.length) out.push(names(moved) + (moved.length === 1 ? ' changed' : ' changed') + ' with ' + (moved.length === 1 ? 'it' : 'them') + ' (neighbours share an edge).');
   return out.join(' ');
 }
-function pickedSummary(g, before) {
+function pickedSummary(g, before, saved) {
+  if (!saved) return 'Gear ' + g + ' left as it was.';   // (#119: skipped or cancelled)
   var now = qualityLevels(gearQuality()), moved = [];
   [g - 1, g + 1].forEach(function (k) { if (k >= 1 && k <= GEARS && before[k] === 0 && now[k] > 0) moved.push(k); });
   return 'Gear ' + g + ' redone: ' + (now[g] === 0 ? 'it looks good.' : now[g] === 1 ? 'it\u2019s still unsure.' : 'it still needs another look.') +
@@ -163,7 +164,7 @@ function openGearList() {
     if (imp.picked) {
       (state.improvedGears = state.improvedGears || {})[imp.picked] = true;
       state.sheetGear = imp.picked;
-      note = (state.guessed || {})[imp.picked] && imp.guessOnly ? 'Gear ' + imp.picked + ': the bridge\u2019s best guess is in use.' : pickedSummary(imp.picked, imp.before);
+      note = (state.guessed || {})[imp.picked] && imp.guessOnly ? 'Gear ' + imp.picked + ': the bridge\u2019s best guess is in use.' : pickedSummary(imp.picked, imp.before, !!imp.savedAny);
     } else note = improveSummary(imp.before);
     state.improving = null;
     state.review = null; state.redoResult = null; state.fixPaused = false;   // (the pass is over: no queue left behind)

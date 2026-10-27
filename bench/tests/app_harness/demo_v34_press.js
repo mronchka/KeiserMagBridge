@@ -108,7 +108,7 @@ function check(name, ok, detail) {
 
   // waiting long without a tap: the note asks for it
   await app.advance(12);
-  check('no tap for a while: "Waiting for your tap"', /Waiting for your tap/.test($('behindHint').textContent), $('behindHint').textContent);
+  check('no tap for a while: no extra note (the line under the circle says to tap)', $('behindHint').hidden && /tap the circle/i.test($('calSub').textContent), $('calSub').textContent);
 
   // back to auto from More options: kept on this phone, sent to the bridge, the next gear saves by itself
   $('autoToggle').click();

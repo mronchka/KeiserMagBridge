@@ -40,7 +40,7 @@ function gearStory(g) {
   for (var k = 2; k <= GEARS - 1; k++) if (fin(s[k]) && fin(s[k + 1])) widths.push(s[k + 1] - s[k]);
   widths.sort(function (a, b) { return a - b; });
   var medw = widths.length ? widths[widths.length >> 1] : 0;
-  var w = fin(s[g]) && fin(s[g + 1]) ? s[g + 1] - s[g] : NaN;
+  var w = g < GEARS && fin(s[g]) && fin(s[g + 1]) ? s[g + 1] - s[g] : NaN;   // (#118: gear 24 ends at the worked-out top)
   var dn = {};
   state.downPoints.forEach(function (x) { var o = onPath(path, x); if (o) dn[x.point] = o.s; });
   var flags = (state.lastFlags || []).filter(function (f) { return itemGear(f) === g; });
@@ -82,7 +82,10 @@ function gearStory(g) {
   else v = q.why.join(' ');
   unread = unread || downUnread;
   return { g: g, level: q.level, verdict: v, guessed: guessed, s: s, dn: dn, medw: medw, w: w, pct: pct, guesses: guesses, off: off,
-    unread: unread, ghost: fin(dn[g]) && fin(dn[g + 1]), narrow: fin(pct) && pct < 80 };
+    unread: unread, narrow: fin(pct) && pct < 80,
+    // the coming-down copy where up and down are the question; else the usual-size bracket (#118)
+    ghost: fin(dn[g]) && fin(dn[g + 1]) && (has('pair') || has('updown') || has('gap') ||
+      flags.some(function (f) { return f.pass === 'd'; })) };
 }
 
 // The picture: absolutely placed boxes in #rulerViz (its own width), like the design's ruler.
@@ -130,7 +133,7 @@ function drawRuler(story) {
     var d1 = X(story.dn[g]) + 1.5, d2 = X(story.dn[g + 1]) - 1.5;
     el('left:' + d1 + 'px;top:' + y2 + 'px;width:' + Math.max(4, d2 - d1) + 'px;height:22px;border-radius:6px;border:2px dashed ' + col + ';color:' + col + ';line-height:18px;font-weight:700', String(g));
     el('left:' + Math.max(0, Math.min(d1, W - 200)) + 'px;top:' + (y2 + 26) + 'px;width:200px;height:16px;text-align:left;color:var(--muted)', 'the same gear, coming down');
-  } else if (story.narrow && fin(s[g])) {
+  } else if (fin(s[g]) && fin(story.w)) {
     var xu = X(s[g]), wu = story.medw * sc;
     el('left:' + xu + 'px;top:' + y2 + 'px;width:' + wu + 'px;height:2px;background:var(--muted)');
     el('left:' + xu + 'px;top:' + (y2 - 5) + 'px;width:2px;height:12px;background:var(--muted)');

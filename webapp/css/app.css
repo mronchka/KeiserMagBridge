@@ -738,7 +738,7 @@ body.calfocus #toast { bottom: auto; top: calc(118px + env(safe-area-inset-top))
 
 /* ---------- Setup (2026-10-27 design: A · Guided) ---------- */
 .su { display: flex; flex-direction: column; }
-#calIdle:has(#setupIntro:not([hidden])) .onb-more, #calIdle:has(#setupIntro:not([hidden])) #calMore { display: none; }
+#view-cal:has(#setupIntro:not([hidden])) .onb-more, #view-cal:has(#setupIntro:not([hidden])) #calMore { display: none; }
 .su-page { display: flex; flex-direction: column; gap: 10px; }
 #suWelcome { min-height: calc(100svh - 190px); }
 .su-top { display: flex; justify-content: flex-end; }
@@ -777,7 +777,8 @@ body.calfocus #toast { bottom: auto; top: calc(118px + env(safe-area-inset-top))
 .su-chi { flex: none; width: 56px; height: 56px; border-radius: 16px; background: var(--surface); display: flex; align-items: center; justify-content: center; }
 /* the three parts at the top */
 .crumb-segs { grid-template-columns: repeat(3, 1fr) !important; }
-.crumb-l { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; font-size: .8rem; color: var(--muted); }
+.crumb-l { display: none !important; }   /* (#114/#115: the bars and the line above say it; the row cost the circle 20 px) */
+.crumb-l-x { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; font-size: .8rem; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .crumb-segs i { transition: none; } }
 .crumb-l .cur { color: var(--text); font-weight: 600; }
 /* "Ready to ride" (the checkpoint) */
@@ -833,5 +834,8 @@ body.calfocus #toast { bottom: auto; top: calc(118px + env(safe-area-inset-top))
 .gs-axis { display: flex; justify-content: space-between; font-size: .76rem; color: var(--muted); margin-bottom: 4px; }
 .gs-btns { display: flex; gap: 10px; }
 .gs-note { margin: 0; font-size: .9rem; color: var(--warn); font-weight: 600; }
+.gs-hint { margin: 0; font-size: .82rem; color: var(--muted); text-align: center; }
+/* the cadence check's two buttons need a little more room (#115) */
+#calActive:has(#btnRelearn:not([hidden])) { --sx2: 16px; }
 .gs-btns .btn { flex: 1; min-height: 48px; }
 .gs .btn.secondary { background: var(--surface2); border-color: var(--line); }

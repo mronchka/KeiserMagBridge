@@ -322,8 +322,7 @@ function renderCal() {
     // gear before the target can be 24 or 23.
     var on = down ? pGear + 1 : pGear - 1;
     var onTxt = down && step >= DOWN_FIRST_STEP ? (TOTAL_POINTS - 1) + ' or ' + on : String(on);
-    bt = pressMode
-      ? 'Waiting for your tap. When the console shows ' + pGear + ', tap the circle.'   // [v3.4] nothing saves by itself
+    bt = pressMode ? ''   // (#114: "tap the circle" is already the line under it)
       : 'Still on gear ' + onTxt + '? Move ' + dirWord + ' until the console first shows ' + pGear + '.';
   }
   setHidden('behindHint', !bt);
@@ -625,7 +624,8 @@ function resultCardHidden() {
     !!state.upSaved || !!state.resultHidden || !!state.place || !!state.gearList || !!state.homeWalk ||   // #25
     !!state.improving || homeListShown() ||   // #45 (the list says it all; the file is under Saved runs)
     (linkBack() && !!(state.dropS && state.dropS.cal !== 0)) ||   // #69: a dropped run (#77: and while it comes back)
-    (state.v33 && !!state.result && state.result.type === 'K' && state.result.ok && !calRunning(state.s));
+    (state.v33 && !!state.result && state.result.type === 'K' && state.result.ok && !calRunning(state.s)) ||
+    (!!state.result && state.result.type === 'A' && /cancel/i.test(state.result.reason));   // (#116)
 }
 
 function renderResult() {

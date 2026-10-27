@@ -229,7 +229,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.advance(2);
     check('stopping the down pass with (x) does not start the gear check by itself', !(st.check && st.check.phase === 'run'),
       st.check && st.check.phase);
-    check('...the start screen offers it instead', app.$('calResume').hidden === false && app.$('resumeCheck').hidden === false);
+    check('...the gear list offers it instead (#117: and Finish and ride)', !!st.gearList && !app.$('gearList').hidden && app.$('glCheck').hidden === false && app.$('glFinish').hidden === false);
     app.$('resumeCheck').click();
     while (st.check.phase === 'run') app.M3.checkAnswer(5);
     check('the gear check summary keeps the breadcrumb (step 6)', app.win.flowNow() === 6 && app.$('crumbs').hidden === false);

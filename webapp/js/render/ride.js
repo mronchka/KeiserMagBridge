@@ -63,7 +63,7 @@ function renderRide() {
   if (!calibrated) {
     gearEl.textContent = '--';
     gearEl.classList.add('dim');
-    note.textContent = s.cal !== 0 ? 'Calibration in progress' : 'Not calibrated — go to Calibrate';
+    note.textContent = s.cal !== 0 ? 'Calibration in progress' : 'Not calibrated — go to Setup';
     note.classList.add('warn');
     if (stale) note.textContent = 'Waiting for the bridge…';
     return;
