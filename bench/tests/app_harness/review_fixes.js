@@ -474,7 +474,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await redo(5, '15.0');
     await redo(10, '30.0');
     check('#11 Improve redoes the red gear first, then the yellow ones in order', JSON.stringify(sent()) === '["#R,u,15","#R,u,5","#R,u,10"]', JSON.stringify(sent()));
-    check('#11 ...then the gear list again: 3 of 3 improved, every gear good', !!st.gearList && /^3 of 3 gears improved\. Every gear looks good\.$/.test(app.$('glLead').textContent),
+    check('#11 ...then the gear list again: 3 of 3 improved, every gear good', !!st.gearList && /^3 of 3 gears improved\. Every gear looks good\./.test(app.$('glLead').textContent),
       app.$('glLead').textContent);
   }
   {
@@ -1135,6 +1135,40 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.advance(1);
     check('#90 ...and back on the list: "Gear 10 redone"', !!st.gearList && /^Gear 10 redone\./.test(app.$('glLead').textContent),
       app.$('glTitle').textContent + ' / ' + app.$('glLead').textContent + ' / ' + app.$('glWhy').textContent);
+  }
+  {
+    // after each Improve redo: good -> a short message and on to the next gear; still unsure -> the result
+    // card, the rider decides; after two tries "Keep it as it is" (no best guess for a yellow gear) leads
+    const app = mk(); const st = app.M3.state;
+    await triesCal(app);
+    app.$('glImprove').click();
+    await app.advance(0.5);
+    const redo5 = async (wTries) => {
+      await app.f('E,ok,redo');
+      await app.f(S({ cal: 1, flow: 6, step: 4, pass: 'ru' }));
+      for (let i = 0; i < wTries; i++) await app.f('W,5,1.3,1.1');
+      await app.f('C,5,15.1,1.0,2.0'); await app.f('E,ok,saved'); await app.f('K,1,120.0,3.00,6,saved'); await app.f('F,end,0'); await app.f(S({}));
+      await app.advance(0.5);
+    };
+    await redo5(2);                                                // took 2 tries again: still unsure
+    check('a redo that leaves the gear unsure: the result card says so, nothing starts by itself',
+      !!st.redoResult && /Gear 5 is still unsure/.test(app.$('reviewCard').innerHTML) && redos(app).join(' ') === '#R,u,5',
+      redos(app).join(' ') + ' / ' + (st.redoResult && JSON.stringify(st.redoResult)));
+    check('...with buttons (Try again first)', /data-review="again"[^>]*>Try again/.test(app.$('reviewCard').innerHTML) && /class="btn primary" type="button" data-review="again"/.test(app.$('reviewCard').innerHTML));
+    app.win.redoResultAct('again');
+    await app.advance(0.5);
+    check('Try again redoes the same gear', redos(app).join(' ') === '#R,u,5 #R,u,5', redos(app).join(' '));
+    await redo5(2);
+    check('after the second try: "Keep it as it is" leads (no best guess for this gear)',
+      !!st.redoResult && /class="btn primary" type="button" data-review="keep"/.test(app.$('reviewCard').innerHTML), app.$('reviewCard').textContent.slice(0, 160));
+    app.win.redoResultAct('keep');
+    await app.advance(0.5);
+    check('...Keep it goes on to the next gear', redos(app).join(' ') === '#R,u,5 #R,u,5 #R,u,12', redos(app).join(' '));
+    await app.f('E,ok,redo'); await app.f(S({ cal: 1, flow: 6, step: 11, pass: 'ru' }));
+    await app.f('C,12,36.1,1.0,2.0'); await app.f('E,ok,saved'); await app.f('K,1,120.0,3.00,6,saved'); await app.f('F,end,0'); await app.f(S({}));
+    await app.advance(1);
+    check('a redo that comes out good: "looks good now", and on (here: back to the list)',
+      app.toasts.some((t) => /Gear 12 looks good now/.test(t)) && !st.redoResult && !!st.gearList, JSON.stringify(app.toasts.slice(-2)));
   }
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL crashed: ' + (e && e.stack || e)); process.exit(1); });

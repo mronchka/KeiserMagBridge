@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.5-2026-10-25.2';
+  var APP_BUILD = 'v3.5-2026-10-27.1';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.5-2026-10-25.2">
+<link rel="stylesheet" href="css/app.css?v=v3.5-2026-10-27.1">
 </head>
 <body>
 
@@ -147,7 +147,7 @@
         <button class="btn primary wide" id="glImprove" type="button" hidden>Improve</button>
         <button class="btn wide" id="glCheck" type="button">Check a few gears</button>
         <button class="btn text" id="glFinish" type="button">Finish and ride</button>
-        <button class="btn text" id="glAgain" type="button" hidden>Calibrate again</button>
+        <button class="btn secondary wide" id="glAgain" type="button" hidden>Start a fresh calibration</button>
       </div>
     </div>
 
@@ -321,10 +321,12 @@
         <div class="behind-hint" id="behindHint" role="status" hidden></div>
         <div id="calCount">0 of 25</div>
         <div class="stop-note" id="stopNote" hidden>Stop pedalling to shift any time you like.</div>
+        <!-- the down pass: in the line under the circle, so the circle is the same size on both passes -->
+        <button class="btn skipdown" id="btnSkipDown" type="button" hidden aria-label="Finish without the down pass: save the gears measured so far">Finish without the down pass</button>
       </div>
-      <div class="rv-links" id="fixLinks" hidden>
-        <button class="linkbtn" id="fixGuess" type="button">Use best guess instead</button>
-        <button class="linkbtn" id="fixSkip" type="button">Skip this gear</button>
+      <div class="rv-btns" id="fixLinks" hidden>
+        <button class="btn secondary" id="fixGuess" type="button">Use best guess</button>
+        <button class="btn secondary" id="fixSkip" type="button">Skip this gear</button>
       </div>
       <div class="btn-stack" id="confirmBtns" hidden style="margin-top:0;gap:4px">
         <button class="btn primary big" id="btnConfirm" type="button">Yes, it matches</button>
@@ -334,7 +336,6 @@
         <button class="btn primary capture" id="btnCapture" type="button">CAPTURE</button>
         <button class="btn" id="btnUndo" type="button">UNDO</button>
         <button class="btn danger" id="btnCancel" type="button">CANCEL</button>
-        <button class="btn skipdown" id="btnSkipDown" type="button" hidden aria-label="Finish without the down pass: save the gears measured so far">Finish without the down pass</button>
       </div>
     </div>
 

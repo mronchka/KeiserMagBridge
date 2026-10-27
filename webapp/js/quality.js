@@ -167,7 +167,7 @@ function startImprove(pick, picked) {
   if (!edges.length) return;
   state.improving = { before: qualityLevels(q), picked: Array.isArray(pick) ? picked : 0 };
   state.gearList = null;
-  state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = '';
+  state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = ''; state.redoResult = null; state.redoBefore = null;
   state.review = { items: edges, source: 'improve' };
   fixNext();
   render();
@@ -226,7 +226,7 @@ function renderGearList() {
     : gl.home ? 'The calibration on the bridge. ' : 'Saved on the bridge and ready to ride. ';
   var downs = state.downPoints.map(function (x) { return x.point; });
   var noDown = isV33() && !state.learnFailed && state.points.length > 0 && !downs.length;   // #83: the down pass not done
-  lead += !bad && !unsure ? (noDown ? 'Every gear looks good going up; coming down isn\u2019t measured yet.' : 'Every gear looks good.')
+  lead += !bad && !unsure ? (noDown ? 'Every gear looks good going up; coming down isn\u2019t measured yet.' : 'Every gear looks good. Tap one to redo it.')
     : (bad ? bad + ' gear' + (bad === 1 ? '' : 's') + ' need' + (bad === 1 ? 's' : '') + ' another look' : '') + (bad && unsure ? ', ' : '') +
       (unsure ? unsure + ' ' + (unsure === 1 ? 'is' : 'are') + ' unsure' : '') + '. ' + (noDown ? 'Coming down isn\u2019t measured yet. ' : '') + 'Tap a gear to see why.';
   $('glTitle').textContent = gl.improved || gl.redone ? 'Your gears now' : gl.home ? 'Your calibration' : gl.checked ? 'Your gears' : 'Calibration done';

@@ -261,8 +261,10 @@ function fixNext() {
     render();
     return;
   }
-  var tries = state.fixTries[fixKey(it)] || 0;
-  if (state.fixPaused || tries >= FIX_MAX_TRIES || !fixCanRedo(it) || state.conn !== 'connected' || state.edit) { renderReview(); return; }
+  var gk = 'g' + itemGear(it);   // (tries count per gear: a whole-gear redo measures both its points)
+  var tries = state.fixTries[gk] || 0;
+  var force = state.redoAgain === gk; state.redoAgain = '';   // ("Try again" on the result card: past the limit too)
+  if (state.fixPaused || state.redoResult || (tries >= FIX_MAX_TRIES && !force) || !fixCanRedo(it) || state.conn !== 'connected' || state.edit) { renderReview(); return; }
   if (state.s && state.s.cal !== 0) {
     // K and the F list come just before the status line says the board is idle: try again shortly
     clearTimeout(fixWaitT);
@@ -270,7 +272,9 @@ function fixNext() {
     renderReview();
     return;
   }
-  state.fixTries[fixKey(it)] = tries + 1;
+  state.fixTries[gk] = tries + 1;
+  // what the gear looked like before this redo: the result card says what changed
+  if (state.review.source === 'improve') state.redoBefore = { gear: itemGear(it), level: gearQuality()[itemGear(it)].level };
   if (state.v35) startEdit('R', 'g', itemGear(it));   // [v3.5] the whole gear, by taps
   else startEdit('R', it.pass, it.point);
 }
@@ -315,14 +319,16 @@ function renderReview() {
   var card = $('reviewCard'), items = reviewItems();
   var active = calRunning(state.s);
   var checkRun = !!state.check && state.check.phase === 'run';
+  if (state.redoResult && !active && !checkRun) return renderRedoResult(card);
   var show = !active && !checkRun && items.length > 0 && !state.fixHold && !state.upSaved && !state.place &&   // [v3.3] fixes wait for the down pass
     !(isV33() && !$('calResume').hidden);   // (#58: and while the start screen offers to pick it up)
   renderFixLinks();
   setHidden('reviewCard', !show);
   if (!show) { reviewKey = ''; return; }
+  card.className = 'card review';
   var connected = state.conn === 'connected', busy = !!state.edit;
   var it = items[0], words = pointWords(it.pass, it.point), key2 = fixKey(it);
-  var tries = state.fixTries[key2] || 0, tired = tries >= FIX_MAX_TRIES || !fixCanRedo(it);
+  var tries = state.fixTries['g' + itemGear(it)] || 0, tired = tries >= FIX_MAX_TRIES || !fixCanRedo(it);
   var key = key2 + it.reason + '|' + items.length + '|' + tries + '|' + busy + '|' + state.editErr + '|' + connected + '|' + state.fixPaused;
   if (key === reviewKey) return;   // only rewrite when something changed (keeps focus and taps intact)
   reviewKey = key;
@@ -344,14 +350,75 @@ function renderReview() {
     (tired && guessable
       ? '<button class="btn primary wide" type="button" data-review="guess"' + dis + ' aria-label="Use the bridge’s best guess for ' + esc(words) + '">Use best guess</button>'
       : '<button class="btn primary wide" type="button" data-review="redo"' + dis + ' aria-label="Redo ' + esc(words) + ' by pedalling">' + (improving && it.gear ? 'Redo it' : 'Redo ' + esc(words.replace(/ \(.*\)$/, ''))) + '</button>') +
-    '</div><div class="rv-links">' +
-    (tired || !guessable ? '' : '<button class="linkbtn" type="button" data-review="guess"' + dis + '>Use best guess instead</button>') +
-    '<button class="linkbtn" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
+    '</div><div class="rv-btns">' +
+    (tired || !guessable ? '' : '<button class="btn secondary" type="button" data-review="guess"' + dis + '>Use best guess</button>') +
+    '<button class="btn secondary" type="button" data-review="skip"' + (busy ? ' disabled' : '') + '>' + (tired ? 'Keep it as it is' : 'Skip') + '</button></div>';
   if (items.length > 1) html += '<p class="small muted" style="margin-top:8px">Then ' + (items.length - 1) + ' more to look at.</p>';
   if (busy) html += '<div class="rv-msg busy" role="status">' + (!connected ? 'Connection lost: reconnect to carry on.'
     : state.edit.kind === 'R' ? 'Starting the redo…' : 'Saving the best guess…') + '</div>';
   if (state.editErr) html += '<div class="rv-msg bad" role="alert">Not changed: ' + esc(state.editErr) + '</div>';
   card.innerHTML = html;
+}
+
+// After each redo of an Improve pass: what it did to the gear, and the rider picks what's next.
+// From the second try on, the bridge's best guess (or keeping it) is the main button.
+var redoResultKey = '';
+function renderRedoResult(card) {
+  var r = state.redoResult, g = r.gear, connected = state.conn === 'connected', busy = !!state.edit;
+  var mine = reviewItems().filter(function (it) { return itemGear(it) === g; });
+  var others = reviewItems().filter(function (it) { return itemGear(it) !== g; });
+  var tries = state.fixTries['g' + g] || 0;
+  var guessIt = mine.filter(function (it) { return !!fixGuess(it); })[0];
+  var key = JSON.stringify(r) + '|' + mine.length + '|' + others.length + '|' + tries + '|' + connected + '|' + busy + '|' + state.editErr;
+  setHidden('reviewCard', false);
+  if (key === redoResultKey) return;
+  redoResultKey = key;
+  var good = r.after === 0, better = r.after < r.before, still = !good;
+  var next = others.length ? 'Next: gear ' + itemGear(others[0]) : 'Back to your gears';
+  var dis = !connected || busy ? ' disabled' : '';
+  var html = '<h2>' + (good ? 'Gear ' + g + ' looks good now <span class="rv-done" aria-hidden="true">✓</span>'
+      : better ? 'Gear ' + g + ' is better' : r.after === 2 ? 'Gear ' + g + ' still needs another look' : 'Gear ' + g + ' is still unsure') + '</h2>';
+  if (still) html += '<p class="rv-t">' + esc(r.why || '') + '</p><p class="small muted">' +
+    (tries >= FIX_MAX_TRIES ? 'Redone ' + tries + ' times. ' + (guessIt ? 'The bridge’s best guess is probably better than another try.' : 'Another try is unlikely to change it: keep it as it is.')
+      : 'Redone once.' + (better ? '' : ' Check the console shows gear ' + g + ' at each tap, then try again.')) + '</p>';
+  else html += '<p class="small muted">It was ' + (r.before === 2 ? 'red' : 'yellow') + ' before this redo.</p>';
+  var btns = [];
+  if (good || (better && r.after === 1 && tries < FIX_MAX_TRIES && !mine.length)) btns.push(['next', next, true]);
+  else if (tries >= FIX_MAX_TRIES) {
+    if (guessIt) btns.push(['guess', 'Use best guess', true]);
+    btns.push(['keep', 'Keep it as it is', !guessIt]);
+    btns.push(['again', 'Try again', false]);
+  } else {
+    btns.push(['again', 'Try again', true]);
+    if (guessIt) btns.push(['guess', 'Use best guess', false]);
+    btns.push(['keep', others.length ? 'Keep it, next gear' : 'Keep it as it is', false]);
+  }
+  html += '<div class="rv-btns">' + btns.map(function (b) {
+    return '<button class="btn ' + (b[2] ? 'primary' : 'secondary') + '" type="button" data-review="' + b[0] + '"' + (b[0] === 'next' || b[0] === 'keep' ? '' : dis) + '>' + esc(b[1]) + '</button>';
+  }).join('') + '</div>';
+  if (busy) html += '<div class="rv-msg busy" role="status">' + (!connected ? 'Connection lost: reconnect to carry on.' : 'Saving the best guess…') + '</div>';
+  if (state.editErr) html += '<div class="rv-msg bad" role="alert">Not changed: ' + esc(state.editErr) + '</div>';
+  card.className = 'card review' + (good ? ' rv-ok' : '');
+  card.innerHTML = html;
+}
+
+// The result card's buttons: next (leave this gear for now), keep (as it is), again, guess.
+function redoResultAct(act) {
+  var rr = state.redoResult;
+  if (!rr) return;
+  state.redoResult = null; redoResultKey = '';
+  var g = rr.gear, mine = reviewItems().filter(function (it) { return itemGear(it) === g; });
+  if (act === 'next') state.review.items = reviewItems().filter(function (it) { return itemGear(it) !== g; });
+  else if (act === 'keep') { mine.forEach(keepAsIs); state.review.items = reviewItems().filter(function (it) { return itemGear(it) !== g; }); }
+  else {
+    // this gear first again (the bridge may not flag it, e.g. a yellow gear: its edges from the list)
+    if (!mine.length) mine = gearRedoEdges(g).map(function (e) { e.reason = 'rider'; return e; });
+    if (act === 'guess') mine.sort(function (a, b) { return (fixGuess(b) ? 1 : 0) - (fixGuess(a) ? 1 : 0); });   // (the point the bridge has a guess for)
+    state.review.items = mine.concat(reviewItems().filter(function (it) { return itemGear(it) !== g; }));
+    if (act === 'again') state.redoAgain = 'g' + g;
+  }
+  state.fixPaused = false; state.editErr = '';
+  if (act === 'guess') fixAction('guess'); else fixNext();
 }
 
 // On the redo screen of a flagged point: small "Use best guess instead" / "Skip" links.

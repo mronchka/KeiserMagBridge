@@ -139,7 +139,11 @@ body.calfocus #calActive:has(#confirmBtns:not([hidden])) .cal-btns { margin-top:
 /* the down pass adds "Finish without the down pass": the circle makes room for it */
 /* whatever else is showing, the circle gives up that much room (so the buttons stay on screen) */
 /* (each one's real height at 393 px wide, where its text takes two lines, plus the 10 px gap) */
-#calActive:has(#btnSkipDown:not([hidden])) { --sx1: 54px; }
+/* press mode: no CAPTURE button; its row is the circle's (on both passes: "Finish without the down pass"
+   sits in the line under the circle) */
+#calActive:has(#btnCapture[hidden]):not(.nopoint) { --sx1: -50px; }
+#calActive:has(#btnCapture:not([hidden])):has(#btnSkipDown:not([hidden])) { --sx1: 44px; }   /* (auto mode: CAPTURE and the down pass's button both need room) */
+.cal-foot:has(#btnSkipDown:not([hidden])) #stopNote, .cal-foot:has(#behindHint:not([hidden])) #btnSkipDown { display: none; }
 /* #88: notes take the count's place under the circle (.cal-foot), so nothing else resizes the circle */
 .cal-foot { min-height: 3.4rem; }
 .cal-foot:has(#behindHint:not([hidden])) #calCount, .cal-foot:has(#behindHint:not([hidden])) #stopNote { display: none; }
@@ -405,8 +409,8 @@ main {
 /* [v3.2] N,behind: the agreeing turns sit behind the previous point */
 .behind-hint { color: var(--warn); padding: 0 16px; font-size: .95rem; font-weight: 600; line-height: 1.35; text-align: center; }   /* #88: a line, not a box */
 .behind-hint b { color: inherit; }
-.cal-btns .btn.skipdown { grid-column: 1 / -1; min-height: 44px; font-size: 1rem; background: transparent; color: var(--accent); font-weight: 500; }
-.cal-btns .btn.skipdown.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
+.btn.skipdown { display: block; margin: 2px auto 0; min-height: 40px; padding: 4px 16px; font-size: .95rem; background: transparent; color: var(--accent); font-weight: 500; }
+.btn.skipdown.armed { background: var(--bad); color: var(--bad-ink); border-color: var(--bad); }
 #calActive.redoing .cal-btns .btn.danger { grid-column: 1 / -1; }
 /* [v3.3] one flow of numbered steps: "Step 3 of 6 · Sweep the lever" and 6 small segments */
 .crumbs { display: flex; flex-direction: column; gap: 8px; }
@@ -443,8 +447,8 @@ main {
 /* iPhone: the screen-lock tip shows too, so the gauge gives up the room */
 .place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100vh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
 /* the same with the dynamic viewport height where there is one (iOS 15.4+): 100vh can include hidden browser bars */
-@supports (height: 100dvh) {
-  .stage { --stage: max(120px, min(300px, 78vw, calc(100dvh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
+@supports (height: 100svh) {
+  .stage { --stage: max(120px, min(300px, 78vw, calc(100svh - 440px - var(--sx1, 0px) - var(--sx2, 0px) - var(--sx3, 0px) - var(--sx4, 0px)
     - max(0px, env(safe-area-inset-bottom, 0px) - 12px)))); }
   .gauge { width: max(150px, min(260px, 66vw, calc((100dvh - 520px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
   .place:has(#lockTip:not([hidden])) .gauge { width: max(140px, min(260px, 66vw, calc((100dvh - 585px - max(0px, env(safe-area-inset-bottom, 0px) - 12px)) * 1.41))); }
@@ -502,12 +506,17 @@ main {
 .x-btn { min-width: 44px; min-height: 44px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 1.2rem; font-weight: 700; }
 .result .downinfo { margin-top: 10px; font-size: .95rem; }
 /* [v3.2] review card: points the bridge's check flagged after saving (F lines) */
-.review { border-color: var(--warn); }
+.review { border-color: transparent; }
 .review h2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .rv-item { border-top: 1px solid var(--line); padding: 14px 0 4px; }
 .rv-item:first-of-type { margin-top: 8px; }
 .rv-t { font-size: 1.05rem; line-height: 1.4; }
-.rv-t b { color: var(--warn); }
+.rv-t b { color: var(--text); }
+.rv-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.rv-btns .btn { flex: 1 1 140px; min-height: 48px; }
+.rv-btns .btn.secondary { background: var(--surface2); border-color: var(--line); }   /* (visibly buttons, on a card or on the page) */
+.rv-done { color: var(--ok); }
+.rv-ok h2 { color: var(--ok); }
 .rv-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 28px; margin-top: 10px; font-size: 1rem; }
 .rv-links .linkbtn { min-height: 44px; }
 .rv-msg { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: .95rem; }

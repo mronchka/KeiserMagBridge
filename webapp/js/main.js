@@ -145,8 +145,11 @@ $('reviewCard').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-review]') : null;
   if (!b || b.disabled) return;
   var act = b.getAttribute('data-review');
-  if (act === 'dismiss') {
-    state.review = null;
+  var rr = state.redoResult;
+  if (rr && /^(next|again|keep|guess)$/.test(act)) {
+    redoResultAct(act);   // the result card after a redo
+  } else if (act === 'dismiss') {
+    state.review = null; state.redoResult = null;
     state.fixPaused = false;
   } else if (act === 'redo') {
     state.editErr = '';

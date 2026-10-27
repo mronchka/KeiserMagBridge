@@ -636,7 +636,18 @@ function onF(p) {
       });
       state.review = { items: rest, source: 'improve' };
       state.improveLast = '';
-      fixNext();
+      var rb = state.redoBefore; state.redoBefore = null;
+      if (rb && state.improveSaved) {
+        // what the redo did: the rider sees it and picks what's next
+        var gq = gearQuality()[rb.gear];
+        if (gq.level === 0) {   // good now: say so, and carry on
+          toast('Gear ' + rb.gear + ' looks good now ✓');
+          fixNext();
+        } else {   // still not right: the rider decides (try again, the best guess, or keep it)
+          state.redoResult = { gear: rb.gear, before: rb.level, after: gq.level, why: gq.why.join(' ') };
+          renderReview();
+        }
+      } else fixNext();
     } else if (state.wantReadback) {
       // save the edited calibration first; its F list (after Q,end) drives what comes next
       state.wantReadback = false;
