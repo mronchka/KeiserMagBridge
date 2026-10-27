@@ -286,6 +286,8 @@ function fixNext() {
   state.fixTries[gk] = tries + 1;
   // what the gear looked like before this redo: the result card says what changed
   if (state.review.source === 'improve') state.redoBefore = { gear: itemGear(it), level: gearQuality()[itemGear(it)].level };
+  if (it.action === 'guess' && fixGuess(it)) { startEdit('G', it.pass, it.point, fixGuess(it)); return; }   // (#102)
+  if (state.improving && state.improving.guessOnly) { state.review.items = []; fixNext(); return; }   // (no redo after a guess)
   if (state.v35) startEdit('R', 'g', itemGear(it));   // [v3.5] the whole gear, by taps
   else startEdit('R', it.pass, it.point);
 }

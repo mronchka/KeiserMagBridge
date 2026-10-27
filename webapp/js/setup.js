@@ -21,13 +21,13 @@ function renderSetupIntro(show) {
   setHidden('suPart3', !!state.s && !state.v32);   // (a bridge without a down pass)
   var up = pressPreferred() ? 'Gear 1 to 24. One tap at each.' : 'Gear 1 to 24. Hold each until it saves.';
   if ($('suUpText').textContent !== up) $('suUpText').textContent = up;
-  setHidden('suBackHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));
+  setHidden('suBackHome', !(state.homeWalk && !!(state.s && state.s.flags.V)));   // (#104: also before the hub's re-read)
 }
 
 // The intro card before part 2 (press mode: nothing is saved until the first tap, so the board can wait)
 function chapterUpDue(s) {
   return !!s && isV33() && s.cal === 1 && s.flow === 4 && s.step === 0 && s.pass === 'u' && !state.points.length &&
-    !!s.flags.T && !state.learnFailed && !state.chapterUpSeen;
+    !!s.flags.T && !s.flags.I && !state.learnFailed && !state.chapterUpSeen;
 }
 
 // The three parts of setup, for the bar at the top: Get ready (steps 1-3), Up (4), Down (5).
@@ -37,7 +37,7 @@ function setupPart(f) { return f >= 1 && f <= 3 ? 1 : f === 4 ? 2 : f === 5 ? 3 
 function setupLevel(bad, unsure, noDown) {
   var rec = flowRecord() || {};
   if (noDown) return 'Ready to ride';
-  if (!bad && !unsure && rec.checkDone) return 'Dialled in';
+  if (!bad && !unsure && rec.checked) return 'Dialled in';   // (#101: a gear check done, not just skipped)
   return 'Tuned';
 }
 function shortDate(iso) {
@@ -63,7 +63,7 @@ function renderSetupHub(q, bad, unsure, fixable, noDown) {
     rows.push({ act: 'improve', dot: bad ? 'bad' : 'warn', t: 'Redo ' + names, s: 'About ' + Math.max(1, fixable) + ' min' });
   }
   if (noDown) rows.push({ act: 'down', dot: 'accent', t: 'Back down through the gears', s: 'About 5 min · recommended' });
-  rows.push({ act: 'check', dot: 'accent', t: 'Check a few gears as you ride', s: '3 min' + ((flowRecord() || {}).checkDone ? '' : ' · not done yet') });
+  rows.push({ act: 'check', dot: 'accent', t: 'Check a few gears as you ride', s: '3 min' + ((flowRecord() || {}).checked ? '' : ' · not done yet') });
   rows.push({ act: 'again', dot: 'none', t: 'Moved the bridge? Start over', s: 'About 15 min' });
   var connected = state.conn === 'connected' && !!state.homeRead;
   var more = '<div class="su-kick">Make it better</div><div class="su-rows">' + rows.map(function (r) {

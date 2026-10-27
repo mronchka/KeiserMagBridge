@@ -632,6 +632,7 @@ function onF(p) {
       flagged.forEach(function (it) {
         if ((state.keptEdges || {})[fixKey(it)]) return;   // #53: kept as it is
         if (picked && itemGear(it) !== picked) return;
+        if (state.improving && state.improving.guessOnly) return;   // (#102: a guess pass doesn't turn into a redo)
         if (!rest.some(function (x) { return fixKey(x) === fixKey(it); })) rest.unshift(it);
       });
       state.review = { items: rest, source: 'improve' };
@@ -928,7 +929,7 @@ function onN(p) {
 }
 
 function onCalStarted() {
-  state.chapterUpSeen = false; state.sheetGear = 0;
+  state.sheetGear = 0;
   state.points = [];
   state.downPoints = [];
   state.behind = null;

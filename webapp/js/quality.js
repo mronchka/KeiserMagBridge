@@ -151,7 +151,8 @@ function gearRedoEdges(g) {
   var out = [];
   if (g >= 2) out.push({ pass: 'u', point: g, reason: 'rider', gear: g });
   var dn = g + 1;
-  if (isV32() && !state.learnFailed && dn <= TOTAL_POINTS - 2 && state.downPoints.some(function (x) { return x.point === dn; })) {
+  var lowDown = state.downPoints.length ? Math.min.apply(null, state.downPoints.map(function (x) { return x.point; })) : 99;
+  if (isV32() && !state.learnFailed && dn <= TOTAL_POINTS - 2 && dn >= lowDown) {   // (#106: measured, or missing within the down pass)
     out.push({ pass: 'd', point: dn, reason: 'rider', gear: g });
   }
   return out;
@@ -218,7 +219,7 @@ function renderGearList() {
   var reading = !!gl.home && connected && !state.homeRead;   // #75: the last list shown, while the bridge's is read
   var live = connected && !reading;
   var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading + '|' + (gl.redone || 0) +
-    '|' + (state.sheetGear || 0) + '|' + JSON.stringify(state.keptEdges || {}) + '|' + !!(flowRecord() || {}).checkDone;
+    '|' + (state.sheetGear || 0) + '|' + JSON.stringify(state.keptEdges || {}) + '|' + !!(flowRecord() || {}).checked;
   if (key === gearListKey) return;
   gearListKey = key;
   var lead = gl.redone ? 'Gear ' + gl.redone + ' redone. '

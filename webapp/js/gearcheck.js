@@ -181,6 +181,7 @@ function finishCheck() {
   c.picking = false;
   state.checkDone = true;
   if (c.flow) setFlowRecord({ checkDone: true });   // (c.flow, not state.v33: that is cleared by a drop)
+  if (!c.single && c.results.length) setFlowRecord({ checked: true });   // (#101: a whole gear check with answers)
   var res = (c.prev || []).concat(c.results);   // (with "Check a few more gears": the earlier answers too)
   if (c.flow) {
     state.checkMisses = state.checkMisses || {};

@@ -28,12 +28,14 @@ Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (
 $('goCal').addEventListener('click', function () { showView('cal'); });
 
 $('calStart').addEventListener('click', function () {
+  state.chapterUpSeen = false;   // (#107: a new calibration from this page: the part 2 card again)
   if (state.v33) { openPlace(); return; }   // [v3.3] step 1 first: find a good spot (Next starts the run)
   onCalStarted();
   send('c');
 });
 // [v3.3] step 1 -> step 2: placement stream off, start the calibration
 $('placeNext').addEventListener('click', function () {
+  state.chapterUpSeen = false;
   closePlace(true);
   onCalStarted();
   send('c');
@@ -217,7 +219,7 @@ function suTop() { var mn = document.querySelector('main'); if (mn) mn.scrollTop
 function suFocus(id) { var el = $(id); if (el && el.focus) el.focus(); }
 $('suGo').addEventListener('click', function () { setupPage = 'plan'; render(); suTop(); suFocus('suPlanT'); });
 $('suNotNow').addEventListener('click', function () { showView('ride'); render(); });
-$('suBack').addEventListener('click', function () { if (state.homeWalk && state.homeRead) state.homeWalk = false; else setupPage = 'welcome'; render(); suTop(); suFocus('suWelcomeT'); });
+$('suBack').addEventListener('click', function () { if (state.homeWalk) state.homeWalk = false; else setupPage = 'welcome'; render(); suTop(); suFocus('suWelcomeT'); });
 $('suStart').addEventListener('click', function () { $('calStart').click(); });
 $('suBackHome').addEventListener('click', function () { state.homeWalk = false; render(); });
 $('chapterGo').addEventListener('click', function () { state.chapterUpSeen = true; render(); suFocus('calHead'); });

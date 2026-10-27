@@ -53,23 +53,32 @@ function gearStory(g) {
   var miss = (state.checkMisses || {})[g];
   var st = (state.pointStats || {})['u' + g] || {};
   var unread = !fin(s[g]) && g >= 2;
+  var lowDown = state.downPoints.length ? Math.min.apply(null, state.downPoints.map(function (x) { return x.point; })) : 99;
+  var downUnread = !unread && isV32() && state.downPoints.length > 0 && g + 1 <= TOTAL_POINTS - 2 && g + 1 >= lowDown &&
+    !state.downPoints.some(function (x) { return x.point === g + 1; });   // (#106: in the down pass's range, but not on this phone)
   var off = flags.some(function (f) { return f.pass === 'u' && f.reason === 'offpath'; });
   var pct = fin(w) && medw > 0 ? Math.round(100 * w / medw) : NaN;
-  // the verdict: the most telling thing about this gear, in a sentence
-  var v;
+  var flag = function (r) { return flags.filter(function (f) { return f.reason === r; })[0]; };
+  var has = function (r) { return reasons.indexOf(r) >= 0; };
+  // the verdict: the gear's most serious reason first (the bridge's flags and a check miss are red;
+  // the list's own reasons yellow), in a sentence
+  var v, fb = flag('behind'), fo = flag('offpath');
   if (unread) v = 'Where gear ' + g + ' starts didn’t reach this phone. The bridge most likely has it.';
+  else if (downUnread) v = 'Where gear ' + g + ' ends coming down didn’t reach this phone. The bridge most likely has it.';
   else if (miss) v = 'In the gear check the bridge read gear ' + miss.app + ' where the console showed ' + miss.console + '.';
-  else if (reasons.indexOf('behind') >= 0) v = 'Gear ' + g + ' was saved before the lever got past gear ' + (g - 1) + ', so the two overlap.';
-  else if (off) v = 'Where gear ' + g + ' starts is off to one side of the line the other gears make.';
-  else if (reasons.indexOf('pair') >= 0 || reasons.indexOf('updown') >= 0 || reasons.indexOf('gap') >= 0)
-    v = 'Going up and coming down, gear ' + g + ' changes at quite different spots.';
-  else if (reasons.indexOf('offpath') >= 0) v = 'Coming down, gear ' + g + ' ends off to one side of the other gears.';
-  else if (reasons.indexOf('narrow') >= 0 && fin(pct)) v = 'Gear ' + g + ' is about ' + pct + '% of the usual size, so a small nudge of the lever skips it.';
-  else if (reasons.indexOf('prior') >= 0) v = 'Gear ' + g + ' has moved since your last calibration.';
-  else if (st.back) v = 'Gear ' + g + ' was saved too far and had to be gone back to. It looks fine now.';
-  else if (st.w >= 2) v = 'It took ' + (st.w + 1) + ' tries to hold gear ' + g + ' steady when it was saved.';
+  else if (fb) v = fb.pass === 'd' ? 'Coming down, gear ' + g + ' was saved before the lever got past gear ' + (g + 1) + '.'
+    : 'Gear ' + g + ' was saved before the lever got past gear ' + (g - 1) + ', so the two overlap.';
+  else if (fo) v = fo.pass === 'd' ? 'Coming down, gear ' + g + ' ends off to one side of the other gears.'
+    : 'Where gear ' + g + ' starts is off to one side of the line the other gears make.';
+  else if (flag('pair') || flag('updown')) v = 'Going up and coming down, gear ' + g + ' changes at quite different spots.';
+  else if (flag('prior')) v = 'Gear ' + g + ' has moved since your last calibration.';
   else if (q.level === 0) v = 'Looks right' + (fin(pct) ? ': a normal size' : '') + ', and in line with the gears around it.';
+  else if (has('narrow') && fin(pct)) v = 'Gear ' + g + ' is about ' + pct + '% of the usual size, so a small nudge of the lever skips it.';
+  else if (has('gap')) v = 'Going up and coming down, gear ' + g + ' changes at quite different spots.';
+  else if (st.back || has('back')) v = 'Gear ' + g + ' was saved too far and had to be gone back to.';
+  else if (st.w >= 2 || has('unsteady')) v = 'Gear ' + g + ' took ' + (st.w || 2) + ' tries to settle when it was saved.';
   else v = q.why.join(' ');
+  unread = unread || downUnread;
   return { g: g, level: q.level, verdict: v, s: s, dn: dn, medw: medw, w: w, pct: pct, guesses: guesses, off: off,
     unread: unread, ghost: fin(dn[g]) && fin(dn[g + 1]), narrow: fin(pct) && pct < 80 };
 }
@@ -161,7 +170,8 @@ function renderGearSheet() {
   var story = gearStory(g), connected = state.conn === 'connected';
   var flagsG = (state.lastFlags || []).filter(function (f) { return itemGear(f) === g && fin(f.gx); });
   var canRedo = gearRedoEdges(g).length > 0;
-  var key = JSON.stringify([g, story.level, story.verdict, flagsG.length, connected, canRedo, $('rulerViz').clientWidth]);
+  var live = connected && (!!state.homeRead || !!state.gearList);   // (#103: not on a remembered copy)
+  var key = JSON.stringify([g, story.level, story.verdict, flagsG.length, live, canRedo, $('rulerViz').clientWidth]);
   if (key === sheetKey) return;
   sheetKey = key;
   $('gsTitle').textContent = 'Gear ' + g;
@@ -176,7 +186,7 @@ function renderGearSheet() {
   redo.className = 'btn ' + (story.level ? 'primary' : 'secondary') + ' wide';
   setHidden('gsRedo', !canRedo && !story.unread);
   setHidden('gsGuess', !flagsG.length || story.unread);
-  redo.disabled = guess.disabled = check.disabled = !connected;
+  redo.disabled = guess.disabled = check.disabled = !live;
 }
 // Redo / best guess / a check ride of just this gear, from the sheet
 function sheetRedo() {
@@ -193,7 +203,10 @@ function sheetGuess() {
   state.improving = { before: qualityLevels(gearQuality()), picked: g };
   state.gearList = null;
   state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = ''; state.redoResult = null; state.redoBefore = null;
-  state.review = { items: [{ pass: f.pass, point: f.point, reason: f.reason, gx: f.gx, gy: f.gy, gz: f.gz, gear: g }], source: 'improve' };
+  state.improving.guessOnly = true;   // (#102: only the bridge's guesses, no redo after them)
+  state.review = { items: (state.lastFlags || []).filter(function (x) { return itemGear(x) === g && fin(x.gx); }).map(function (x) {
+    return { pass: x.pass, point: x.point, reason: x.reason, gx: x.gx, gy: x.gy, gz: x.gz, gear: g, action: 'guess' };
+  }), source: 'improve' };
   fixAction('guess');
   render();
 }
@@ -205,4 +218,5 @@ function sheetCheck() {
     { gear: g, pace: 'easy', label: 'Gear ' + g + ', easy', task: 'Shift to gear ' + g + ' and pedal at an easy pace.' },
     { gear: g, pace: 'fast', label: 'Gear ' + g + ', faster', task: 'Stay in that gear and pedal faster.' }
   ]);
+  if (state.check) state.check.single = true;   // (#101: one gear, not "a gear check done")
 }
