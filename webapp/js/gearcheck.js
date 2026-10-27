@@ -219,7 +219,8 @@ function renderCheckSummary() {
   var res = c.results, done = c.redone || {};
   var miss = res.filter(function (r) { return r.app !== r.console; });
   var allRedone = miss.length && miss.every(function (r) { return done[edgeGear(r.app, r.console)]; });
-  $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : allRedone ? 'Redone: check them again?' : miss.length ? 'Some gears differ' : 'All gears match';
+  $('rckDoneTitle').textContent = !res.length ? 'Gear check skipped' : allRedone ? 'Redone: check them again?'
+    : c.single ? 'Gear ' + c.single + (miss.length ? ' differs' : ' matches') : miss.length ? 'Some gears differ' : 'All gears match';
   var html = '', redone = {};
   res.forEach(function (r) {
     var ok = r.app === r.console, btn = '';

@@ -81,15 +81,15 @@ function check(name, ok, detail) {
     $('calCount').textContent === 'Redo gear 10 · step 4 of 4', head() + ' / ' + $('calCount').textContent);
   const pendU = JSON.stringify(st.gearPending && st.gearPending.u);
   await tapWhenReady();
-  await until(() => !!st.gearList, 15, 0.1);
-  check('saved: the measured points go into the page\'s copy, back on the list "Gear 10 redone"',
-    !st.gearPending && JSON.stringify(pt(10)) === pendU && !!dpt(11) && /^Gear 10 redone\./.test($('glLead').textContent),
+  await until(() => /Gear 10 redone/.test($('glLead').textContent), 15, 0.1);
+  check('saved: the measured points go into the page\'s copy, back on the hub "Gear 10 redone"',
+    !st.gearPending && JSON.stringify(pt(10)) === pendU && !!dpt(11) && !st.gearList && /^Gear 10 redone: it looks good\./.test($('glLead').textContent),
     $('glLead').textContent);
   check('...one #R,g for the whole gear', redos().join(' ') === '#R,g,10', redos().join(' '));
 
   // one stage back, then cancel: nothing changes
   const up12 = JSON.stringify(pt(12));
-  st.gearList.sel = 12; app.win.renderGearList();
+  st.homeSel = 12; app.win.renderGearList();
   $('glImprove').click();
   await stage('g1');
   await tapWhenReady(); await stage('g2');
@@ -104,7 +104,7 @@ function check(name, ok, detail) {
   check('x: cancelled, the stored point unchanged on the phone', JSON.stringify(pt(12)) === up12 && !st.gearPending, JSON.stringify(pt(12)));
 
   // gear 1: only the down edge (stages 3-4)
-  app.win.openGearList(); st.gearList.sel = 1; app.win.renderGearList();
+  app.win.openGearList(); st.homeSel = 1; app.win.renderGearList();
   $('glImprove').click();
   await stage('g3');
   check('gear 1: starts at stage 3, "step 1 of 2"', $('calCount').textContent === 'Redo gear 1 · step 1 of 2' && head() === 'Up into gear 2',
@@ -114,7 +114,7 @@ function check(name, ok, detail) {
   await app.advance(1);
 
   // Improve: red gears by #R,g (the review flags up point 20 and down point 23, i.e. gears 20 and 22)
-  app.win.openGearList(); st.gearList.sel = 0; app.win.renderGearList();
+  app.win.openGearList(); st.homeSel = 0; app.win.renderGearList();
   const n0 = redos().length;
   $('glImprove').click();
   await until(() => redos().length > n0, 5, 0.1);

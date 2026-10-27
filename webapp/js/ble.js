@@ -232,6 +232,7 @@ function setConn(c, msg, isErr) {
       state.v33 = false; state.newerLines = 0; state.bWas = null;
       state.v34 = false; state.captureMode = ''; state.pressSentAt = 0; state.pressRefused = null;   // [v3.4] asked again (#V)
       state.rereadTries = 0; state.qReread = false; clearTimeout(state.rereadT);
+      if (state.sheetGear) { state.sheetGear = 0; if (typeof sheetInert === 'function') sheetInert(false); }   // (#109)
       state.v35 = false;
       // [v3.3] the board keeps its placement stream across a drop ('v' toggles it): the first
       // status line after reconnecting decides (onFlowStatus)

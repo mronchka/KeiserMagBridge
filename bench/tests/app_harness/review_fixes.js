@@ -474,7 +474,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await redo(5, '15.0');
     await redo(10, '30.0');
     check('#11 Improve redoes the red gear first, then the yellow ones in order', JSON.stringify(sent()) === '["#R,u,15","#R,u,5","#R,u,10"]', JSON.stringify(sent()));
-    check('#11 ...then the gear list again: 3 of 3 improved, every gear good', !!st.gearList && /^3 of 3 gears improved\. Every gear looks good\./.test(app.$('glLead').textContent),
+    check('#11 ...then the gear list again: 3 of 3 improved, every gear good', !!st.gearList && /^Gears 5, 9 and 15 are good now\. Every gear looks good\./.test(app.$('glLead').textContent),
       app.$('glLead').textContent);
   }
   {

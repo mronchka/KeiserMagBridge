@@ -68,8 +68,10 @@ function check(name, ok, detail) {
     await until(() => sent().some((c) => /^#G,u,20/.test(c)), 5, 0.1);
     check('Use best guess sends #G for that point', sent().some((c) => /^#G,u,20/.test(c)), JSON.stringify(sent().slice(-3)));
     await until(() => !!st.gearList, 10, 0.1);
-    check('...and comes back to the list ("Gear 20 redone") with its sheet', !!st.gearList && /Gear 20 redone/.test($('glLead').textContent) && st.sheetGear === 20,
+    check('...and comes back to the hub ("best guess in use") with its sheet', !st.gearList && /Gear 20: the bridge’s best guess is in use/.test($('glLead').textContent) && st.sheetGear === 20,
       $('glLead').textContent);
+    check('a gear on the best guess stays "unsure", with Check on a ride first', app.win.gearQuality()[20].level === 1 &&
+      /best guess, not a measurement/.test($('gsVerdict').textContent) && /primary/.test($('gsCheck').className), $('gsVerdict').textContent);
     // a good gear: Redo is there but not the main button; no best guess
     app.win.openGearSheet(10);
     check('a good gear: "Looks right", Redo (secondary), no best guess', /Looks right/.test($('gsVerdict').textContent) && $('gsGuess').hidden && /secondary/.test($('gsRedo').className),
@@ -78,6 +80,14 @@ function check(name, ok, detail) {
     await app.advance(0.5);
     check('Check on a ride: a gear check of just that gear', !!st.check && st.check.phase === 'run' && st.check.list.length === 2 && st.check.list.every((c) => c.gear === 10) && $('gearSheet').hidden,
       JSON.stringify(st.check && st.check.list.map((c) => c.gear)));
+    check('...titled "Check gear 10"', $('crumbT').textContent === 'Check gear 10', $('crumbT').textContent);
+    st.check.activeMs = 1e9;
+    await until(() => st.s && st.s.gear === 10, 30, 0.25);   // (the simulated rider shifts there)
+    await app.advance(2);
+    while (st.check && st.check.phase === 'run') M3.checkAnswer(10);   // (the console agrees with the bridge)
+    check('...its summary: "Gear 10 matches"', $('rckDoneTitle').textContent === 'Gear 10 matches', $('rckDoneTitle').textContent);
+    $('rckClose').click();
+    check('...and Done ends on the hub with a line on it', !st.gearList && !st.check && /Gear 10 matches the console/.test($('glLead').textContent), $('glLead').textContent);
     check('no page errors (hub)', app.errors.length === 0, JSON.stringify(app.errors).slice(0, 300));
   }
   process.exit(fail ? 1 : 0);

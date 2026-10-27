@@ -109,7 +109,10 @@ function renderFlow(active, placing, saved) {
     // Setup's three parts: Get ready (steps 1-3), Up through the gears (4), Back down (5); the gear check
     // and a redo are no part
     var part = rs ? 0 : setupPart(f), PARTS = ['Get ready', 'Up through the gears', 'Back down'];
-    var title = rs ? 'Redo gear ' + rg : part ? PARTS[part - 1] : FLOW_STEPS[f - 1];
+    var imp = state.improving, left = imp && state.review ? reviewItems().map(itemGear).filter(function (g, i, a) { return a.indexOf(g) === i; }).length : 0;
+    var kOfN = rs && imp && imp.gears > 1 && left ? ' · gear ' + Math.max(1, imp.gears - left + 1) + ' of ' + imp.gears : '';
+    var title = rs ? 'Redo gear ' + rg + kOfN : part ? PARTS[part - 1]
+      : f === 6 && state.check && state.check.single ? 'Check gear ' + state.check.single : FLOW_STEPS[f - 1];
     var t = !part ? '<b>' + esc(title) + '</b>'
       : 'PART ' + part + ' OF 3 · <b>' + esc(part === 1 ? FLOW_STEPS[f - 1] : title) + '</b>';   // (part 1: its step; "Get ready" is under the bar)
     setHidden('crumbSegs', !part);
@@ -250,7 +253,13 @@ var REASON_TEXT = {
 function reviewItems() { return state.review ? state.review.items : []; }
 function fixKey(it) { return it.pass + it.point; }
 function fixCanRedo(it) { return it.point >= 2 && it.point <= (it.pass === 'd' ? TOTAL_POINTS - 2 : TOTAL_POINTS - 1); }
-function fixGuess(it) { return fin(it.gx) ? { x: it.gx, y: it.gy, z: it.gz } : null; }
+function fixGuess(it) {
+  if (!fin(it.gx)) {   // (#112: an item from the gear list: the bridge's flag for that point has the guess)
+    var f = (state.lastFlags || []).filter(function (x) { return x.pass === it.pass && x.point === it.point && fin(x.gx); })[0];
+    return f ? { x: f.gx, y: f.gy, z: f.gz } : null;
+  }
+  return { x: it.gx, y: it.gy, z: it.gz };
+}
 // The flagged point being redone right now (pass ru/rd matching the first item), or null.
 function fixInRedo() {
   var s = state.s, it = reviewItems()[0];
@@ -332,6 +341,7 @@ function renderReview() {
   var card = $('reviewCard'), items = reviewItems();
   var active = calRunning(state.s);
   var checkRun = !!state.check && state.check.phase === 'run';
+  if (linkBack() && state.dropS && state.dropS.cal !== 0) { setHidden('reviewCard', true); reviewKey = ''; return; }   // (#109: "paused" says it)
   if (state.redoResult && !active && !checkRun) return renderRedoResult(card);
   var show = !active && !checkRun && items.length > 0 && !state.fixHold && !state.upSaved && !state.place &&   // [v3.3] fixes wait for the down pass
     !(isV33() && !$('calResume').hidden);   // (#58: and while the start screen offers to pick it up)
@@ -391,7 +401,7 @@ function renderRedoResult(card) {
   var dis = !connected || busy ? ' disabled' : '';
   var html = '<h2>' + (good ? 'Gear ' + g + ' looks good now <span class="rv-done" aria-hidden="true">✓</span>'
       : better ? 'Gear ' + g + ' is better' : r.after === 2 ? 'Gear ' + g + ' still needs another look' : 'Gear ' + g + ' is still unsure') + '</h2>';
-  if (still) html += '<p class="rv-t">' + esc(r.why || '') + '</p><p class="small muted">' +
+  if (still) html += '<p class="rv-t">' + esc(gearStory(g).verdict || r.why || '') + '</p><p class="small muted">' +
     (tries >= FIX_MAX_TRIES ? 'Redone ' + tries + ' times. ' + (guessIt ? 'The bridge’s best guess is probably better than another try.' : 'Another try is unlikely to change it: keep it as it is.')
       : 'Redone once.' + (better ? '' : ' Check the console shows gear ' + g + ' at each tap, then try again.')) + '</p>';
   else html += '<p class="small muted">It was ' + (r.before === 2 ? 'red' : 'yellow') + ' before this redo.</p>';

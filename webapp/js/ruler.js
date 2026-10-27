@@ -63,7 +63,9 @@ function gearStory(g) {
   // the verdict: the gear's most serious reason first (the bridge's flags and a check miss are red;
   // the list's own reasons yellow), in a sentence
   var v, fb = flag('behind'), fo = flag('offpath');
+  var guessed = !!(state.guessed || {})[g];
   if (unread) v = 'Where gear ' + g + ' starts didn’t reach this phone. The bridge most likely has it.';
+  else if (guessed && !miss) v = 'Gear ' + g + ' uses the bridge\u2019s best guess, not a measurement. Check it on a ride.';
   else if (downUnread) v = 'Where gear ' + g + ' ends coming down didn’t reach this phone. The bridge most likely has it.';
   else if (miss) v = 'In the gear check the bridge read gear ' + miss.app + ' where the console showed ' + miss.console + '.';
   else if (fb) v = fb.pass === 'd' ? 'Coming down, gear ' + g + ' was saved before the lever got past gear ' + (g + 1) + '.'
@@ -79,7 +81,7 @@ function gearStory(g) {
   else if (st.w >= 2 || has('unsteady')) v = 'Gear ' + g + ' took ' + (st.w || 2) + ' tries to settle when it was saved.';
   else v = q.why.join(' ');
   unread = unread || downUnread;
-  return { g: g, level: q.level, verdict: v, s: s, dn: dn, medw: medw, w: w, pct: pct, guesses: guesses, off: off,
+  return { g: g, level: q.level, verdict: v, guessed: guessed, s: s, dn: dn, medw: medw, w: w, pct: pct, guesses: guesses, off: off,
     unread: unread, ghost: fin(dn[g]) && fin(dn[g + 1]), narrow: fin(pct) && pct < 80 };
 }
 
@@ -171,7 +173,7 @@ function renderGearSheet() {
   var flagsG = (state.lastFlags || []).filter(function (f) { return itemGear(f) === g && fin(f.gx); });
   var canRedo = gearRedoEdges(g).length > 0;
   var live = connected && (!!state.homeRead || !!state.gearList);   // (#103: not on a remembered copy)
-  var key = JSON.stringify([g, story.level, story.verdict, flagsG.length, live, canRedo, $('rulerViz').clientWidth]);
+  var key = JSON.stringify([g, story.level, story.verdict, flagsG.length, live, canRedo, $('rulerViz').clientWidth, story.guessed]);
   if (key === sheetKey) return;
   sheetKey = key;
   $('gsTitle').textContent = 'Gear ' + g;
@@ -183,7 +185,9 @@ function renderGearSheet() {
   // Redo: the main button when the gear is flagged; the best guess when the bridge has one; a check ride
   var redo = $('gsRedo'), guess = $('gsGuess'), check = $('gsCheck');
   redo.textContent = story.unread ? 'Read it again' : 'Redo gear ' + g;
-  redo.className = 'btn ' + (story.level ? 'primary' : 'secondary') + ' wide';
+  redo.className = 'btn ' + (story.level && !story.guessed ? 'primary' : 'secondary') + ' wide';
+  check.className = 'btn ' + (story.guessed ? 'primary' : 'secondary');   // (#111: a guess is checked on a ride)
+  setHidden('gsNote', live);   // (#109: why the buttons are off)
   setHidden('gsRedo', !canRedo && !story.unread);
   setHidden('gsGuess', !flagsG.length || story.unread);
   redo.disabled = guess.disabled = check.disabled = !live;
@@ -195,12 +199,13 @@ function sheetRedo() {
   if (gearStory(g).unread) { state.rereadTries = 0; rereadSoon(); return; }
   startGearRedo(g);
 }
+function sheetOnHub() { return !state.gearList && homeListShown(); }
 function sheetGuess() {
   var g = state.sheetGear, f = (state.lastFlags || []).filter(function (x) { return itemGear(x) === g && fin(x.gx); })[0];
   closeGearSheet();
   if (!f) return;
   // as a picked gear of Improve, so the list comes back with "Gear N redone" afterwards (no redo first)
-  state.improving = { before: qualityLevels(gearQuality()), picked: g };
+  state.improving = { before: qualityLevels(gearQuality()), picked: g, fromHub: sheetOnHub(), gears: 1 };
   state.gearList = null;
   state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = ''; state.redoResult = null; state.redoBefore = null;
   state.improving.guessOnly = true;   // (#102: only the bridge's guesses, no redo after them)
@@ -211,12 +216,12 @@ function sheetGuess() {
   render();
 }
 function sheetCheck() {
-  var g = state.sheetGear;
+  var g = state.sheetGear, hub = sheetOnHub();
   closeGearSheet();
   state.gearList = null;
   startGearCheck(null, [
-    { gear: g, pace: 'easy', label: 'Gear ' + g + ', easy', task: 'Shift to gear ' + g + ' and pedal at an easy pace.' },
-    { gear: g, pace: 'fast', label: 'Gear ' + g + ', faster', task: 'Stay in that gear and pedal faster.' }
+    { gear: g, pace: 'easy', label: 'Easy pace', task: 'Shift to gear ' + g + ' and pedal at an easy pace.' },
+    { gear: g, pace: 'fast', label: 'Faster', task: 'Stay in that gear and pedal faster.' }
   ]);
-  if (state.check) state.check.single = true;   // (#101: one gear, not "a gear check done")
+  if (state.check) { state.check.single = g; state.check.fromHub = hub; }   // (#101: one gear, not "a gear check done"; #112)
 }

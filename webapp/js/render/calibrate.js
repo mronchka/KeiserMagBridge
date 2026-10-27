@@ -108,6 +108,13 @@ function renderCal() {
   setHidden('calIdle', active || checkRun || checkDone || checkOffer || gearsShown || placing || saved);
   var lostRun = linkBack() && !!(state.dropS && state.dropS.cal !== 0);   // #69 (#77: until the first status line)
   setHidden('calLost', !lostRun);
+  if (lostRun) {   // (#109: a redo says so)
+    var lr = state.dropS && redoPass(state.dropS.pass);
+    var lt = lr ? 'Redo paused' : 'Calibration paused';
+    if ($('calLostT').textContent !== lt) $('calLostT').textContent = lt;
+    var lp = 'The connection to the bridge dropped. Reconnect: the bridge has kept your place, and the ' + (lr ? 'redo' : 'calibration') + ' carries on from there.';
+    if ($('calLostP').textContent !== lp) $('calLostP').textContent = lp;
+  }
   // #85: the bridge says it is calibrated and the page is reading that calibration (at most 3 tries)
   var reading = !lostRun && homeListDue() && !state.homeRead && !homeListShown() && (state.homeTries || 0) < 3 && !state.homeWalk;
   setHidden('calReading', !reading);

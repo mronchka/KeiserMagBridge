@@ -90,7 +90,7 @@ function check(name, ok, detail) {
   check('when B clears it turns green on that gear', sawGreen, $('discBig').textContent);
   await until(() => !st.review && st.s.cal === 0, 120);
   await until(() => !!st.gearList, 10);
-  check('after the improve pass the gear list comes back with what improved', !!st.gearList && /improved/.test($('glLead').textContent) &&
+  check('after the improve pass the gear list comes back with what improved', !!st.gearList && /good now|better|another look/.test($('glLead').textContent) &&
     $('glTitle').textContent === 'Your gears now', $('glTitle').textContent + ': ' + $('glLead').textContent);
   $('glCheck').click();
   check('step 6 (gear check) starts from it', !!st.check && st.check.phase === 'run' && /^Check a few gears$/.test(crumb()), crumb());

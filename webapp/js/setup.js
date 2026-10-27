@@ -48,12 +48,13 @@ function shortDate(iso) {
 // The hub's status block and "Make it better" rows (on the "Your calibration" list)
 function renderSetupHub(q, bad, unsure, fixable, noDown) {
   var word = setupLevel(bad, unsure, noDown);
-  var rid = calRecordId() || state.homeRecordId, rec = rid ? findRecord(rid) : null;
-  var when = rec ? 'Set up ' + shortDate(rec.ts) + ' on this phone' : 'Saved on the bridge';
+  // (#113: one stable line that says what the icon says)
+  var when = bad ? bad + ' gear' + (bad === 1 ? ' needs' : 's need') + ' another look'
+    : unsure ? unsure + ' gear' + (unsure === 1 ? ' is' : 's are') + ' unsure' : 'Every gear looks good';
   var html = '<span class="su-ico ' + (bad ? 'warn' : 'ok') + '" aria-hidden="true">' + (bad
       ? '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 5 V11 M10 14.5 V15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>'
       : '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M4 10.5 L8 14.5 L16 5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') +
-    '</span><span><span class="su-word">' + esc(word) + '</span><span class="su-when">' + esc(when + (noDown ? ' · going up' : ' · up and down')) + '</span></span>';
+    '</span><span><span class="su-word">' + esc(word) + '</span><span class="su-when">' + esc((noDown ? 'Going up' : 'Up and down') + ' · ' + when) + '</span></span>';
   if ($('glStatus').innerHTML !== html) $('glStatus').innerHTML = html;
   var redoList = [];
   for (var g = 1; g <= GEARS; g++) if (q[g].level && q[g].edges.some(function (e) { return !(state.keptEdges || {})[e.pass + e.point]; })) redoList.push(g);
@@ -73,9 +74,10 @@ function renderSetupHub(q, bad, unsure, fixable, noDown) {
   if ($('glMore').innerHTML !== more) $('glMore').innerHTML = more;
 }
 function setupHubAct(act) {
+  state.hubNote = '';
   if (act === 'improve') startImprove();
   else if (act === 'down') sendDownCmd();
-  else if (act === 'check') { state.gearList = null; startGearCheck(); }
+  else if (act === 'check') { state.gearList = null; startGearCheck(); if (state.check) state.check.fromHub = true; }
   else if (act === 'again') calibrateAgain();
   render();
 }

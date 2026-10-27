@@ -69,6 +69,8 @@ function gearQuality() {
       for (p = lo; p <= TOTAL_POINTS - 2; p++) if (!dn[p]) mark(p - 1, 1, 'Where it starts coming down wasn\u2019t read from the bridge.', null);
     }
   }
+  // yellow: on the bridge's best guess, not measured (#111): check it on a ride
+  Object.keys(state.guessed || {}).forEach(function (k) { var gg = +k; if (gg >= 1 && gg <= GEARS) mark(gg, 1, 'It uses the bridge\u2019s best guess, not a measurement. Check it on a ride.', null); });
   // red: the gear check found the console on another gear (the edge between the two, redone going up)
   Object.keys(state.checkMisses || {}).forEach(function (gg) {
     var m = state.checkMisses[gg];
@@ -122,8 +124,52 @@ function improveEdges(q) {
 function qualityLevels(q) { var l = {}; for (var g = 1; g <= GEARS; g++) l[g] = q[g].level; return l; }
 
 // The list replaces the finish card when a v3.3 calibration is done (maybeOfferCheck).
+// #110: what an Improve pass did, in words: which gears are good now, better, still the same, and which
+// neighbours changed with them (a redo moves the edge two gears share)
+function improveSummary(before) {
+  var now = qualityLevels(gearQuality()), good = [], better = [], same = [], moved = [];
+  for (var g = 1; g <= GEARS; g++) {
+    if (before[g] > 0) { if (now[g] === 0) good.push(g); else if (now[g] < before[g]) better.push(g); else same.push(g); }
+    else if (now[g] > 0) moved.push(g);
+  }
+  var names = function (a) { return (a.length === 1 ? 'Gear ' : 'Gears ') + (a.length <= 1 ? a[0] : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]); };
+  var be = function (a) { return a.length === 1 ? ' is ' : ' are '; };
+  var out = [];
+  if (good.length) out.push(names(good) + be(good) + 'good now.');
+  if (better.length) out.push(names(better) + be(better) + 'better, still unsure.');
+  if (same.length) out.push(names(same) + (same.length === 1 ? ' needs' : ' need') + ' another look.');
+  if (moved.length) out.push(names(moved) + (moved.length === 1 ? ' changed' : ' changed') + ' with ' + (moved.length === 1 ? 'it' : 'them') + ' (neighbours share an edge).');
+  return out.join(' ');
+}
+function pickedSummary(g, before) {
+  var now = qualityLevels(gearQuality()), moved = [];
+  [g - 1, g + 1].forEach(function (k) { if (k >= 1 && k <= GEARS && before[k] === 0 && now[k] > 0) moved.push(k); });
+  return 'Gear ' + g + ' redone: ' + (now[g] === 0 ? 'it looks good.' : now[g] === 1 ? 'it\u2019s still unsure.' : 'it still needs another look.') +
+    (moved.length ? ' Gear ' + moved.join(' and ') + ' changed with it (they share an edge).' : '');
+}
+// a redo, best guess or check started on Setup's hub ends back on the hub, with a line on what happened
+function backToHub(note) {
+  state.gearList = null;
+  state.hubNote = note || '';
+  state.homeSel = 0;
+  showView('cal');
+  render();
+}
+
 function openGearList() {
   var gl = { sel: 0 };
+  if (state.improving && state.improving.fromHub) {
+    var imp = state.improving, note;
+    if (imp.picked) {
+      (state.improvedGears = state.improvedGears || {})[imp.picked] = true;
+      state.sheetGear = imp.picked;
+      note = (state.guessed || {})[imp.picked] && imp.guessOnly ? 'Gear ' + imp.picked + ': the bridge\u2019s best guess is in use.' : pickedSummary(imp.picked, imp.before);
+    } else note = improveSummary(imp.before);
+    state.improving = null;
+    state.review = null; state.redoResult = null; state.fixPaused = false;   // (the pass is over: no queue left behind)
+    backToHub(note);
+    return;
+  }
   if (state.improving && state.improving.picked) {
     gl.redone = state.improving.picked;   // #90: the gear the rider picked
     (state.improvedGears = state.improvedGears || {})[gl.redone] = true;
@@ -133,7 +179,7 @@ function openGearList() {
     // back from the improve pass: what got better
     var now = qualityLevels(gearQuality()), before = state.improving.before, total = 0, better = 0;
     for (var g = 1; g <= GEARS; g++) if (before[g] > 0) { total++; if (now[g] < before[g]) better++; }
-    gl.improved = { better: better, total: total };
+    gl.improved = { better: better, total: total, text: improveSummary(before) };
     state.improvedGears = {};
     for (var k = 1; k <= GEARS; k++) if (before[k] > 0) state.improvedGears[k] = true;
     state.improving = null;
@@ -166,7 +212,9 @@ function startGearRedo(g) {
 function startImprove(pick, picked) {
   var q = gearQuality(), edges = Array.isArray(pick) ? pick : improveEdges(q);
   if (!edges.length) return;
-  state.improving = { before: qualityLevels(q), picked: Array.isArray(pick) ? picked : 0 };
+  state.improving = { before: qualityLevels(q), picked: Array.isArray(pick) ? picked : 0, fromHub: !state.gearList && homeListShown(),
+    gears: edges.map(itemGear).filter(function (g, i, a) { return a.indexOf(g) === i; }).length };   // (#112: "gear k of n")
+  state.hubNote = '';
   state.gearList = null;
   state.reviewKept = {}; state.fixTries = {}; state.fixPaused = false; state.editErr = ''; state.redoResult = null; state.redoBefore = null;
   state.review = { items: edges, source: 'improve' };
@@ -219,11 +267,11 @@ function renderGearList() {
   var reading = !!gl.home && connected && !state.homeRead;   // #75: the last list shown, while the bridge's is read
   var live = connected && !reading;
   var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading + '|' + (gl.redone || 0) +
-    '|' + (state.sheetGear || 0) + '|' + JSON.stringify(state.keptEdges || {}) + '|' + !!(flowRecord() || {}).checked;
+    '|' + (state.sheetGear || 0) + '|' + JSON.stringify(state.keptEdges || {}) + '|' + !!(flowRecord() || {}).checked + '|' + (state.hubNote || '') + '|' + JSON.stringify(state.guessed || {});
   if (key === gearListKey) return;
   gearListKey = key;
-  var lead = gl.redone ? 'Gear ' + gl.redone + ' redone. '
-    : gl.improved ? gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. '
+  var lead = gl.redone ? ((state.guessed || {})[gl.redone] ? 'Gear ' + gl.redone + ': the bridge\u2019s best guess is in use. ' : 'Gear ' + gl.redone + ' redone. ')
+    : gl.improved ? (gl.improved.text ? gl.improved.text + ' ' : gl.improved.better + ' of ' + gl.improved.total + ' gear' + (gl.improved.total === 1 ? '' : 's') + ' improved. ')
     : reading ? 'The last one read from the bridge (reading it again). '
     : gl.home ? 'The calibration on the bridge. ' : 'Saved on the bridge and ready to ride. ';
   var downs = state.downPoints.map(function (x) { return x.point; });
@@ -235,6 +283,8 @@ function renderGearList() {
   if (gl.home && !gl.redone && !gl.improved) {
     lead = reading ? 'Reading the bridge\u2019s calibration\u2026' : !bad && !unsure ? 'All ' + GEARS + ' gears look good. Tap one to see it.'
       : (GEARS - bad - unsure) + ' gears look good · ' + (bad + unsure) + ' could be better. Tap one to see why.';
+    if (state.hubNote && !reading) lead = state.hubNote + ' ' + lead;   // (#108: what the last action did)
+    if (!connected) lead = 'Reconnect the bridge to make changes. ' + lead;   // (#109)
   }
   $('glTitle').textContent = gl.improved || gl.redone ? 'Your gears now' : gl.home ? 'Setup' : gl.checked ? 'Your gears' : 'Calibration done';
   $('glLead').textContent = lead;

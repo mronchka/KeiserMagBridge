@@ -450,6 +450,7 @@ function onRedoStarted(s) {
     // #52: kept aside until the redo is saved, and given back if it isn't
     var pts = gearR ? gearEdges(gearR) : [{ pass: pass, point: point }];
     state.gearPending = null;
+    if (state.guessed) delete state.guessed[gearR || (pass === 'd' ? point - 1 : point)];   // (#111: measured again)
     state.redoStash = { gearKey: gearR ? 'g' + gearR : '', entries: pts.map(function (e) {
       var k = e.pass + e.point;
       var was = (e.pass === 'd' ? state.downPoints : state.points).filter(function (x) { return x.point === e.point; })[0];
@@ -729,6 +730,7 @@ function onE(p) {
       clearTimeout(ed.timer);
       ed.okd = true;   // K follows
       if (ed.kind === 'R') { state.redoStash = null; state.improveSaved = state.improveLast; gearPendingApply(); }   // (#74: saved, even if its K is lost)
+      if (ed.kind === 'G') (state.guessed = state.guessed || {})[ed.pass === 'd' ? ed.point - 1 : ed.point] = true;   // (#111)
       // A guess isn't sent back as a C line: apply it here so the saved copy matches the bridge.
       if (ed.kind === 'G' && ed.g && fin(ed.g.x)) {
         var list = ed.pass === 'd' ? 'downPoints' : 'points';
@@ -1060,6 +1062,7 @@ function adoptStoredCal(q, ours) {   // ours: the page's own readback of this ru
     state.checkMisses = {}; state.keptEdges = {}; state.improvedGears = null; state.lastFlags = [];
   }
   if (other) {
+    state.guessed = {};
     // #70: nor this session's result: the gear check goes to the file that matches the bridge's calibration
     if (state.result && state.result.type === 'K') { state.result = null; renderResult(); }
     forgetCalRecord();

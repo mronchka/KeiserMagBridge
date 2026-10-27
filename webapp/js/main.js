@@ -202,7 +202,15 @@ $('rckPlus').addEventListener('click', function () { var c = state.check; if (c 
 $('rckSave').addEventListener('click', function () { var c = state.check; if (c) checkAnswer(c.val); });
 $('rckQuit').addEventListener('click', function () { finishCheck(); render(); });
 $('rckClose').addEventListener('click', function () {
-  var flow = state.check && state.check.flow;
+  var flow = state.check && state.check.flow, c0 = state.check;
+  if (c0 && c0.results) c0.results.forEach(function (r) { if (r.app === r.console && state.guessed) delete state.guessed[r.app]; });   // (#111: checked on a ride)
+  if (c0 && c0.fromHub) {
+    var miss = c0.results.filter(function (r) { return r.app !== r.console; }).length;
+    state.check = null;
+    backToHub(!c0.results.length ? '' : c0.single ? 'Gear ' + c0.single + (miss ? ' differs from the console.' : ' matches the console.')
+      : miss ? miss + ' of ' + c0.results.length + ' checks differed.' : 'Every gear checked matches the console.');
+    return;
+  }
   state.check = null;
   if (flow && state.result && state.result.type === 'K' && state.result.ok) { openGearList(); state.gearList.checked = true; render(); }   // [v3.3] back to the gear list
   else render();
