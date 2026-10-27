@@ -214,17 +214,19 @@ $('glGrid').addEventListener('click', function (ev) {
 });
 // Setup: the welcome and the plan, the intro card, the hub, the gear sheet
 function suTop() { var mn = document.querySelector('main'); if (mn) mn.scrollTop = 0; }
-$('suGo').addEventListener('click', function () { setupPage = 'plan'; render(); suTop(); });
+function suFocus(id) { var el = $(id); if (el && el.focus) el.focus(); }
+$('suGo').addEventListener('click', function () { setupPage = 'plan'; render(); suTop(); suFocus('suPlanT'); });
 $('suNotNow').addEventListener('click', function () { showView('ride'); render(); });
-$('suBack').addEventListener('click', function () { if (state.homeWalk && state.homeRead) state.homeWalk = false; else setupPage = 'welcome'; render(); suTop(); });
+$('suBack').addEventListener('click', function () { if (state.homeWalk && state.homeRead) state.homeWalk = false; else setupPage = 'welcome'; render(); suTop(); suFocus('suWelcomeT'); });
 $('suStart').addEventListener('click', function () { $('calStart').click(); });
 $('suBackHome').addEventListener('click', function () { state.homeWalk = false; render(); });
-$('chapterGo').addEventListener('click', function () { state.chapterUpSeen = true; render(); });
+$('chapterGo').addEventListener('click', function () { state.chapterUpSeen = true; render(); suFocus('calHead'); });
 $('glMore').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-su]') : null;
   if (b && !b.disabled) setupHubAct(b.getAttribute('data-su'));
 });
 $('gsClose').addEventListener('click', closeGearSheet);
+document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && state.sheetGear) closeGearSheet(); });
 $('gearSheet').addEventListener('click', function (ev) { if (ev.target === $('gearSheet')) closeGearSheet(); });
 $('gsRedo').addEventListener('click', sheetRedo);
 $('gsGuess').addEventListener('click', sheetGuess);

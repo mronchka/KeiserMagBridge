@@ -111,7 +111,7 @@ function renderFlow(active, placing, saved) {
     var part = rs ? 0 : setupPart(f), PARTS = ['Get ready', 'Up through the gears', 'Back down'];
     var title = rs ? 'Redo gear ' + rg : part ? PARTS[part - 1] : FLOW_STEPS[f - 1];
     var t = !part ? '<b>' + esc(title) + '</b>'
-      : 'PART ' + part + ' OF 3 · <b>' + esc(title) + '</b>' + (part === 1 ? ' · ' + esc(FLOW_STEPS[f - 1]) : '');
+      : 'PART ' + part + ' OF 3 · <b>' + esc(part === 1 ? FLOW_STEPS[f - 1] : title) + '</b>';   // (part 1: its step; "Get ready" is under the bar)
     setHidden('crumbSegs', !part);
     setHidden('crumbL', !part);
     if ($('crumbT').innerHTML !== t) $('crumbT').innerHTML = t;

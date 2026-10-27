@@ -27,7 +27,7 @@ function check(name, ok, detail) {
   // Step 1: placement
   M3.openPlace();
   await app.advance(4);
-  check('step 1 breadcrumb', /PART 1 OF 3 · <b>Get ready<\/b> · Find a good spot|PART 1 OF 3 · Get ready · Find a good spot/.test(crumb()), crumb());
+  check('step 1 breadcrumb', /PART 1 OF 3 · Find a good spot/.test(crumb()), crumb());
   check('placement meters fed by X lines', !!(st.place && st.place.x) && $('gNum').textContent !== '--', 'swing ' + $('gNum').textContent + ' µT, dip ' + $('mDipV').textContent + ', headroom ' + $('mHeadV').textContent);
   await app.advance(15);
   check('verdict says good spot', /spot/i.test($('placeVt').textContent), $('placeVt').textContent);
@@ -35,12 +35,12 @@ function check(name, ok, detail) {
   // Step 2: start (as the Next button does)
   M3.state.place = null; M3.send('v', true); M3.send('c');
   await until(() => st.s && st.s.cal === 4, 30);
-  check('step 2 (learn your pedalling) reaches the cadence check', st.s.cal === 4 && /PART 1 OF 3 · Get ready · Learn your pedalling/.test(crumb()), crumb());
+  check('step 2 (learn your pedalling) reaches the cadence check', st.s.cal === 4 && /PART 1 OF 3 · Learn your pedalling/.test(crumb()), crumb());
   M3.send('n');
   await until(() => st.s.cal === 6 && st.s.step === 0, 5);
-  check('noise turns (cal 6, step 0) shown as part of step 2', /PART 1 OF 3 · Get ready · Learn your pedalling/.test(crumb()) && /lever still/i.test(app.$('calSub').textContent), crumb() + ' / ' + app.$('calSub').textContent);
+  check('noise turns (cal 6, step 0) shown as part of step 2', /PART 1 OF 3 · Learn your pedalling/.test(crumb()) && /lever still/i.test(app.$('calSub').textContent), crumb() + ' / ' + app.$('calSub').textContent);
   await until(() => st.s.flow === 3, 20);
-  check('step 3 sweep: up (pass su)', /PART 1 OF 3 · Get ready · Sweep the lever/.test(crumb()) && st.s.pass === 'su' && /push the lever up/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);
+  check('step 3 sweep: up (pass su)', /PART 1 OF 3 · Sweep the lever/.test(crumb()) && st.s.pass === 'su' && /push the lever up/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);
   M3.send('n');
   await app.advance(1);
   check('step 3 sweep: down (pass sd, no Next count needed)', st.s.pass === 'sd' && /back down/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);

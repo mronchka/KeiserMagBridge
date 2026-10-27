@@ -77,7 +77,8 @@ function gearStory(g) {
 // The picture: absolutely placed boxes in #rulerViz (its own width), like the design's ruler.
 function drawRuler(story) {
   var box = $('rulerViz'), W = box.clientWidth || 345, H = 128;
-  var s = story.s, g = story.g, col = ['var(--ok)', 'var(--warn-fill)', 'var(--bad)'][story.level];
+  var s = story.s, g = story.g, col = ['var(--ok)', 'var(--warn)', 'var(--bad)'][story.level];
+  var fill = ['var(--ok)', 'var(--warn-fill)', 'var(--bad)'][story.level], ink = ['var(--ok-ink)', 'var(--warn-ink)', 'var(--bad-ink)'][story.level];
   var ks = Object.keys(s).map(Number).sort(function (a, b) { return a - b; });
   if (ks.length < 3) { box.innerHTML = ''; return; }
   // the window: two usual gears either side of this one
@@ -93,8 +94,8 @@ function drawRuler(story) {
     var x1 = X(s[k]) + 1.5, w = Math.max(4, X(s[k2]) - 1.5 - x1);
     var single = k2 === k + 1, sel = single && k === g, merged = !single && g >= k && g < k2;
     el('left:' + x1 + 'px;top:' + TY + 'px;width:' + w + 'px;height:' + TH + 'px;border-radius:6px;' +
-      'background:' + (sel ? col : 'var(--surface2)') + ';' + (merged ? 'border:2px solid ' + col + ';background-image:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 6px);' : '') +
-      'color:' + (sel ? (story.level === 1 ? '#000' : '#fff') : 'var(--muted)') + ';line-height:' + TH + 'px;font-weight:' + (sel ? 700 : 600),
+      'background:' + (sel ? fill : 'var(--surface2)') + ';' + (merged ? 'border:2px solid ' + col + ';background-image:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 6px);' : '') +
+      'color:' + (sel ? ink : 'var(--muted)') + ';line-height:' + TH + 'px;font-weight:' + (sel ? 700 : 600),
       single ? (w >= 18 ? String(k) : '') : (w >= 56 ? k + '–' + (k2 - 1) + ' ?' : (w >= 14 ? '?' : '')));
     if (sel && w < 22) el('left:' + (x1 + w / 2 - 30) + 'px;top:' + (TY - 20) + 'px;width:60px;height:16px;color:' + col + ';font-weight:700', 'gear ' + g);
   }
@@ -131,13 +132,31 @@ function drawRuler(story) {
 
 // The sheet: open on a tapped gear (the end-of-run list or "Your calibration")
 function openGearSheet(g) { state.sheetGear = g; renderGearSheet(); }
-function closeGearSheet() { state.sheetGear = 0; renderGearSheet(); }
-var sheetKey = '';
+function closeGearSheet() {
+  var g = state.sheetGear;
+  state.sheetGear = 0;
+  renderGearSheet();
+  renderGearList();
+  var chip = g && document.querySelector ? document.querySelector('.gl-g[data-gear="' + g + '"]') : null;
+  if (chip && chip.focus) chip.focus();   // (back where the rider was)
+}
+var sheetKey = '', sheetWasShown = false;
+function sheetInert(on) {
+  ['main', 'header', 'nav'].forEach(function (sel) {
+    var el = document.querySelector ? document.querySelector(sel) : null;
+    if (el) { if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); }
+  });
+}
 function renderGearSheet() {
   var g = state.sheetGear;
   var show = !!g && state.view === 'cal' && !calRunning(state.s) && !state.check && state.points.length > 0;
   setHidden('gearSheet', !show);
   document.body.classList.toggle('sheet-open', show);
+  if (show !== sheetWasShown) {   // (a dialog: the rest of the page waits; focus goes in)
+    sheetWasShown = show;
+    sheetInert(show);
+    if (show) setTimeout(function () { var d = document.querySelector ? document.querySelector('#gearSheet .gs') : null; if (d && d.focus) d.focus(); }, 0);
+  }
   if (!show) { sheetKey = ''; return; }
   var story = gearStory(g), connected = state.conn === 'connected';
   var flagsG = (state.lastFlags || []).filter(function (f) { return itemGear(f) === g && fin(f.gx); });

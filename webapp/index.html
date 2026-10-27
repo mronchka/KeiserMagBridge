@@ -79,7 +79,7 @@
   <!-- CALIBRATE -->
   <section class="view" id="view-cal" aria-label="Calibrate">
     <!-- [v3.3] where you are in the one calibration flow -->
-    <div class="crumbs" id="crumbs" role="group" aria-label="Calibration progress" hidden>
+    <div class="crumbs" id="crumbs" role="group" hidden>
       <div class="crumb-t" id="crumbT">PART 1 OF 3</div>
       <div class="crumb-segs" id="crumbSegs" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="crumb-l" id="crumbL" aria-hidden="true"><span>Get ready</span><span>Up</span><span>Down</span></div>
@@ -255,16 +255,16 @@
               <circle cx="80" cy="178" r="7" fill="var(--line)"></circle>
             </svg>
           </div>
-          <h1 class="su-h1">Let’s teach the bridge your bike</h1>
+          <h2 class="su-h1" id="suWelcomeT" tabindex="-1">Let’s teach the bridge your bike</h2>
           <p class="su-p">About 10 minutes on the bike, once. Then Zwift sees the same gear as your console.</p>
           <button class="btn primary big" id="suGo" type="button">Get started</button>
           <button class="linkbtn su-not" id="suNotNow" type="button">Not now</button>
         </div>
         <div class="su-page" id="suPlan" hidden>
           <button class="linkbtn su-back" id="suBack" type="button" aria-label="Back"><svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 L2 10 L10 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-          <h1 class="su-h1">Here’s the plan</h1>
+          <h2 class="su-h1" id="suPlanT" tabindex="-1">Here’s the plan</h2>
           <p class="su-p">Stay on the bike throughout. After part 2 you can stop and ride.</p>
-          <ol class="su-steps">
+          <ol class="su-steps" role="list">
             <li><span class="su-n">1</span><div><div class="su-st"><b>Get ready</b><span>2 min</span></div><div class="su-sd">Check the bridge’s spot, learn your pedalling, one slow sweep of the lever.</div></div></li>
             <li><span class="su-n">2</span><div><div class="su-st"><b>Up through the gears</b><span>5–8 min</span></div><div class="su-sd" id="suUpText">Gear 1 to 24. One tap at each.</div><div class="su-ready"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5 L5.5 11 L12 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Then you’re ready to ride</div></div></li>
             <li id="suPart3"><span class="su-n opt">3</span><div><div class="su-st"><b>Back down <span class="su-tag">Recommended</span></b><span>5 min</span></div><div class="su-sd">The console changes at slightly different spots coming down. Stop any time and finish another day.</div></div></li>
@@ -322,7 +322,7 @@
     <div id="calActive" hidden>
       <div class="su-chapter" id="chapterCard" hidden>
         <div class="su-ck">Part 2 · about 6 min</div>
-        <h1 class="su-h1">Up through the gears</h1>
+        <h2 class="su-h1">Up through the gears</h2>
         <div class="su-ch-rows">
           <div class="su-ch"><span class="su-chi"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 23 V6 M8 11 L14 5 L20 11" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span>Shift up until the console <b>first</b> shows the next gear.</span></div>
           <div class="su-ch"><span class="su-chi"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--accent)" stroke-width="2.4"></circle><circle cx="15" cy="15" r="5" fill="var(--accent)"></circle></svg></span><span>Tap the big circle.</span></div>
@@ -374,7 +374,7 @@
       </div>
       <div class="behind-hint" id="behindHint" role="alert" hidden></div>
       <div class="cal-say" id="calSay" aria-live="polite">
-        <div class="h" id="calHead"></div>
+        <div class="h" id="calHead" tabindex="-1"></div>
         <div class="s" id="calSub"></div>
       </div>
       <!-- #88: one note at a time (the most important), in place of the count; the circle never resizes for it -->
@@ -499,8 +499,7 @@
 
 <!-- One gear, explained (the ruler): opens from a tapped gear on the list -->
 <div class="gs-back" id="gearSheet" hidden>
-  <div class="gs" role="dialog" aria-modal="true" aria-labelledby="gsTitle">
-    <div class="gs-handle" aria-hidden="true"></div>
+  <div class="gs" role="dialog" aria-modal="true" aria-labelledby="gsTitle" tabindex="-1">
     <div class="gs-head"><h2 id="gsTitle">Gear 4</h2><span class="gs-pill" id="gsPill"></span>
       <button class="gs-x" id="gsClose" type="button" aria-label="Close"><svg width="10" height="10" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg></button></div>
     <p class="gs-verdict" id="gsVerdict"></p>
