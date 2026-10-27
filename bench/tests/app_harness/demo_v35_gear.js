@@ -42,7 +42,7 @@ function check(name, ok, detail) {
   app.win.showView('cal'); M3.render();
   check('...and off again when it closes', cmds()[cmds().length - 1] === '#H,0');
   await until(() => !$('gearList').hidden && st.homeRead, 15);
-  check('Calibrate opens on "Your calibration"', !$('gearList').hidden && $('glTitle').textContent === 'Your calibration', $('glTitle').textContent);
+  check('Setup opens on its hub', !$('gearList').hidden && $('glTitle').textContent === 'Setup', $('glTitle').textContent);
 
   // gear 10, picked on the list
   const up10 = JSON.stringify(pt(10));

@@ -99,6 +99,28 @@ In press mode (flag `T`), the circle is the button on the up pass, the down pass
 
 "More options" has the switch "Save each gear by itself (no tap)". It is kept on this phone (`m3bridge.capture`) and sent on every connection. The simulator is a v3.4 bridge by default (`&v33=1` for v3.3); a tap before the simulated rider has reached the gear is refused once.
 
+### Setup (2026-10-27 design: A · Guided)
+
+The Calibrate tab is now **Setup** (the tab bar has icons).
+
+- **First run:** a welcome ("Let’s teach the bridge your bike", Get started / Not now), then the plan in three parts:
+  1. Get ready, 2 min: the spot, your pedalling, the sweep.
+  2. Up through the gears, 5–8 min. Then you're ready to ride.
+  3. Back down, 5 min, recommended: stop any time.
+- **During the run:** "PART n OF 3" with three bars across the top. In press mode a card ("Part 2 · about 6 min") explains the taps before gear 1; the board waits for the first tap anyway.
+- **The checkpoint** is "Ready to ride", with "Make it better: Back down through the gears" and Continue down / Ride now, finish later.
+- **A returning rider's hub** ("Setup"):
+  - a status: Ready to ride (going up only), Tuned (up and down), or Dialled in (no gear flagged and a gear check done);
+  - "Set up <date> on this phone";
+  - the 24 gears as full-size buttons;
+  - "Make it better": Redo gears N and M / Back down through the gears / Check a few gears as you ride / Moved the bridge? Start over.
+- **Tapping any gear** opens its sheet:
+  - a one-line verdict;
+  - the ruler: the gear along the lever among its neighbours (positions are distances along the path through the up points), its coming-down copy dashed underneath, a "usual size" bracket when it's narrow, "off the line", the bridge's best guess, and "starts in here" when its start didn't reach the phone;
+  - Redo gear N (the main button when it's flagged), Use best guess (when the bridge sent one), and Check on a ride (a gear check of just that gear).
+
+None of this needs firmware: everything is drawn from the points and flags the board already sends.
+
 ### Redo a gear by taps (firmware v3.5)
 
 With a v3.5 bridge (`E,ok,v3.5`), every redo is a whole gear (`#R,g,<gear>`), done by taps in any capture mode. That covers Improve, "Redo gear N" after tapping a gear on the list, and the gear check's Redo. To redo gear 10, the circle asks, one stage at a time:
@@ -189,3 +211,4 @@ Extra options, added after `?demo=1`:
 - `node bench/tests/app_harness/demo_v33_flow.js`: drives the v3.3 simulator (`&v33=1`) through all six steps and checks the breadcrumb, meters, sweep, pause, checkpoint, dots, guided redo and gear check.
 - `node bench/tests/app_harness/demo_v34_press.js`: a v3.4 bridge in press mode. It checks `#V` / `#A,press`, the tappable circle, Measuring…, a tap too early and the second tap, Undo tap, nothing saving by itself, the switch back to auto, and a v3.3 bridge refusing `#V` quietly.
 - `node bench/tests/app_harness/demo_v35_gear.js`: a v3.5 bridge redoing gear 10 by four taps. It checks the circle at each stage, a tap too early, the points kept until the bridge saves, a stage back, a cancel, gear 1, Improve with `#R,g`, and `#H` following the Console tab.
+- `node bench/tests/app_harness/demo_setup.js`: Setup's welcome, plan and part 2 card with the simulator; the hub's status and rows; a gear's sheet (verdict, ruler, best guess) and its Redo / best guess / check buttons.

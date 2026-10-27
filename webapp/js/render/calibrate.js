@@ -111,9 +111,16 @@ function renderCal() {
   // #85: the bridge says it is calibrated and the page is reading that calibration (at most 3 tries)
   var reading = !lostRun && homeListDue() && !state.homeRead && !homeListShown() && (state.homeTries || 0) < 3 && !state.homeWalk;
   setHidden('calReading', !reading);
-  setHidden('onb', lostRun || reading || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
+  // Setup's welcome and plan stand where the walkthrough was (the walkthrough itself stays hidden)
+  var introShow = !(lostRun || reading || homeListShown() || !!state.improving || (!$('calResume').hidden && !state.homeWalk));
+  setHidden('onb', true);
+  renderSetupIntro(introShow && !active && !placing && !saved);   // #12 (#38: nor under an Improve pass; #58: nor under the resume card): the stored calibration's gear list instead of the walkthrough (Calibrate again shows it)
   setHidden('onbHome', !(state.homeWalk && state.homeRead && state.points.length === TOTAL_POINTS));   // #26: and back
   setHidden('calActive', !active);
+  // the intro card before part 2 (press mode: the board waits for the first tap)
+  var chapter = !!active && chapterUpDue(s);
+  $('calActive').classList.toggle('chapter', chapter);
+  setHidden('chapterCard', !chapter);
   // [v3.2] a redo (or the gear check) keeps the circle at the top: hide the result card until it ends
   if (state.result) setHidden('resultCard', resultCardHidden());
   $('calStart').disabled = !connected || !s;

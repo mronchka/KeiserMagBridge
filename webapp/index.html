@@ -8,7 +8,7 @@
 <script>
   // [v3.3] the page's own build. If the published page (fetched with no-store) carries another one,
   // or the bridge sends lines newer than this page knows, a "Reload" bar appears.
-  var APP_BUILD = 'v3.5-2026-10-27.1';
+  var APP_BUILD = 'v3.5-2026-10-27.2';
   // Dark unless the rider picked light on this phone (header button).
   (function () {
     var t = 'dark';
@@ -20,7 +20,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>M3 Bridge</title>
-<link rel="stylesheet" href="css/app.css?v=v3.5-2026-10-27.1">
+<link rel="stylesheet" href="css/app.css?v=v3.5-2026-10-27.2">
 </head>
 <body>
 
@@ -34,7 +34,7 @@
   <button class="hdr-btn" id="hdrBtn" type="button" hidden>Disconnect</button>
   <!-- while calibrating: (x) Calibrate Undo -->
   <button class="top-x" id="topX" type="button" aria-label="Cancel calibration"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span class="lbl">Tap again to stop</span></button>
-  <div class="top-title" aria-hidden="true">Calibrate</div>
+  <div class="top-title" aria-hidden="true">Setup</div>
   <button class="top-undo" id="topUndo" type="button" hidden>Undo</button>
 </header>
 
@@ -67,7 +67,7 @@
         <div class="gear dim" id="gear">--</div>
       </div>
       <div class="gear-note" id="gearNote">Waiting for data</div>
-      <button class="btn primary" id="goCal" type="button" hidden>Go to Calibrate</button>
+      <button class="btn primary" id="goCal" type="button" hidden>Go to Setup</button>
     </div>
     <div class="tiles" id="tiles">
       <div class="tile"><div class="v" id="watts">--</div><div class="u">Watts</div></div>
@@ -80,8 +80,9 @@
   <section class="view" id="view-cal" aria-label="Calibrate">
     <!-- [v3.3] where you are in the one calibration flow -->
     <div class="crumbs" id="crumbs" role="group" aria-label="Calibration progress" hidden>
-      <div class="crumb-t" id="crumbT">STEP 1 OF 6</div>
-      <div class="crumb-segs" id="crumbSegs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="crumb-t" id="crumbT">PART 1 OF 3</div>
+      <div class="crumb-segs" id="crumbSegs" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="crumb-l" id="crumbL" aria-hidden="true"><span>Get ready</span><span>Up</span><span>Down</span></div>
     </div>
 
     <!-- [v3.3] step 1: find a good spot (live meters from X lines) -->
@@ -124,12 +125,22 @@
     </div>
 
     <!-- [v3.3] checkpoint after the gears going up -->
-    <div class="card saved-card" id="upSaved" role="region" aria-label="Saved" hidden>
-      <h2>Saved</h2>
-      <p>The gears going up are saved and ready to ride. Coming back down makes each gear switch where the console does.</p>
+    <div class="card saved-card" id="upSaved" role="region" aria-label="Ready to ride" hidden>
+      <svg class="su-ring" width="120" height="120" viewBox="0 0 170 170" aria-hidden="true">
+        <circle cx="85" cy="85" r="70" fill="none" stroke="var(--surface2)" stroke-width="12"></circle>
+        <circle cx="85" cy="85" r="70" fill="none" stroke="var(--ok)" stroke-width="12" stroke-dasharray="14.33 4" transform="rotate(-90 85 85)"></circle>
+        <path d="M62 86 L78 102 L110 68" fill="none" stroke="var(--ok)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <h2>Ready to ride</h2>
+      <p class="su-p">All the gears going up are saved. Zwift now sees the gear your console shows.</p>
+      <div class="su-better">
+        <div class="su-kick">Make it better <span>5 min</span></div>
+        <div class="t">Back down through the gears</div>
+        <div class="s">Makes shifting down just as accurate. Stop whenever you like; it keeps what’s done.</div>
+      </div>
       <div class="btn-stack">
         <button class="btn primary big" id="upContinue" type="button">Continue down</button>
-        <button class="btn text" id="upLater" type="button">Later</button>
+        <button class="btn secondary wide" id="upLater" type="button">Ride now, finish later</button>
       </div>
     </div>
 
@@ -139,11 +150,13 @@
     <!-- [v3.3] the end of a calibration: every gear with how well it was captured, and "Improve" (#11) -->
     <div class="card gears" id="gearList" role="region" aria-label="Your gears" hidden>
       <h2 id="glTitle">Calibration done</h2>
+      <div class="su-status" id="glStatus" hidden></div>
       <!-- #43: a tapped gear's "why" takes the lead's place, in a slot of fixed height, so the buttons stay put -->
       <div class="gl-say"><p class="gl-lead" id="glLead"></p><p class="gl-why" id="glWhy" role="status"></p></div>
       <div class="gl-grid" id="glGrid"></div>
       <div class="gl-legend" aria-hidden="true"><span><i class="q0"></i>Good</span><span><i class="q1"></i>Unsure</span><span><i class="q2"></i>Needs another look</span></div>
-      <div class="btn-stack">
+      <div class="su-more" id="glMore" hidden></div>
+      <div class="btn-stack" id="glBtns">
         <button class="btn primary wide" id="glImprove" type="button" hidden>Improve</button>
         <button class="btn wide" id="glCheck" type="button">Check a few gears</button>
         <button class="btn text" id="glFinish" type="button">Finish and ride</button>
@@ -223,6 +236,44 @@
       </div>
       <!-- One step at a time, Apple-style: a picture, a title, one sentence. Steps come from
            CAL_INTRO (crank mode on v3 firmware, hold-still on v2); the last page starts. -->
+      <!-- Setup, first run: a welcome, then the plan (the old walkthrough below stays hidden) -->
+      <div class="su" id="setupIntro" hidden>
+        <div class="su-page" id="suWelcome">
+          <div class="su-top"><span class="su-conn" id="suConn">Bridge connected</span></div>
+          <div class="su-art">
+            <svg width="240" height="200" viewBox="0 0 240 210" aria-hidden="true">
+              <circle cx="110" cy="122" r="72" fill="none" stroke="var(--line)" stroke-width="2"></circle>
+              <circle cx="110" cy="122" r="58" fill="none" stroke="var(--surface2)" stroke-width="10"></circle>
+              <circle cx="110" cy="122" r="9" fill="none" stroke="var(--line)" stroke-width="2"></circle>
+              <path d="M 150 62 A 72 72 0 0 1 178 98" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round"></path>
+              <path class="su-w1" d="M 186 74 A 16 16 0 0 1 192 86" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"></path>
+              <path class="su-w2" d="M 192 66 A 28 28 0 0 1 202 86" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"></path>
+              <path class="su-w3" d="M 198 58 A 40 40 0 0 1 212 86" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"></path>
+              <rect x="196" y="22" width="38" height="30" rx="6" fill="var(--surface)" stroke="var(--text)" stroke-width="2"></rect>
+              <rect x="203" y="29" width="24" height="16" rx="2" fill="var(--accent)" opacity="0.35"></rect>
+              <line x1="110" y1="122" x2="80" y2="176" stroke="var(--line)" stroke-width="6" stroke-linecap="round"></line>
+              <circle cx="80" cy="178" r="7" fill="var(--line)"></circle>
+            </svg>
+          </div>
+          <h1 class="su-h1">Let’s teach the bridge your bike</h1>
+          <p class="su-p">About 10 minutes on the bike, once. Then Zwift sees the same gear as your console.</p>
+          <button class="btn primary big" id="suGo" type="button">Get started</button>
+          <button class="linkbtn su-not" id="suNotNow" type="button">Not now</button>
+        </div>
+        <div class="su-page" id="suPlan" hidden>
+          <button class="linkbtn su-back" id="suBack" type="button" aria-label="Back"><svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 L2 10 L10 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+          <h1 class="su-h1">Here’s the plan</h1>
+          <p class="su-p">Stay on the bike throughout. After part 2 you can stop and ride.</p>
+          <ol class="su-steps">
+            <li><span class="su-n">1</span><div><div class="su-st"><b>Get ready</b><span>2 min</span></div><div class="su-sd">Check the bridge’s spot, learn your pedalling, one slow sweep of the lever.</div></div></li>
+            <li><span class="su-n">2</span><div><div class="su-st"><b>Up through the gears</b><span>5–8 min</span></div><div class="su-sd" id="suUpText">Gear 1 to 24. One tap at each.</div><div class="su-ready"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5 L5.5 11 L12 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Then you’re ready to ride</div></div></li>
+            <li id="suPart3"><span class="su-n opt">3</span><div><div class="su-st"><b>Back down <span class="su-tag">Recommended</span></b><span>5 min</span></div><div class="su-sd">The console changes at slightly different spots coming down. Stop any time and finish another day.</div></div></li>
+          </ol>
+          <p class="su-later">Later, fine-tune any gear from Setup.</p>
+          <button class="btn primary big" id="suStart" type="button">Start part 1</button>
+          <button class="linkbtn su-not" id="suBackHome" type="button" hidden>Back to Setup</button>
+        </div>
+      </div>
       <div class="onb" id="onb" aria-roledescription="walkthrough">
         <div class="onb-art" aria-hidden="true">
           <div class="art" data-art="pedal">
@@ -269,6 +320,16 @@
     </div>
 
     <div id="calActive" hidden>
+      <div class="su-chapter" id="chapterCard" hidden>
+        <div class="su-ck">Part 2 · about 6 min</div>
+        <h1 class="su-h1">Up through the gears</h1>
+        <div class="su-ch-rows">
+          <div class="su-ch"><span class="su-chi"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 23 V6 M8 11 L14 5 L20 11" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span>Shift up until the console <b>first</b> shows the next gear.</span></div>
+          <div class="su-ch"><span class="su-chi"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--accent)" stroke-width="2.4"></circle><circle cx="15" cy="15" r="5" fill="var(--accent)"></circle></svg></span><span>Tap the big circle.</span></div>
+          <div class="su-ch"><span class="su-chi"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 4 A 11 11 0 1 1 5 20" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"></path><path d="M5 13 V20 H12" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span>Keep pedalling for 3 turns while it measures. Then the next gear.</span></div>
+        </div>
+        <button class="btn primary big" id="chapterGo" type="button">Start at gear 1</button>
+      </div>
       <div class="hold-banner" id="holdBanner" role="status" hidden>
         <div class="hb-t">Hold the lever still — the reading is still changing</div>
         <div class="hb-s">It will capture by itself once the lever stops.</div>
@@ -430,11 +491,28 @@
 </main>
 
 <nav role="tablist" aria-label="Views">
-  <button type="button" role="tab" data-view="ride" aria-selected="true">Ride</button>
-  <button type="button" role="tab" data-view="cal" aria-selected="false">Calibrate<span class="badge" id="calBadge" hidden></span></button>
-  <button type="button" role="tab" data-view="diag" aria-selected="false">Diagnose<span class="badge" id="diagBadge" hidden></span></button>
-  <button type="button" role="tab" data-view="console" aria-selected="false">Console</button>
+  <button type="button" role="tab" data-view="ride" aria-selected="true"><svg class="nav-ico" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M11 11 L15 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg><span>Ride</span></button>
+  <button type="button" role="tab" data-view="cal" aria-selected="false"><svg class="nav-ico" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 6 H18 M4 11 H18 M4 16 H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><circle cx="16" cy="16" r="2.5" fill="currentColor"></circle></svg><span>Setup<span class="badge" id="calBadge" hidden></span></span></button>
+  <button type="button" role="tab" data-view="diag" aria-selected="false"><svg class="nav-ico" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 13 H7 L9 6 L13 17 L15 11 H19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>Diagnose<span class="badge" id="diagBadge" hidden></span></span></button>
+  <button type="button" role="tab" data-view="console" aria-selected="false"><svg class="nav-ico" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="4" width="16" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"></rect><path d="M7 9 L9.5 11 L7 13 M11 14 H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>Console</span></button>
 </nav>
+
+<!-- One gear, explained (the ruler): opens from a tapped gear on the list -->
+<div class="gs-back" id="gearSheet" hidden>
+  <div class="gs" role="dialog" aria-modal="true" aria-labelledby="gsTitle">
+    <div class="gs-handle" aria-hidden="true"></div>
+    <div class="gs-head"><h2 id="gsTitle">Gear 4</h2><span class="gs-pill" id="gsPill"></span>
+      <button class="gs-x" id="gsClose" type="button" aria-label="Close"><svg width="10" height="10" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 L13 13 M13 3 L3 13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg></button></div>
+    <p class="gs-verdict" id="gsVerdict"></p>
+    <div class="gs-viz" id="rulerViz" aria-hidden="true"></div>
+    <div class="gs-axis" aria-hidden="true"><span>‹ lower gears</span><span>higher gears ›</span></div>
+    <button class="btn primary wide" id="gsRedo" type="button">Redo</button>
+    <div class="gs-btns">
+      <button class="btn secondary" id="gsGuess" type="button">Use best guess</button>
+      <button class="btn secondary" id="gsCheck" type="button">Check on a ride</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast" role="status"></div>
 
@@ -454,7 +532,7 @@
     var APP_FILES = ['js/state.js', 'js/ui.js', 'js/protocol.js', 'js/ble.js',
       'js/flow.js', 'js/gearcheck.js', 'js/quality.js', 'js/storage.js', 'js/diag.js',
       'js/render/ride.js', 'js/render/calibrate.js', 'js/render/diagnose.js', 'js/render/console.js',
-      'js/main.js'];
+      'js/ruler.js', 'js/setup.js', 'js/main.js'];
     var DEMO_FILE = 'js/demo-sim.js';   // with ?demo=1, just before the last file
     var demo = false;
     try { demo = new URLSearchParams(location.search).get('demo') === '1'; } catch (e) {}

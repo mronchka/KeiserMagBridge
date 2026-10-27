@@ -209,11 +209,26 @@ $('rckClose').addEventListener('click', function () {
 $('glGrid').addEventListener('click', function (ev) {
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-gear]') : null;
   if (!b) return;
-  var g = +b.getAttribute('data-gear');
-  if (state.gearList) state.gearList.sel = state.gearList.sel === g ? 0 : g;
-  else state.homeSel = state.homeSel === g ? 0 : g;   // #12: the Calibrate tab's list
+  openGearSheet(+b.getAttribute('data-gear'));   // the gear, explained (with Redo / best guess / check)
   renderGearList();
 });
+// Setup: the welcome and the plan, the intro card, the hub, the gear sheet
+function suTop() { var mn = document.querySelector('main'); if (mn) mn.scrollTop = 0; }
+$('suGo').addEventListener('click', function () { setupPage = 'plan'; render(); suTop(); });
+$('suNotNow').addEventListener('click', function () { showView('ride'); render(); });
+$('suBack').addEventListener('click', function () { if (state.homeWalk && state.homeRead) state.homeWalk = false; else setupPage = 'welcome'; render(); suTop(); });
+$('suStart').addEventListener('click', function () { $('calStart').click(); });
+$('suBackHome').addEventListener('click', function () { state.homeWalk = false; render(); });
+$('chapterGo').addEventListener('click', function () { state.chapterUpSeen = true; render(); });
+$('glMore').addEventListener('click', function (ev) {
+  var b = ev.target && ev.target.closest ? ev.target.closest('[data-su]') : null;
+  if (b && !b.disabled) setupHubAct(b.getAttribute('data-su'));
+});
+$('gsClose').addEventListener('click', closeGearSheet);
+$('gearSheet').addEventListener('click', function (ev) { if (ev.target === $('gearSheet')) closeGearSheet(); });
+$('gsRedo').addEventListener('click', sheetRedo);
+$('gsGuess').addEventListener('click', sheetGuess);
+$('gsCheck').addEventListener('click', sheetCheck);
 $('glImprove').addEventListener('click', function () {
   var gl = state.gearList || (homeListShown() ? { sel: state.homeSel || 0 } : null);
   if (gl && gl.sel && gearRedoEdges(gl.sel).length) startGearRedo(gl.sel);   // #90: the gear the rider tapped

@@ -8,7 +8,7 @@ DOM stub and a virtual clock).  SKIPs with a message if node or the harness isn'
   E0  node --check on the page's script and on the harness scripts
   E1  the app agent's own checks: replay_v32b.js (real v3.2b lines), demo_v33_flow.js (the page's simulator)
   E2  lines from the v3.3 MODEL (closed-loop riders, S lines from Firmware.status_line() every 250 ms):
-        - breadcrumb 'STEP n OF 6' follows the board's step field
+        - breadcrumb ('PART n OF 3', Setup's three parts, with step 1-3's name) follows the board's step field
         - 'Paused - pedal to continue' while flag O is set, no alarm styling
         - down-pass dots turn blue
         - after F,end with something flagged: the gear list shows it red and offers Improve (#11),
@@ -197,11 +197,24 @@ def run_page(label, path):
     return res
 
 
+# Setup's three parts (2026-10-27): steps 1-3 are part 1 (with the step's name), 4 is part 2, 5 part 3;
+# step 6 (the gear check, a redo) is no part.
+def crumb_ok(step, crumb):
+    c = crumb.upper()
+    if 1 <= step <= 3:
+        return "PART 1 OF 3" in c and ["FIND A GOOD SPOT", "LEARN YOUR PEDALLING", "SWEEP THE LEVER"][step - 1] in c
+    if step == 4:
+        return "PART 2 OF 3" in c
+    if step == 5:
+        return "PART 3 OF 3" in c
+    return "CHECK A FEW GEARS" in c or "REDO GEAR" in c
+
+
 def page_checks(label, f, res):
     ck.check(not res["errors"], f"E2 {label}: no page errors {res['errors'][:2]}")
     rec = res["rec"]
     inflow = [r for r in rec if r["step"] > 0]
-    good = [r for r in inflow if f"STEP {r['step']} OF 6" in r["crumb"].upper()]
+    good = [r for r in inflow if crumb_ok(r["step"], r["crumb"])]
     bad = [(round(r["t"], 1), r["step"], r["crumb"]) for r in inflow if r not in good]
     ck.check(inflow and len(good) >= 0.97 * len(inflow),
              f"E2 {label}: breadcrumb follows the board's step ({len(good)}/{len(inflow)} S lines) {bad[:3]}")

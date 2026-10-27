@@ -20,11 +20,11 @@ function maybeOfferCheck() {
   render();
 }
 // prev: a finished check whose results are kept ("Check a few more gears": its matched gears aren't asked again)
-function startGearCheck(prev) {
+function startGearCheck(prev, list) {
   var skip = {};
   if (prev) prev.results.forEach(function (r) { if (r.app === r.console) skip[r.target] = true; });
   state.check = { phase: 'run', flow: isV33(), v32: isV32(), idx: 0, results: [], picking: false, val: 1, app: 0,
-    list: pickChecks(skip, prev ? prev.redone : state.improvedGears), prev: prev ? (prev.prev || []).concat(prev.results) : [], redone: prev ? prev.redone : null };
+    list: list || pickChecks(skip, prev ? prev.redone : state.improvedGears), prev: prev ? (prev.prev || []).concat(prev.results) : [], redone: prev ? prev.redone : null };
   showView('cal');
   render();
 }

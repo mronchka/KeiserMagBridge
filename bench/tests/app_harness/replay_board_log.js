@@ -35,8 +35,13 @@ function check(name, ok, detail) {
         if (st.calFocus && st.view === 'cal') focus++;
         if (cal === 1 && /^[ud]$/.test(f[13]) && +f[6] > 0) { points++; if (!$('topUndo').hidden) undoOnPoints++; }
       }
-      const m = /STEP (\d) OF 6/.exec($('crumbs').hidden ? '' : $('crumbT').textContent);
-      if (m) stepsSeen.add(+m[1]);
+      // Setup's three parts: part 1 (steps 1-3, named), part 2 = step 4, part 3 = step 5
+      const ct = $('crumbs').hidden ? '' : $('crumbT').textContent, m = /PART (\d) OF 3/.exec(ct);
+      if (m) {
+        const part = +m[1];
+        const sub = ['Find a good spot', 'Learn your pedalling', 'Sweep the lever'].findIndex((n) => ct.indexOf(n) >= 0);
+        stepsSeen.add(part === 1 ? (sub >= 0 ? sub + 1 : 1) : part + 2);
+      }
       if (!$('reviewCard').hidden && reviewShown === null) reviewShown = t;
       if (st.check && st.check.phase === 'run' && checkStarted === null) checkStarted = t;
       const h = $('calHead').textContent;

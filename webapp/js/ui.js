@@ -29,6 +29,7 @@ function render() {
   renderReview();
   renderRideCheck();
   renderGearList();
+  renderGearSheet();
   renderBadge();
 }
 

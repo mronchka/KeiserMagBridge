@@ -928,6 +928,7 @@ function onN(p) {
 }
 
 function onCalStarted() {
+  state.chapterUpSeen = false; state.sheetGear = 0;
   state.points = [];
   state.downPoints = [];
   state.behind = null;

@@ -72,7 +72,7 @@ function onFlowStatus(s, prevCal, prevFlow) {
   if (s.cal !== 0 && s.cal !== 7 && s.flow >= 2 && s.flow <= 5 && state.check && state.check.phase === 'run') state.check = null;
   if (s.flow !== prevFlow) {
     if (s.flow === 3 && prevFlow === 2) logLine('Sweep: lever slowly up, then back down.', 'sys');
-    if (s.flow === 4 && prevFlow === 3) toast('Now up through the gears');
+    if (s.flow === 4 && prevFlow === 3 && !chapterUpDue(s)) toast('Now up through the gears');   // (the part 2 card says it in press mode)
   }
 }
 
@@ -106,13 +106,24 @@ function renderFlow(active, placing, saved) {
   if (f) {
     var rs = state.s && state.s.cal !== 0 && redoPass(state.s.pass);
     var rg = rs ? (state.s.pass === 'rd' ? state.s.step : state.s.step + 1) : 0;
-    var title = rs ? 'Redo gear ' + rg : FLOW_STEPS[f - 1];
-    var t = rs ? '<b>' + esc(title) + '</b>' : 'STEP ' + f + ' OF 6 · <b>' + esc(title) + '</b>';   // (#88: a redo isn't a flow step)
-    setHidden('crumbSegs', rs);
+    // Setup's three parts: Get ready (steps 1-3), Up through the gears (4), Back down (5); the gear check
+    // and a redo are no part
+    var part = rs ? 0 : setupPart(f), PARTS = ['Get ready', 'Up through the gears', 'Back down'];
+    var title = rs ? 'Redo gear ' + rg : part ? PARTS[part - 1] : FLOW_STEPS[f - 1];
+    var t = !part ? '<b>' + esc(title) + '</b>'
+      : 'PART ' + part + ' OF 3 · <b>' + esc(title) + '</b>' + (part === 1 ? ' · ' + esc(FLOW_STEPS[f - 1]) : '');
+    setHidden('crumbSegs', !part);
+    setHidden('crumbL', !part);
     if ($('crumbT').innerHTML !== t) $('crumbT').innerHTML = t;
-    $('crumbs').setAttribute('aria-label', 'Step ' + f + ' of 6: ' + title);
-    var segs = $('crumbSegs').children;
-    for (var i = 0; i < segs.length; i++) segs[i].className = i < f - 1 || (f === 4 && saved && i === 3) ? 'done' : i === f - 1 ? 'cur' : '';
+    $('crumbs').setAttribute('aria-label', part ? 'Part ' + part + ' of 3: ' + title : title);
+    var segs = $('crumbSegs').children, labs = $('crumbL').children, upDone = part === 2 && saved;
+    for (var i = 0; i < segs.length; i++) {
+      var done = i < part - 1 || (upDone && i === 1), cur = i === part - 1 && !done;
+      segs[i].className = done ? 'done' : cur ? 'cur' : '';
+      labs[i].className = cur ? 'cur' : '';
+      var lt = ['Get ready', 'Up', 'Down'][i] + (done ? ' ✓' : '');
+      if (labs[i].textContent !== lt) labs[i].textContent = lt;
+    }
   }
   setHidden('calPlace', !placing);
   if (placing) renderPlace();

@@ -516,14 +516,14 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await f2('F,end,1');
     await f2(S({}));
     const q2 = app2.win.gearQuality();
-    check('#12 ...and opens on its gear list (Your calibration), not the walkthrough', !app2.$('gearList').hidden && app2.$('onb').hidden &&
-      app2.$('glTitle').textContent === 'Your calibration' && !app2.$('glAgain').hidden && app2.$('glImprove').textContent === 'Improve calibration',
+    check('#12 ...and opens on Setup\'s hub (its gears, "Make it better"), not the welcome', !app2.$('gearList').hidden && app2.$('setupIntro').hidden &&
+      app2.$('glTitle').textContent === 'Setup' && !app2.$('glMore').hidden && /Redo gear/.test(app2.$('glMore').innerHTML) && /Start over/.test(app2.$('glMore').innerHTML),
       app2.$('glTitle').textContent);
     check('#12 ...with the red flag, the narrow gear, and the hold-still tries restored from the saved file', q2[15].level === 2 && q2[9].level === 1 && q2[5].level === 1,
       [5, 9, 15].map((g) => g + ':' + q2[g].level).join(' '));
     check('#12 ...without saving a "Stored calibration" record or a review card', app2.win.records.length === nRec && app2.$('reviewCard').hidden && !st2.review);
-    app2.$('glAgain').click();
-    check('#12 Calibrate again shows the walkthrough', app2.$('gearList').hidden && !app2.$('onb').hidden);
+    app2.win.setupHubAct('again');
+    check('#12 "Start over" shows the plan', app2.$('gearList').hidden && !app2.$('setupIntro').hidden && !app2.$('suPlan').hidden);
   }
   {
     // pass 1 issues on the gear list (#11 / #12)
@@ -950,7 +950,7 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     await app.f('Q,end,121.0,3.00,6', 0.02);
     await app.f('F,end,0', 0.02);
     await app.f(S({}));
-    check('#70 the re-read shows the other calibration', app.$('glTitle').textContent === 'Your calibration' && st.points[2].x === 9.7, app.$('glTitle').textContent);
+    check('#70 the re-read shows the other calibration', app.$('glTitle').textContent === 'Setup' && st.points[2].x === 9.7, app.$('glTitle').textContent);
     app.$('glCheck').click();
     while (st.check && st.check.phase === 'run') app.M3.checkAnswer(5);
     check('#70 ...and its gear check is not added to this session\'s file', !/# gear_check:/.test(app.win.getCsv(ridA) || ''), app.$('rckSaved').textContent);
@@ -964,8 +964,8 @@ const start6 = (app) => { if (app.M3.state.gearList) app.$('glCheck').click(); }
     app.M3.setConn('disconnected'); app.connect();
     await app.f(S({}));
     app.M3.render();
-    check('#75 the last list shows while the bridge is read again, its buttons off', !app.$('gearList').hidden && app.$('glImprove').disabled &&
-      app.$('glCheck').disabled && /reading it again/.test(app.$('glLead').textContent), app.$('glLead').textContent);
+    check('#75 the last list shows while the bridge is read again, its buttons off', !app.$('gearList').hidden &&
+      !/data-su="[a-z]+">/.test(app.$('glMore').innerHTML) && /Reading the bridge/.test(app.$('glLead').textContent), app.$('glLead').textContent);
     for (let i = 0; i < 20; i++) await app.f(S({}), 3);              // no answer to any k
     check('#75 ...and once the reads give up it is no longer shown as the bridge\'s', app.$('gearList').hidden,
       'k sent ' + app.cmds().filter((c) => c === 'k').length);

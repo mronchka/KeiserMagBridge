@@ -27,7 +27,7 @@ function check(name, ok, detail) {
   // Step 1: placement
   M3.openPlace();
   await app.advance(4);
-  check('step 1 breadcrumb', /STEP 1 OF 6/.test(crumb()), crumb());
+  check('step 1 breadcrumb', /PART 1 OF 3 · <b>Get ready<\/b> · Find a good spot|PART 1 OF 3 · Get ready · Find a good spot/.test(crumb()), crumb());
   check('placement meters fed by X lines', !!(st.place && st.place.x) && $('gNum').textContent !== '--', 'swing ' + $('gNum').textContent + ' µT, dip ' + $('mDipV').textContent + ', headroom ' + $('mHeadV').textContent);
   await app.advance(15);
   check('verdict says good spot', /spot/i.test($('placeVt').textContent), $('placeVt').textContent);
@@ -35,19 +35,19 @@ function check(name, ok, detail) {
   // Step 2: start (as the Next button does)
   M3.state.place = null; M3.send('v', true); M3.send('c');
   await until(() => st.s && st.s.cal === 4, 30);
-  check('step 2 (learn your pedalling) reaches the cadence check', st.s.cal === 4 && /STEP 2 OF 6/.test(crumb()), crumb());
+  check('step 2 (learn your pedalling) reaches the cadence check', st.s.cal === 4 && /PART 1 OF 3 · Get ready · Learn your pedalling/.test(crumb()), crumb());
   M3.send('n');
   await until(() => st.s.cal === 6 && st.s.step === 0, 5);
-  check('noise turns (cal 6, step 0) shown as part of step 2', /STEP 2 OF 6/.test(crumb()) && /lever still/i.test(app.$('calSub').textContent), crumb() + ' / ' + app.$('calSub').textContent);
+  check('noise turns (cal 6, step 0) shown as part of step 2', /PART 1 OF 3 · Get ready · Learn your pedalling/.test(crumb()) && /lever still/i.test(app.$('calSub').textContent), crumb() + ' / ' + app.$('calSub').textContent);
   await until(() => st.s.flow === 3, 20);
-  check('step 3 sweep: up (pass su)', /STEP 3 OF 6/.test(crumb()) && st.s.pass === 'su' && /push the lever up/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);
+  check('step 3 sweep: up (pass su)', /PART 1 OF 3 · Get ready · Sweep the lever/.test(crumb()) && st.s.pass === 'su' && /push the lever up/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);
   M3.send('n');
   await app.advance(1);
   check('step 3 sweep: down (pass sd, no Next count needed)', st.s.pass === 'sd' && /back down/i.test($('calHead').textContent), st.s.pass + ' ' + $('calHead').textContent);
   M3.send('n');
   await until(() => st.s.flow === 4, 5);
   check('survey result (Z) read', !!st.survey && st.survey.verdict === 'ok', JSON.stringify(st.survey));
-  check('step 4 breadcrumb', /STEP 4 OF 6/.test(crumb()), crumb());
+  check('step 4 breadcrumb', /PART 2 OF 3 · Up through the gears/.test(crumb()), crumb());
 
   // Up pass, with pauses (&rest=1)
   let sawPause = false, pauseText = '', sawStopNote = false, stuckHint = '';
@@ -61,13 +61,13 @@ function check(name, ok, detail) {
   check('"you can stop any time" note on the gear steps', sawStopNote);
   check('N,stuck hint shown', /If the console already shows 5, ease back into 4 and come up to it again/.test(stuckHint), stuckHint);
   await app.advance(1);
-  check('checkpoint after the up pass (cal 7): Saved card, breadcrumb step 4', st.upSaved && st.s.cal === 7 && !$('upSaved').hidden && $('calActive').hidden && /STEP 4 OF 6/.test(crumb()), 'cal ' + st.s.cal + ' ' + crumb());
+  check('checkpoint after the up pass (cal 7): Saved card, breadcrumb step 4', st.upSaved && st.s.cal === 7 && !$('upSaved').hidden && $('calActive').hidden && /PART 2 OF 3 · Up through the gears/.test(crumb()), 'cal ' + st.s.cal + ' ' + crumb());
   check('flagged gears wait during the checkpoint', $('reviewCard').hidden && !st.edit, 'review ' + (st.review ? st.review.items.length : 0));
 
   // Continue down (as the button does: board is idle after the save, so #D or n)
   M3.send('n');
   await until(() => st.s.flow === 5 && st.s.cal !== 0, 5);
-  check('step 5 breadcrumb', /STEP 5 OF 6/.test(crumb()), crumb());
+  check('step 5 breadcrumb', /PART 3 OF 3 · Back down/.test(crumb()), crumb());
   await until(() => st.downPoints.length >= 3, 120);
   const dots = $('calDots').children.map((d) => d.className);
   const blue = st.downPoints.filter((q) => /\bdown\b|\bcur\b/.test(dots[q.point - 1] || '')).length;
@@ -93,13 +93,13 @@ function check(name, ok, detail) {
   check('after the improve pass the gear list comes back with what improved', !!st.gearList && /improved/.test($('glLead').textContent) &&
     $('glTitle').textContent === 'Your gears now', $('glTitle').textContent + ': ' + $('glLead').textContent);
   $('glCheck').click();
-  check('step 6 (gear check) starts from it', !!st.check && st.check.phase === 'run' && /STEP 6 OF 6/.test(crumb()), crumb());
+  check('step 6 (gear check) starts from it', !!st.check && st.check.phase === 'run' && /^Check a few gears$/.test(crumb()), crumb());
 
   // E2: the board starts calibrating again during step 6 (#D): the breadcrumb follows the board
   M3.sendCmd('#D');
   await until(() => st.s.cal !== 0, 5);
   await app.advance(0.5);
-  check('#D during the gear check: breadcrumb follows the board (step 5)', st.s.flow === 5 && /STEP 5 OF 6/.test(crumb()), 'board ' + st.s.flow + ', page ' + crumb());
+  check('#D during the gear check: breadcrumb follows the board (step 5)', st.s.flow === 5 && /PART 3 OF 3 · Back down/.test(crumb()), 'board ' + st.s.flow + ', page ' + crumb());
   check('no page errors', app.errors.length === 0, app.errors.map(String).join('; '));
   process.exit(fail ? 1 : 0);
 })();

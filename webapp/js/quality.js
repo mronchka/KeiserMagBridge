@@ -127,7 +127,7 @@ function openGearList() {
   if (state.improving && state.improving.picked) {
     gl.redone = state.improving.picked;   // #90: the gear the rider picked
     (state.improvedGears = state.improvedGears || {})[gl.redone] = true;
-    gl.sel = gl.redone;
+    state.sheetGear = gl.redone;   // (its sheet again: how it looks now)
     state.improving = null;
   } else if (state.improving) {
     // back from the improve pass: what got better
@@ -198,7 +198,7 @@ function homeListShown() {
   // #65: a drop: keep showing it (its buttons are off until the link is back)
   return (state.conn !== 'connected' || !state.s) && !!state.homeShownBefore && !state.place && !state.check && !calRunning(state.s);   // (#77: until the first status line)
 }
-function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; onbIdx = 0; render(); }   // (#80: from page 1)
+function calibrateAgain() { state.homeWalk = true; state.homeSel = 0; onbIdx = 0; setupPage = 'plan'; state.sheetGear = 0; render(); }   // (#80: from page 1; Setup: the plan)
 
 var gearListKey = '';
 function renderGearList() {
@@ -217,7 +217,8 @@ function renderGearList() {
   var edges = improveEdges(q), connected = state.conn === 'connected';
   var reading = !!gl.home && connected && !state.homeRead;   // #75: the last list shown, while the bridge's is read
   var live = connected && !reading;
-  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading + '|' + (gl.redone || 0);
+  var key = JSON.stringify(qualityLevels(q)) + '|' + gl.sel + '|' + edges.length + '|' + connected + '|' + JSON.stringify(gl.improved || '') + '|' + !!gl.home + '|' + !!gl.checked + '|' + reading + '|' + (gl.redone || 0) +
+    '|' + (state.sheetGear || 0) + '|' + JSON.stringify(state.keptEdges || {}) + '|' + !!(flowRecord() || {}).checkDone;
   if (key === gearListKey) return;
   gearListKey = key;
   var lead = gl.redone ? 'Gear ' + gl.redone + ' redone. '
@@ -229,11 +230,16 @@ function renderGearList() {
   lead += !bad && !unsure ? (noDown ? 'Every gear looks good going up; coming down isn\u2019t measured yet.' : 'Every gear looks good. Tap one to redo it.')
     : (bad ? bad + ' gear' + (bad === 1 ? '' : 's') + ' need' + (bad === 1 ? 's' : '') + ' another look' : '') + (bad && unsure ? ', ' : '') +
       (unsure ? unsure + ' ' + (unsure === 1 ? 'is' : 'are') + ' unsure' : '') + '. ' + (noDown ? 'Coming down isn\u2019t measured yet. ' : '') + 'Tap a gear to see why.';
-  $('glTitle').textContent = gl.improved || gl.redone ? 'Your gears now' : gl.home ? 'Your calibration' : gl.checked ? 'Your gears' : 'Calibration done';
+  // Setup's hub (a returning rider): its own count line under the status
+  if (gl.home && !gl.redone && !gl.improved) {
+    lead = reading ? 'Reading the bridge\u2019s calibration\u2026' : !bad && !unsure ? 'All ' + GEARS + ' gears look good. Tap one to see it.'
+      : (GEARS - bad - unsure) + ' gears look good · ' + (bad + unsure) + ' could be better. Tap one to see why.';
+  }
+  $('glTitle').textContent = gl.improved || gl.redone ? 'Your gears now' : gl.home ? 'Setup' : gl.checked ? 'Your gears' : 'Calibration done';
   $('glLead').textContent = lead;
   var html = '';
   for (g = 1; g <= GEARS; g++) {
-    html += '<button class="gl-g q' + q[g].level + (gl.sel === g ? ' sel' : '') + '" type="button" data-gear="' + g + '" aria-label="Gear ' + g +
+    html += '<button class="gl-g q' + q[g].level + (gl.sel === g || state.sheetGear === g ? ' sel' : '') + '" type="button" data-gear="' + g + '" aria-label="Gear ' + g +
       ': ' + Q_TEXT[q[g].level] + '">' + g + '</button>';
   }
   $('glGrid').innerHTML = html;
@@ -258,4 +264,9 @@ function renderGearList() {
   $('glImprove').disabled = !live;
   $('glCheck').className = 'btn ' + (edges.length || pickRedo ? '' : 'primary ') + 'wide';
   $('glCheck').disabled = !live;
+  // the hub: status and "Make it better" in place of the buttons
+  setHidden('glStatus', !gl.home);
+  setHidden('glMore', !gl.home);
+  setHidden('glBtns', !!gl.home);
+  if (gl.home) renderSetupHub(q, bad, unsure, fixable, noDown);
 }
